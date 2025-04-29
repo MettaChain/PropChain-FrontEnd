@@ -1,5 +1,12 @@
-# PropChain-FrontEnd
-Readme file of ptopchain front-end
-
-# PropChain
-PropChain is an innovative Web3-powered real estate platform that revolutionizes property transactions through blockchain technology. Built with *JavaScript, TpyeScript, NextJs, Tailwind CSS, PostgreSQL, NestJS, and Rust*, the platform allows users to tokenize real estate assets as NFTs and seamlessly conduct transactions using cryptocurrencies.
+…or create a new repository on the command line
+echo "# PropChain-contract" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/MettaChain/PropChain-contract.git
+git push -u origin main
+…or push an existing repository from the command line
+git remote add origin https://github.com/MettaChain/PropChain-contract.git
+git branch -M main
+git push -u origin main
