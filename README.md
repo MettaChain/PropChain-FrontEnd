@@ -1,5 +1,2 @@
 # PropChain-FrontEnd
-kjgkjgjjmkmgjmctikutmkjrfjfjrf
-mkfkfmjfmjfmj
-,jfgmjfmfnmfmj
-kjfmhfnhfn
+Readme file of ptopchain front-end
