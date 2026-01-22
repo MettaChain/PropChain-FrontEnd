@@ -1,6 +1,28 @@
-import { Chain } from 'wagmi';
+/**
+ * Blockchain Network Configuration
+ * Supported chains for PropChain platform
+ */
 
-export const SUPPORTED_CHAINS: Chain[] = [
+export interface ChainConfig {
+  id: number;
+  name: string;
+  network: string;
+  nativeCurrency: {
+    decimals: number;
+    name: string;
+    symbol: string;
+  };
+  rpcUrls: {
+    public: { http: string[] };
+    default: { http: string[] };
+  };
+  blockExplorers: {
+    default: { name: string; url: string };
+  };
+  testnet: boolean;
+}
+
+export const SUPPORTED_CHAINS: ChainConfig[] = [
   {
     id: 1,
     name: 'Ethereum',
