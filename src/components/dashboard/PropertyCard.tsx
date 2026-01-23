@@ -1,7 +1,11 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { MapPin, TrendingUp, TrendingDown, Building2 } from "lucide-react";
+import { MapPin, TrendingUp, TrendingDown, Building2, ShoppingCart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTransaction } from "@/hooks/useTransaction";
+import { GasEstimator } from "@/components/GasEstimator";
+import { useState } from "react";
 
 interface Property {
   id: string;
@@ -21,7 +25,23 @@ interface PropertyCardProps {
 }
 
 export const PropertyCard = ({ property, index }: PropertyCardProps) => {
+  const { addTransactionToQueue } = useTransaction();
+  const [showGasEstimator, setShowGasEstimator] = useState(false);
   const isPositiveROI = property.roi >= 0;
+
+  const handlePurchase = () => {
+    // Simulate a transaction hash for demo purposes
+    const mockTxHash = `0x${Math.random().toString(16).substr(2, 64)}`;
+    
+    addTransactionToQueue({
+      hash: mockTxHash,
+      type: 'purchase',
+      description: `Purchase tokens for ${property.name}`,
+      propertyId: property.id,
+      value: (property.value * 0.1).toString(), // 10% purchase for demo
+      requiredConfirmations: 2,
+    });
+  };
 
   return (
     <motion.div
@@ -88,6 +108,30 @@ export const PropertyCard = ({ property, index }: PropertyCardProps) => {
               ${property.monthlyIncome.toLocaleString()}
             </p>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Button
+            onClick={() => setShowGasEstimator(!showGasEstimator)}
+            variant="outline"
+            size="sm"
+            className="w-full"
+          >
+            Estimate Gas
+          </Button>
+          
+          {showGasEstimator && (
+            <GasEstimator
+              to="0x742d35Cc6634C0532925a3b844Bc454e4438f44e" // Sample contract address
+              value={(property.value * 0.1).toString()}
+              enabled={true}
+            />
+          )}
+
+          <Button onClick={handlePurchase} className="w-full">
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Purchase Tokens
+          </Button>
         </div>
       </div>
     </motion.div>

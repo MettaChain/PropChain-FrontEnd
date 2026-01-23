@@ -14,6 +14,9 @@ import { RiskAnalysis } from "@/components/dashboard/RiskAnalysis";
 import { PortfolioReport } from "@/components/dashboard/PortfolioReport";
 import { DataRefreshWrapper } from "@/components/dashboard/DataRefreshWrapper";
 import { WalletConnector } from "@/components/WalletConnector";
+import { TransactionQueue } from "@/components/TransactionQueue";
+import { TransactionHistory } from "@/components/TransactionHistory";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -90,6 +93,23 @@ const Index = () => {
 
             {/* Properties */}
             <PropertiesList />
+
+            {/* Transaction Management */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">Transaction Management</h3>
+              <Tabs defaultValue="queue" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
+                  <TabsTrigger value="history">Transaction History</TabsTrigger>
+                </TabsList>
+                <TabsContent value="queue">
+                  <TransactionQueue />
+                </TabsContent>
+                <TabsContent value="history">
+                  <TransactionHistory />
+                </TabsContent>
+              </Tabs>
+            </div>
 
             {/* Transactions */}
             <RecentTransactions />
