@@ -1,61 +1,6 @@
-import { Chain } from 'wagmi';
+import { mainnet, polygon, bsc } from 'wagmi/chains';
 
-export const SUPPORTED_CHAINS: Chain[] = [
-  {
-    id: 1,
-    name: 'Ethereum',
-    network: 'homestead',
-    nativeCurrency: {
-      decimals: 18,
-      name: 'Ether',
-      symbol: 'ETH',
-    },
-    rpcUrls: {
-      public: { http: ['https://mainnet.infura.io/v3/'] },
-      default: { http: ['https://mainnet.infura.io/v3/'] },
-    },
-    blockExplorers: {
-      default: { name: 'Etherscan', url: 'https://etherscan.io' },
-    },
-    testnet: false,
-  },
-  {
-    id: 137,
-    name: 'Polygon',
-    network: 'matic',
-    nativeCurrency: {
-      decimals: 18,
-      name: 'MATIC',
-      symbol: 'MATIC',
-    },
-    rpcUrls: {
-      public: { http: ['https://polygon-rpc.com'] },
-      default: { http: ['https://polygon-rpc.com'] },
-    },
-    blockExplorers: {
-      default: { name: 'PolygonScan', url: 'https://polygonscan.com' },
-    },
-    testnet: false,
-  },
-  {
-    id: 56,
-    name: 'Binance Smart Chain',
-    network: 'bsc',
-    nativeCurrency: {
-      decimals: 18,
-      name: 'BNB',
-      symbol: 'BNB',
-    },
-    rpcUrls: {
-      public: { http: ['https://bsc-dataseed1.binance.org'] },
-      default: { http: ['https://bsc-dataseed1.binance.org'] },
-    },
-    blockExplorers: {
-      default: { name: 'BscScan', url: 'https://bscscan.com' },
-    },
-    testnet: false,
-  },
-];
+export const SUPPORTED_CHAINS = [mainnet, polygon, bsc];
 
 export const CHAIN_CONFIG = {
   1: {
