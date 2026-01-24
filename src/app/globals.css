@@ -28,6 +28,7 @@ body {
 
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "../styles/mobile.css";
 
 @custom-variant dark (&:is(.dark *));
 
