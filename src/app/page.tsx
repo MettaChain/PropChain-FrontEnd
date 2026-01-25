@@ -1,15 +1,27 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { ChainAwareProvider } from '@/providers/ChainAwareProvider';
-import { useWalletPersistence } from '@/utils/walletPersistence';
-import { setupExtensionErrorHandling } from '@/utils/extensionDetection';
-import { setupConsoleOverride, suppressExtensionErrors } from '@/utils/consoleOverride';
-import { ManualErrorSuppressor, globalErrorSuppressor } from '@/utils/manualErrorSuppressor';
-import { WalletConnector } from '@/components/WalletConnector';
-import { ChainAware, ChainSpecific, MultiChainBadge, GasEstimation, TransactionButton } from '@/components/ChainAwareProps';
-import { LoadingState } from '@/components/LoadingSpinner';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import React, { useEffect } from "react";
+import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
+import { useWalletPersistence } from "@/utils/walletPersistence";
+import { setupExtensionErrorHandling } from "@/utils/extensionDetection";
+import {
+  setupConsoleOverride,
+  suppressExtensionErrors,
+} from "@/utils/consoleOverride";
+import {
+  ManualErrorSuppressor,
+  globalErrorSuppressor,
+} from "@/utils/manualErrorSuppressor";
+import { WalletConnector } from "@/components/WalletConnector";
+import {
+  ChainAware,
+  ChainSpecific,
+  MultiChainBadge,
+  GasEstimation,
+  TransactionButton,
+} from "@/components/ChainAwareProps";
+import { LoadingState } from "@/components/LoadingSpinner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function HomeContent() {
   useWalletPersistence();
@@ -20,16 +32,16 @@ function HomeContent() {
     suppressExtensionErrors();
     ManualErrorSuppressor();
     globalErrorSuppressor();
-    
+
     // Make manual suppressor available globally
     (window as any).suppressErrors = () => {
       console.clear();
-      console.log('🔧 Manual error suppression activated');
+      console.log("🔧 Manual error suppression activated");
     };
   }, []);
 
   const handleSampleTransaction = async () => {
-    console.log('Sample transaction executed');
+    console.log("Sample transaction executed");
   };
 
   return (
@@ -56,7 +68,8 @@ function HomeContent() {
             Multi-Chain Real Estate Platform
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Experience seamless wallet connectivity across Ethereum, Polygon, and Binance Smart Chain
+            Experience seamless wallet connectivity across Ethereum, Polygon,
+            and Binance Smart Chain
           </p>
         </div>
 
@@ -68,7 +81,8 @@ function HomeContent() {
                   Connect Your Wallet
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Connect your Web3 wallet to access multi-chain real estate features
+                  Connect your Web3 wallet to access multi-chain real estate
+                  features
                 </p>
                 <WalletConnector />
               </div>
@@ -83,19 +97,25 @@ function HomeContent() {
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Address</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Address
+                    </p>
                     <p className="font-mono text-sm text-gray-900 dark:text-white">
                       {address?.slice(0, 8)}...{address?.slice(-6)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Balance</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Balance
+                    </p>
                     <p className="font-semibold text-gray-900 dark:text-white">
                       {balance} {chainSymbol}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Network</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Network
+                    </p>
                     <MultiChainBadge>
                       <span className="text-sm">{chainName}</span>
                     </MultiChainBadge>
@@ -111,7 +131,9 @@ function HomeContent() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-blue-600" />
-                      <span className="text-sm font-medium">Ethereum Mainnet</span>
+                      <span className="text-sm font-medium">
+                        Ethereum Mainnet
+                      </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       High security, extensive DeFi ecosystem
@@ -166,7 +188,7 @@ function HomeContent() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   Multi-Chain Features
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="text-2xl mb-2">🔗</div>
                     <h4 className="font-medium text-gray-900 dark:text-white mb-1">
@@ -193,6 +215,26 @@ function HomeContent() {
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       Connection survives refreshes
                     </p>
+                  </div>
+                </div>
+
+                {/* Mobile Properties Link */}
+                <div className="border-t border-gray-200 dark:border-gray-600 pt-6">
+                  <div className="text-center">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                      📱 Mobile-First Property Experience
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                      Experience our touch-optimized property viewing with AR
+                      preview, location discovery, and offline support
+                    </p>
+                    <a
+                      href="/mobile-properties"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      <span className="mr-2">📱</span>
+                      View Mobile Properties
+                    </a>
                   </div>
                 </div>
               </div>
