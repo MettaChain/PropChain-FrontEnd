@@ -78,6 +78,9 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
     testnet: false,
   },
 ];
+import { mainnet, polygon, bsc } from 'wagmi/chains';
+
+export const SUPPORTED_CHAINS = [mainnet, polygon, bsc];
 
 export const CHAIN_CONFIG = {
   1: {

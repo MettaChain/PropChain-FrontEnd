@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@/utils/earlyErrorSuppression";
+import { ClientProviders } from "@/components/ClientProviders";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "PropChain - Multi-Chain Real Estate Platform",
-  description: "Seamless multi-chain wallet connectivity for real estate tokenization on Ethereum, Polygon, and BSC",
+  description:
+    "Seamless multi-chain wallet connectivity for real estate tokenization on Ethereum, Polygon, and BSC",
 };
 
 export default function RootLayout({
@@ -28,7 +30,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );
