@@ -1,9 +1,3 @@
-/**
- * Blockchain Network Configuration
- * Supported chains for PropChain platform
- */
-
-
 import { mainnet, polygon, bsc } from 'wagmi/chains';
 
 export const SUPPORTED_CHAINS = [mainnet, polygon, bsc];

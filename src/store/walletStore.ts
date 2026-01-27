@@ -74,7 +74,7 @@ export const useWalletStore = create<WalletStore>()(
 
       setSwitchingNetwork: (isSwitching: boolean) => {
         set({ isSwitchingNetwork: isSwitching });
-      }
+      },
 
       setError: (error: string | null) => {
         set({ error, isConnecting: false, isSwitchingNetwork: false });

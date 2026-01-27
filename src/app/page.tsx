@@ -67,7 +67,7 @@ function HomeContent() {
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
             Multi-Chain Real Estate Platform
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-6">
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Experience seamless wallet connectivity across Ethereum, Polygon, and Binance Smart Chain
           </p>
           <a
