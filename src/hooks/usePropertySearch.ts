@@ -31,6 +31,7 @@ export function usePropertySearch() {
     setProperties,
     setLoading,
     setError,
+    lastUpdated,
   } = useSearchStore();
 
   // Initialize from URL parameters on mount
@@ -121,6 +122,7 @@ export function usePropertySearch() {
     totalPages,
     isLoading,
     error,
+    lastUpdated,
 
     // Actions
     setFilter: handleFilterChange,

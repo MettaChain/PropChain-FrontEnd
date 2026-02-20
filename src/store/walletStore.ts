@@ -13,6 +13,8 @@ export interface WalletState {
   isSwitchingNetwork: boolean;
   error: string | null;
   balance: string | null;
+  isLoading: boolean;
+  lastUpdated: number | null;
 }
 
 export interface WalletActions {
@@ -24,13 +26,16 @@ export interface WalletActions {
   setError: (error: string | null) => void;
   setBalance: (balance: string | null) => void;
   clearError: () => void;
+  setLoading: (loading: boolean) => void;
+  setLastUpdated: (timestamp: number) => void;
+  reset: () => void;
 }
 
 export type WalletStore = WalletState & WalletActions;
 
 export const useWalletStore = create<WalletStore>()(
   persist(
-    (set, get) => ({
+    (set: (partial: WalletStore | Partial<WalletStore> | ((state: WalletStore) => Partial<WalletStore>)) => void, get: () => WalletStore) => ({
       isConnected: false,
       address: null,
       walletType: null,
@@ -39,6 +44,8 @@ export const useWalletStore = create<WalletStore>()(
       isSwitchingNetwork: false,
       error: null,
       balance: null,
+      isLoading: false,
+      lastUpdated: null,
 
       setConnected: (address: string, walletType: WalletType, chainId: ChainId = DEFAULT_CHAIN_ID) => {
         set({
@@ -48,6 +55,7 @@ export const useWalletStore = create<WalletStore>()(
           chainId,
           isConnecting: false,
           error: null,
+          lastUpdated: Date.now(),
         });
       },
 
@@ -61,11 +69,13 @@ export const useWalletStore = create<WalletStore>()(
           isSwitchingNetwork: false,
           error: null,
           balance: null,
+          isLoading: false,
+          lastUpdated: null,
         });
       },
 
       setChainId: (chainId: ChainId) => {
-        set({ chainId, isSwitchingNetwork: false, error: null });
+        set({ chainId, isSwitchingNetwork: false, error: null, lastUpdated: Date.now() });
       },
 
       setConnecting: (isConnecting: boolean) => {
@@ -81,12 +91,29 @@ export const useWalletStore = create<WalletStore>()(
       },
 
       setBalance: (balance: string | null) => {
-        set({ balance });
+        set({ balance, lastUpdated: Date.now() });
       },
 
       clearError: () => {
         set({ error: null });
       },
+      
+      setLoading: (loading: boolean) => set({ isLoading: loading }),
+      
+      setLastUpdated: (timestamp: number) => set({ lastUpdated: timestamp }),
+      
+      reset: () => set({
+        isConnected: false,
+        address: null,
+        walletType: null,
+        chainId: DEFAULT_CHAIN_ID,
+        isConnecting: false,
+        isSwitchingNetwork: false,
+        error: null,
+        balance: null,
+        isLoading: false,
+        lastUpdated: null,
+      }),
     }),
     {
       name: 'propchain-wallet',
@@ -96,6 +123,7 @@ export const useWalletStore = create<WalletStore>()(
         walletType: state.walletType,
         chainId: state.chainId,
         isSwitchingNetwork: state.isSwitchingNetwork,
+        lastUpdated: state.lastUpdated,
       }),
     }
   )

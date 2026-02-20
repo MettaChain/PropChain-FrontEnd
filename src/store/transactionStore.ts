@@ -30,6 +30,7 @@ export interface TransactionState {
   recentTransactions: Transaction[];
   isLoading: boolean;
   error: string | null;
+  lastUpdated: number | null;
 }
 
 export interface TransactionActions {
@@ -39,6 +40,8 @@ export interface TransactionActions {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
+  setLastUpdated: (timestamp: number) => void;
+  reset: () => void;
   getTransactionsByStatus: (status: TransactionStatus) => Transaction[];
   getTransactionsByType: (type: TransactionType) => Transaction[];
   getTransactionsByChain: (chainId: number) => Transaction[];
@@ -48,14 +51,15 @@ export type TransactionStore = TransactionState & TransactionActions;
 
 export const useTransactionStore = create<TransactionStore>()(
   persist(
-    (set, get) => ({
+    (set: (partial: TransactionStore | Partial<TransactionStore> | ((state: TransactionStore) => Partial<TransactionStore>)) => void, get: () => TransactionStore) => ({
       transactions: [],
       pendingTransactions: [],
       recentTransactions: [],
       isLoading: false,
       error: null,
+      lastUpdated: null,
 
-      addTransaction: (transactionData) => {
+      addTransaction: (transactionData: Omit<Transaction, 'id' | 'status' | 'confirmations' | 'timestamp'>) => {
         const newTransaction: Transaction = {
           ...transactionData,
           id: `${transactionData.hash}-${Date.now()}`,
@@ -67,10 +71,11 @@ export const useTransactionStore = create<TransactionStore>()(
         set((state) => ({
           transactions: [newTransaction, ...state.transactions],
           pendingTransactions: [newTransaction, ...state.pendingTransactions],
+          lastUpdated: Date.now(),
         }));
       },
 
-      updateTransaction: (id, updates) => {
+      updateTransaction: (id: string, updates: Partial<Transaction>) => {
         set((state) => {
           const updatedTransactions = state.transactions.map((tx) =>
             tx.id === id ? { ...tx, ...updates } : tx
@@ -88,38 +93,50 @@ export const useTransactionStore = create<TransactionStore>()(
             transactions: updatedTransactions,
             pendingTransactions,
             recentTransactions,
+            lastUpdated: Date.now(),
           };
         });
       },
 
-      removeTransaction: (id) => {
+      removeTransaction: (id: string) => {
         set((state) => ({
           transactions: state.transactions.filter((tx) => tx.id !== id),
           pendingTransactions: state.pendingTransactions.filter((tx) => tx.id !== id),
           recentTransactions: state.recentTransactions.filter((tx) => tx.id !== id),
+          lastUpdated: Date.now(),
         }));
       },
 
-      setLoading: (loading) => set({ isLoading: loading }),
-      setError: (error) => set({ error }),
+      setLoading: (loading: boolean) => set({ isLoading: loading }),
+      setError: (error: string | null) => set({ error }),
       clearError: () => set({ error: null }),
+      setLastUpdated: (timestamp: number) => set({ lastUpdated: timestamp }),
+      reset: () => set({
+        transactions: [],
+        pendingTransactions: [],
+        recentTransactions: [],
+        isLoading: false,
+        error: null,
+        lastUpdated: Date.now(),
+      }),
 
-      getTransactionsByStatus: (status) => {
+      getTransactionsByStatus: (status: TransactionStatus) => {
         return get().transactions.filter((tx) => tx.status === status);
       },
 
-      getTransactionsByType: (type) => {
+      getTransactionsByType: (type: TransactionType) => {
         return get().transactions.filter((tx) => tx.type === type);
       },
 
-      getTransactionsByChain: (chainId) => {
+      getTransactionsByChain: (chainId: number) => {
         return get().transactions.filter((tx) => tx.chainId === chainId);
       },
     }),
     {
       name: 'propchain-transactions',
-      partialize: (state) => ({
+      partialize: (state: TransactionStore) => ({
         transactions: state.transactions,
+        lastUpdated: state.lastUpdated,
       }),
     }
   )

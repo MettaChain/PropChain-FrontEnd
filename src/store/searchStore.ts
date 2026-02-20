@@ -27,11 +27,13 @@ interface SearchState {
   // Loading states
   isLoading: boolean;
   error: string | null;
+  lastUpdated: number | null;
   
   // Results
   properties: Property[];
-  
-  // Actions
+}
+
+interface SearchActions {
   setFilters: (filters: Partial<SearchFilters>) => void;
   setFilter: <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) => void;
   clearFilters: () => void;
@@ -42,8 +44,11 @@ interface SearchState {
   setProperties: (properties: Property[], total: number) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
+  setLastUpdated: (timestamp: number) => void;
   reset: () => void;
 }
+
+export type SearchStore = SearchState & SearchActions;
 
 const DEFAULT_STATE = {
   filters: {
@@ -66,25 +71,28 @@ const DEFAULT_STATE = {
   totalResults: 0,
   isLoading: false,
   error: null,
+  lastUpdated: null,
   properties: [],
 };
 
-export const useSearchStore = create<SearchState>()(
+export const useSearchStore = create<SearchStore>()(
   persist(
-    (set, get) => ({
+    (set: (partial: SearchStore | Partial<SearchStore> | ((state: SearchStore) => Partial<SearchStore>)) => void, get: () => SearchStore) => ({
       ...DEFAULT_STATE,
 
-      setFilters: (newFilters) => {
+      setFilters: (newFilters: Partial<SearchFilters>) => {
         set((state) => ({
           filters: { ...state.filters, ...newFilters },
           page: 1, // Reset to first page when filters change
+          lastUpdated: Date.now(),
         }));
       },
 
-      setFilter: (key, value) => {
+      setFilter: <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) => {
         set((state) => ({
           filters: { ...state.filters, [key]: value },
           page: 1,
+          lastUpdated: Date.now(),
         }));
       },
 
@@ -92,53 +100,60 @@ export const useSearchStore = create<SearchState>()(
         set({
           filters: DEFAULT_STATE.filters,
           page: 1,
+          lastUpdated: Date.now(),
         });
       },
 
-      setSortBy: (sortBy) => {
-        set({ sortBy, page: 1 });
+      setSortBy: (sortBy: SortOption) => {
+        set({ sortBy, page: 1, lastUpdated: Date.now() });
       },
 
-      setViewMode: (viewMode) => {
-        set({ viewMode });
+      setViewMode: (viewMode: ViewMode) => {
+        set({ viewMode, lastUpdated: Date.now() });
       },
 
-      setPage: (page) => {
-        set({ page });
+      setPage: (page: number) => {
+        set({ page, lastUpdated: Date.now() });
       },
 
-      setResultsPerPage: (resultsPerPage) => {
-        set({ resultsPerPage, page: 1 });
+      setResultsPerPage: (resultsPerPage: number) => {
+        set({ resultsPerPage, page: 1, lastUpdated: Date.now() });
       },
 
-      setProperties: (properties, total) => {
+      setProperties: (properties: Property[], total: number) => {
         set({
           properties,
           totalResults: total,
           isLoading: false,
           error: null,
+          lastUpdated: Date.now(),
         });
       },
 
-      setLoading: (isLoading) => {
+      setLoading: (isLoading: boolean) => {
         set({ isLoading });
       },
 
-      setError: (error) => {
+      setError: (error: string | null) => {
         set({ error, isLoading: false });
       },
 
+      setLastUpdated: (timestamp: number) => {
+        set({ lastUpdated: timestamp });
+      },
+
       reset: () => {
-        set(DEFAULT_STATE);
+        set({...DEFAULT_STATE, lastUpdated: Date.now()});
       },
     }),
     {
       name: 'propchain-search',
-      partialize: (state) => ({
+      partialize: (state: SearchStore) => ({
         filters: state.filters,
         sortBy: state.sortBy,
         viewMode: state.viewMode,
         resultsPerPage: state.resultsPerPage,
+        lastUpdated: state.lastUpdated,
       }),
     }
   )
