@@ -21,8 +21,21 @@ const incomeData = [
   { month: "Jan", income: 18240, projected: 18500 },
 ];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
+interface IncomeTooltipPayloadItem {
+  value?: number;
+}
+
+interface IncomeTooltipProps {
+  active?: boolean;
+  payload?: IncomeTooltipPayloadItem[];
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: IncomeTooltipProps) => {
+  const actualValue = payload?.[0]?.value;
+  const projectedValue = payload?.[1]?.value;
+
+  if (active && typeof actualValue === "number") {
     return (
       <div className="glass-card rounded-lg p-3 shadow-lg border border-border">
         <p className="text-sm text-muted-foreground mb-2">{label}</p>
@@ -30,13 +43,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           <p className="text-sm">
             <span className="text-muted-foreground">Actual: </span>
             <span className="font-bold text-primary">
-              ${payload[0].value.toLocaleString()}
+              ${actualValue.toLocaleString()}
             </span>
           </p>
           <p className="text-sm">
             <span className="text-muted-foreground">Projected: </span>
             <span className="font-medium text-accent">
-              ${payload[1]?.value?.toLocaleString()}
+              {typeof projectedValue === "number" ? `$${projectedValue.toLocaleString()}` : "N/A"}
             </span>
           </p>
         </div>
@@ -115,7 +128,7 @@ export const IncomeTracker = () => {
               axisLine={false}
               tickLine={false}
               tick={{ fill: "hsl(215, 20%, 55%)", fontSize: 12 }}
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+              tickFormatter={(value: number) => `$${(value / 1000).toFixed(0)}k`}
             />
             <Tooltip
               content={<CustomTooltip />}

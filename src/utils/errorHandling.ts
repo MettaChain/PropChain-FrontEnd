@@ -1,4 +1,5 @@
 import { isExtensionError, sanitizeExtensionError } from './extensionDetection';
+import { getErrorCode, getErrorMessage, isRecord } from './typeGuards';
 
 export const WALLET_ERRORS = {
   USER_REJECTED: 4001,
@@ -9,7 +10,7 @@ export const WALLET_ERRORS = {
   CHAIN_NOT_ADDED: 4902,
 } as const;
 
-export const getWalletErrorMessage = (error: any): string => {
+export const getWalletErrorMessage = (error: unknown): string => {
   if (!error) return 'Unknown error occurred';
 
   // Check for extension errors first
@@ -17,8 +18,9 @@ export const getWalletErrorMessage = (error: any): string => {
     return sanitizeExtensionError(error);
   }
 
-  if (error.code) {
-    switch (error.code) {
+  const code = getErrorCode(error);
+  if (code !== undefined) {
+    switch (code) {
       case WALLET_ERRORS.USER_REJECTED:
         return 'User rejected the request';
       case WALLET_ERRORS.UNAUTHORIZED:
@@ -32,40 +34,54 @@ export const getWalletErrorMessage = (error: any): string => {
       case WALLET_ERRORS.CHAIN_NOT_ADDED:
         return 'Chain has not been added to wallet';
       default:
-        return `Wallet error (${error.code}): ${error.message || 'Unknown error'}`;
+        return `Wallet error (${code}): ${getErrorMessage(error)}`;
     }
   }
 
-  if (error.message) {
-    if (error.message.includes('MetaMask is not installed')) {
+  const message = getErrorMessage(error);
+  if (message) {
+    if (message.includes('MetaMask is not installed')) {
       return 'MetaMask is not installed. Please install MetaMask to continue.';
     }
-    if (error.message.includes('Coinbase Wallet is not installed')) {
+    if (message.includes('Coinbase Wallet is not installed')) {
       return 'Coinbase Wallet is not installed. Please install Coinbase Wallet to continue.';
     }
-    if (error.message.includes('WalletConnect')) {
+    if (message.includes('WalletConnect')) {
       return 'WalletConnect integration needs to be implemented with v2 SDK.';
     }
-    return error.message;
+    return message;
   }
 
   return 'An unexpected error occurred';
 };
 
-export const isSupportedNetworkError = (error: any): boolean => {
-  return error?.message?.includes('Unsupported network') || 
-         error?.message?.includes('chain not supported');
+const getMessage = (error: unknown): string => {
+  if (isRecord(error) && typeof error.message === 'string') return error.message;
+  return getErrorMessage(error, '');
 };
 
-export const isUserRejectionError = (error: any): boolean => {
-  return error?.code === WALLET_ERRORS.USER_REJECTED ||
-         error?.message?.includes('User rejected') ||
-         error?.message?.includes('User denied');
+export const isSupportedNetworkError = (error: unknown): boolean => {
+  const message = getMessage(error);
+  return message.includes('Unsupported network') || message.includes('chain not supported');
 };
 
-export const isNetworkError = (error: any): boolean => {
-  return error?.message?.includes('network') ||
-         error?.message?.includes('chain') ||
-         error?.code === WALLET_ERRORS.CHAIN_DISCONNECTED ||
-         error?.code === WALLET_ERRORS.CHAIN_NOT_ADDED;
+export const isUserRejectionError = (error: unknown): boolean => {
+  const message = getMessage(error);
+  return (
+    getErrorCode(error) === WALLET_ERRORS.USER_REJECTED ||
+    message.includes('User rejected') ||
+    message.includes('User denied')
+  );
+};
+
+export const isNetworkError = (error: unknown): boolean => {
+  const message = getMessage(error).toLowerCase();
+  const code = getErrorCode(error);
+
+  return (
+    message.includes('network') ||
+    message.includes('chain') ||
+    code === WALLET_ERRORS.CHAIN_DISCONNECTED ||
+    code === WALLET_ERRORS.CHAIN_NOT_ADDED
+  );
 };

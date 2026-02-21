@@ -13,7 +13,7 @@ function PropertiesContent() {
   const { viewMode: storeViewMode, setViewMode: setStoreViewMode } = useSearchStore();
   
   // Ensure viewMode is only 'grid' or 'list' for now (map view not implemented yet)
-  const viewMode = (storeViewMode === 'map' ? 'grid' : storeViewMode) as 'grid' | 'list';
+  const viewMode: 'grid' | 'list' = storeViewMode === 'map' ? 'grid' : storeViewMode;
   const setViewMode = (mode: 'grid' | 'list') => setStoreViewMode(mode);
   
   const {

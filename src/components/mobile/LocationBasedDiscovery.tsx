@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { MobilePropertyCard } from "./MobilePropertyCard";
+import type { MobileProperty } from "@/types/mobileProperty";
 
 interface LocationData {
   latitude: number;
@@ -22,31 +23,7 @@ interface LocationData {
   accuracy: number;
 }
 
-interface Property {
-  id: string;
-  name: string;
-  location: string;
-  type: string;
-  value: number;
-  tokens: number;
-  roi: number;
-  monthlyIncome: number;
-  images: string[];
-  videos?: string[];
-  description: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  sqft?: number;
-  yearBuilt?: number;
-  amenities?: string[];
-  distance?: number; // Distance in miles
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-}
-
-const mockProperties: Property[] = [
+const mockProperties: MobileProperty[] = [
   {
     id: "1",
     name: "Manhattan Tower Suite",
@@ -126,12 +103,16 @@ export const LocationBasedDiscovery = () => {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [properties, setProperties] = useState<MobileProperty[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<"distance" | "price" | "roi">(
-    "distance",
-  );
+  const [sortBy, setSortBy] = useState<"distance" | "price" | "roi">("distance");
+
+  const sortOptions: Array<{ key: "distance" | "price" | "roi"; label: string }> = [
+    { key: "distance", label: "Distance" },
+    { key: "price", label: "Price" },
+    { key: "roi", label: "ROI" },
+  ];
 
   const filterOptions = [
     "Residential",
@@ -340,16 +321,12 @@ export const LocationBasedDiscovery = () => {
                 Sort by:
               </span>
               <div className="flex gap-1">
-                {[
-                  { key: "distance", label: "Distance" },
-                  { key: "price", label: "Price" },
-                  { key: "roi", label: "ROI" },
-                ].map(({ key, label }) => (
+                {sortOptions.map(({ key, label }) => (
                   <Button
                     key={key}
                     variant={sortBy === key ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => setSortBy(key as any)}
+                    onClick={() => setSortBy(key)}
                     className="text-xs"
                   >
                     {label}

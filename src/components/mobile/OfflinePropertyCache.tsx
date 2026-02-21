@@ -17,21 +17,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
+import { isMobileProperty } from "@/types/mobileProperty";
+import type { MobileProperty } from "@/types/mobileProperty";
 
 interface CachedProperty {
   id: string;
   name: string;
   location: string;
   images: string[];
-  data: any;
+  data: MobileProperty;
   cachedAt: Date;
   size: number; // in bytes
   lastAccessed: Date;
 }
 
 interface OfflinePropertyCacheProps {
-  properties: any[];
-  onPropertySelect?: (property: any) => void;
+  properties: MobileProperty[];
+  onPropertySelect?: (property: MobileProperty) => void;
 }
 
 export const OfflinePropertyCache = ({
@@ -79,11 +81,39 @@ export const OfflinePropertyCache = ({
       // In a real app, this would load from IndexedDB
       const cached = localStorage.getItem("cachedProperties");
       if (cached) {
-        const parsedCached = JSON.parse(cached).map((item: any) => ({
-          ...item,
-          cachedAt: new Date(item.cachedAt),
-          lastAccessed: new Date(item.lastAccessed),
-        }));
+        const parsed: unknown = JSON.parse(cached);
+        const parsedCached = Array.isArray(parsed)
+          ? parsed
+              .map((item): CachedProperty | null => {
+                if (
+                  typeof item !== "object" ||
+                  item === null ||
+                  !("data" in item) ||
+                  !isMobileProperty(item.data)
+                ) {
+                  return null;
+                }
+
+                const cachedItem = item as {
+                  id: string;
+                  name: string;
+                  location: string;
+                  images: string[];
+                  data: MobileProperty;
+                  cachedAt: string | Date;
+                  lastAccessed: string | Date;
+                  size: number;
+                };
+
+                return {
+                  ...cachedItem,
+                  cachedAt: new Date(cachedItem.cachedAt),
+                  lastAccessed: new Date(cachedItem.lastAccessed),
+                };
+              })
+              .filter((item): item is CachedProperty => item !== null)
+          : [];
+
         setCachedProperties(parsedCached);
 
         // Calculate total storage used
@@ -110,7 +140,7 @@ export const OfflinePropertyCache = ({
     }
   };
 
-  const downloadProperty = async (property: any) => {
+  const downloadProperty = async (property: MobileProperty) => {
     if (isDownloading[property.id]) return;
 
     setIsDownloading((prev) => ({ ...prev, [property.id]: true }));
@@ -130,7 +160,7 @@ export const OfflinePropertyCache = ({
       }));
 
       // Download images
-      for (const image of property.images) {
+      for (const _image of property.images) {
         await new Promise((resolve) => setTimeout(resolve, 300));
         completedSteps++;
         setDownloadProgress((prev) => ({
@@ -403,7 +433,7 @@ export const OfflinePropertyCache = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         removeCachedProperty(property.id);
                       }}

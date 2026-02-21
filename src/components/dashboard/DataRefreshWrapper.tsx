@@ -1,6 +1,7 @@
-import { useState, useCallback, ReactNode } from "react";
+import { useState, useCallback } from "react";
+import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, AlertCircle, CheckCircle, WifiOff } from "lucide-react";
+import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DataRefreshWrapperProps {

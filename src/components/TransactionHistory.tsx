@@ -1,19 +1,28 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { format } from 'date-fns';
-import { useTransactionStore, TransactionType, TransactionStatus } from '@/store/transactionStore';
+import { useTransactionStore } from '@/store/transactionStore';
+import type { Transaction, TransactionType, TransactionStatus } from '@/store/transactionStore';
 import { TransactionCard } from './TransactionCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, Download } from 'lucide-react';
+import { Search, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
+const TRANSACTION_TYPES: TransactionType[] = ['purchase', 'transfer', 'management', 'other'];
+const TRANSACTION_STATUSES: TransactionStatus[] = ['pending', 'processing', 'confirmed', 'failed', 'cancelled'];
+
+const isTransactionType = (value: string): value is TransactionType =>
+  TRANSACTION_TYPES.includes(value as TransactionType);
+
+const isTransactionStatus = (value: string): value is TransactionStatus =>
+  TRANSACTION_STATUSES.includes(value as TransactionStatus);
+
 export const TransactionHistory: React.FC = () => {
-  const { transactions, getTransactionsByType, getTransactionsByStatus } = useTransactionStore();
+  const { transactions, getTransactionsByType } = useTransactionStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');
@@ -47,7 +56,7 @@ export const TransactionHistory: React.FC = () => {
     toast.info('Export functionality not yet implemented');
   };
 
-  const handleRetry = async (transaction: any) => {
+  const handleRetry = async (_transaction: Transaction) => {
     // Implement retry logic
     toast.info('Retry functionality not yet implemented');
   };
@@ -79,7 +88,14 @@ export const TransactionHistory: React.FC = () => {
             />
           </div>
 
-          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as TransactionType | 'all')}>
+          <Select
+            value={typeFilter}
+            onValueChange={(value) => {
+              if (value === 'all' || isTransactionType(value)) {
+                setTypeFilter(value);
+              }
+            }}
+          >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
@@ -92,7 +108,14 @@ export const TransactionHistory: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as TransactionStatus | 'all')}>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              if (value === 'all' || isTransactionStatus(value)) {
+                setStatusFilter(value);
+              }
+            }}
+          >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
