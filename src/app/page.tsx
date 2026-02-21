@@ -38,7 +38,7 @@ function HomeContent() {
     globalErrorSuppressor();
 
     // Make manual suppressor available globally
-    (window as any).suppressErrors = () => {
+    window.suppressErrors = () => {
       console.clear();
       console.log("🔧 Manual error suppression activated");
     };

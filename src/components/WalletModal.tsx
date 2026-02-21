@@ -3,7 +3,8 @@
 import React from 'react';
 import { useWalletStore } from '@/store/walletStore';
 import { getWalletErrorMessage } from '@/utils/errorHandling';
-import { detectWalletExtensions } from '@/utils/extensionDetection';
+import { toChainId } from '@/config/chains';
+import { getErrorCode } from '@/utils/typeGuards';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -13,7 +14,9 @@ interface WalletModalProps {
 export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => {
   const { setConnecting, setConnected, setError } = useWalletStore();
 
-  const connectWallet = async (walletType: 'metamask' | 'walletconnect' | 'coinbase') => {
+  type SupportedWalletId = 'metamask' | 'walletconnect' | 'coinbase';
+
+  const connectWallet = async (walletType: SupportedWalletId) => {
     try {
       setConnecting(true);
       setError(null);
@@ -25,7 +28,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       } else if (walletType === 'coinbase') {
         await connectCoinbase();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError(getWalletErrorMessage(error));
     } finally {
       setConnecting(false);
@@ -39,20 +42,33 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     }
 
     try {
-      const accounts = await window.ethereum.request({
+      const accounts = await window.ethereum.request<string[]>({
         method: 'eth_requestAccounts',
       });
 
-      const chainId = await window.ethereum.request({
+      const chainId = await window.ethereum.request<string>({
         method: 'eth_chainId',
       });
 
+      if (!Array.isArray(accounts) || accounts.length === 0 || typeof accounts[0] !== 'string') {
+        throw new Error('Wallet returned an invalid account response');
+      }
+
+      if (typeof chainId !== 'string') {
+        throw new Error('Wallet returned an invalid chain id response');
+      }
+
       const address = accounts[0];
       const chainIdNumber = parseInt(chainId, 16);
+      const parsedChainId = toChainId(chainIdNumber);
 
-      setConnected(address, 'metamask', chainIdNumber as any);
-    } catch (error: any) {
-      if (error.code === 4001) {
+      if (!parsedChainId) {
+        throw new Error(`Unsupported network (chain ${chainIdNumber})`);
+      }
+
+      setConnected(address, 'metamask', parsedChainId);
+    } catch (error: unknown) {
+      if (getErrorCode(error) === 4001) {
         throw new Error('User rejected the connection request');
       }
       throw error;
@@ -69,27 +85,46 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     }
 
     try {
-      const accounts = await window.ethereum.request({
+      const accounts = await window.ethereum.request<string[]>({
         method: 'eth_requestAccounts',
       });
 
-      const chainId = await window.ethereum.request({
+      const chainId = await window.ethereum.request<string>({
         method: 'eth_chainId',
       });
 
+      if (!Array.isArray(accounts) || accounts.length === 0 || typeof accounts[0] !== 'string') {
+        throw new Error('Wallet returned an invalid account response');
+      }
+
+      if (typeof chainId !== 'string') {
+        throw new Error('Wallet returned an invalid chain id response');
+      }
+
       const address = accounts[0];
       const chainIdNumber = parseInt(chainId, 16);
+      const parsedChainId = toChainId(chainIdNumber);
 
-      setConnected(address, 'coinbase', chainIdNumber as any);
-    } catch (error: any) {
-      if (error.code === 4001) {
+      if (!parsedChainId) {
+        throw new Error(`Unsupported network (chain ${chainIdNumber})`);
+      }
+
+      setConnected(address, 'coinbase', parsedChainId);
+    } catch (error: unknown) {
+      if (getErrorCode(error) === 4001) {
         throw new Error('User rejected the connection request');
       }
       throw error;
     }
   };
 
-  const wallets = [
+  const wallets: Array<{
+    id: SupportedWalletId;
+    name: string;
+    description: string;
+    icon: string;
+    color: string;
+  }> = [
     {
       id: 'metamask',
       name: 'MetaMask',
@@ -139,7 +174,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
             {wallets.map((wallet) => (
               <button
                 key={wallet.id}
-                onClick={() => connectWallet(wallet.id as any)}
+                onClick={() => connectWallet(wallet.id)}
                 className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl`}>
@@ -178,11 +213,3 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     </div>
   );
 };
-
-declare global {
-  interface Window {
-    ethereum?: any & {
-      isCoinbaseWallet?: boolean;
-    };
-  }
-}

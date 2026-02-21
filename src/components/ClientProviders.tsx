@@ -12,10 +12,24 @@ interface ClientProvidersProps {
   children: React.ReactNode;
 }
 
+const TransactionMonitor = dynamic(
+  () => import("@/components/TransactionMonitor").then((m) => m.TransactionMonitor),
+  { ssr: false }
+);
+const NotificationSystem = dynamic(
+  () => import("@/components/NotificationSystem").then((m) => m.NotificationSystem),
+  { ssr: false }
+);
+const Toaster = dynamic(
+  () => import("@/components/ui/sonner").then((m) => m.Toaster),
+  { ssr: false }
+);
+
 export function ClientProviders({ children }: ClientProvidersProps) {
   return (
     <WagmiProvider config={config}>
       <ChainAwareProvider>
+        <PerformanceMonitor />
         {children}
         <TransactionMonitor />
         <NotificationSystem />

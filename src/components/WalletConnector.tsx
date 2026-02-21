@@ -1,16 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from "next/dynamic";
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
-import { WalletModal } from './WalletModal';
-import { NetworkSwitcher } from './NetworkSwitcher';
+
+const WalletModal = dynamic(
+  () => import("./WalletModal").then((m) => m.WalletModal),
+  { ssr: false }
+);
+const NetworkSwitcher = dynamic(
+  () => import("./NetworkSwitcher").then((m) => m.NetworkSwitcher),
+  { ssr: false }
+);
 
 export const WalletConnector: React.FC = () => {
   const {
     isConnected,
     address,
-    walletType,
     isConnecting,
     error,
     setDisconnected,
@@ -30,10 +37,15 @@ export const WalletConnector: React.FC = () => {
   const updateBalance = async () => {
     try {
       if (window.ethereum && address) {
-        const balance = await window.ethereum.request({
+        const balance = await window.ethereum.request<string>({
           method: 'eth_getBalance',
           params: [address, 'latest'],
         });
+
+        if (typeof balance !== 'string') {
+          throw new Error('Invalid balance response');
+        }
+
         const balanceInEth = parseInt(balance, 16) / Math.pow(10, 18);
         setBalance(balanceInEth.toFixed(4));
       }
