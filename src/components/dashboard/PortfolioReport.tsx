@@ -6,6 +6,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+type ReportType = "full" | "tax" | "performance" | "transactions";
+
+const reportTypes: ReportType[] = ["full", "tax", "performance", "transactions"];
+const isReportType = (value: string): value is ReportType =>
+  reportTypes.includes(value as ReportType);
+
+const reportCards: Array<{
+  value: ReportType;
+  label: string;
+  icon: typeof FileText;
+  desc: string;
+}> = [
+  { value: "full", label: "Full Report", icon: FileText, desc: "Complete portfolio overview" },
+  { value: "tax", label: "Tax Summary", icon: Calendar, desc: "IRS-ready tax documents" },
+  { value: "performance", label: "Performance", icon: Calendar, desc: "ROI and yield analysis" },
+  { value: "transactions", label: "Transactions", icon: Calendar, desc: "Detailed activity log" },
+];
+
+interface JsPDFWithTable extends jsPDF {
+  lastAutoTable?: {
+    finalY?: number;
+  };
+  internal: jsPDF["internal"] & {
+    getNumberOfPages?: () => number;
+  };
+}
+
 interface ReportData {
   portfolioValue: number;
   totalProperties: number;
@@ -50,7 +77,7 @@ const mockReportData: ReportData = {
 };
 
 export const PortfolioReport = () => {
-  const [reportType, setReportType] = useState("full");
+  const [reportType, setReportType] = useState<ReportType>("full");
   const [year, setYear] = useState("2024");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
@@ -62,7 +89,7 @@ export const PortfolioReport = () => {
     // Simulate processing time
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    const doc = new jsPDF();
+    const doc = new jsPDF() as JsPDFWithTable;
     const data = mockReportData;
 
     // Header
@@ -106,7 +133,7 @@ export const PortfolioReport = () => {
     });
 
     // Transactions Table
-    const finalY = (doc as any).lastAutoTable.finalY || 105;
+    const finalY = doc.lastAutoTable?.finalY ?? 105;
     doc.setFontSize(16);
     doc.text("Recent Transactions", 20, finalY + 15);
 
@@ -146,7 +173,7 @@ export const PortfolioReport = () => {
     }
 
     // Footer
-    const pageCount = (doc as any).internal.getNumberOfPages();
+    const pageCount = doc.internal.getNumberOfPages?.() ?? 1;
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
@@ -179,7 +206,14 @@ export const PortfolioReport = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div>
           <label className="text-sm font-medium mb-2 block">Report Type</label>
-          <Select value={reportType} onValueChange={setReportType}>
+          <Select
+            value={reportType}
+            onValueChange={(value) => {
+              if (isReportType(value)) {
+                setReportType(value);
+              }
+            }}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select report type" />
             </SelectTrigger>
@@ -233,16 +267,11 @@ export const PortfolioReport = () => {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Full Report", icon: FileText, desc: "Complete portfolio overview" },
-          { label: "Tax Summary", icon: Calendar, desc: "IRS-ready tax documents" },
-          { label: "Performance", icon: Calendar, desc: "ROI and yield analysis" },
-          { label: "Transactions", icon: Calendar, desc: "Detailed activity log" },
-        ].map((item, index) => (
+        {reportCards.map((item, index) => (
           <div
             key={index}
             className="p-4 rounded-lg bg-muted/30 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
-            onClick={() => setReportType(item.label.toLowerCase().replace(" ", ""))}
+            onClick={() => setReportType(item.value)}
           >
             <item.icon className="w-5 h-5 text-primary mb-2" />
             <p className="text-sm font-medium">{item.label}</p>

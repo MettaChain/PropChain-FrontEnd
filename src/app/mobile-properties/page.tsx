@@ -22,9 +22,10 @@ import { MobilePropertyCard } from "@/components/mobile/MobilePropertyCard";
 import { LocationBasedDiscovery } from "@/components/mobile/LocationBasedDiscovery";
 import { ARPropertyPreview } from "@/components/mobile/ARPropertyPreview";
 import { OfflinePropertyCache } from "@/components/mobile/OfflinePropertyCache";
+import type { MobileProperty } from "@/types/mobileProperty";
 
 // Enhanced property data with mobile-specific features
-const properties = [
+const properties: MobileProperty[] = [
   {
     id: "1",
     name: "Manhattan Tower Suite",
@@ -202,7 +203,7 @@ export default function MobilePropertiesPage() {
   const [activeTab, setActiveTab] = useState("browse");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedProperty, setSelectedProperty] = useState<any>(null);
+  const [selectedProperty, setSelectedProperty] = useState<MobileProperty | null>(null);
   const [showARPreview, setShowARPreview] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
 
@@ -229,11 +230,11 @@ export default function MobilePropertiesPage() {
       property.type.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const handlePropertyView = (property: any) => {
+  const handlePropertyView = (property: MobileProperty) => {
     setSelectedProperty(property);
   };
 
-  const handleARPreview = (property: any) => {
+  const handleARPreview = (property: MobileProperty) => {
     setSelectedProperty(property);
     setShowARPreview(true);
   };

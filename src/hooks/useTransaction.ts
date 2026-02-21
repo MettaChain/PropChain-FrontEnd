@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useTransactionStore, TransactionType } from '@/store/transactionStore';
+import { useTransactionStore } from '@/store/transactionStore';
+import type { Transaction, TransactionType } from '@/store/transactionStore';
 import { useWalletStore } from '@/store/walletStore';
 import { toast } from 'sonner';
 
@@ -42,7 +43,7 @@ export const useTransaction = () => {
   );
 
   const retryTransaction = useCallback(
-    (originalTransaction: any) => {
+    (_originalTransaction: Transaction) => {
       // This would need to be implemented based on the specific transaction type
       // For now, just show a message
       toast.info('Retry functionality needs to be implemented for each transaction type');

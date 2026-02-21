@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import type { PanInfo } from "framer-motion";
 import {
   X,
   Heart,
@@ -19,28 +20,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-interface Property {
-  id: string;
-  name: string;
-  location: string;
-  type: string;
-  value: number;
-  tokens: number;
-  roi: number;
-  monthlyIncome: number;
-  images: string[];
-  videos?: string[];
-  description: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  sqft?: number;
-  yearBuilt?: number;
-  amenities?: string[];
-}
+import type { MobileProperty } from "@/types/mobileProperty";
 
 interface MobilePropertyViewerProps {
-  property: Property;
+  property: MobileProperty;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -69,7 +52,7 @@ export const MobilePropertyViewer = ({
     setShowInfo(false);
   }, [property.id]);
 
-  const handleSwipe = (event: any, info: PanInfo) => {
+  const handleSwipe = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 50;
 
     if (Math.abs(info.offset.x) > threshold) {

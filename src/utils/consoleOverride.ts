@@ -1,5 +1,10 @@
 'use client';
 
+import { getErrorMessage } from './typeGuards';
+
+const stringifyArgs = (args: readonly unknown[]): string =>
+  args.map((arg) => (typeof arg === 'string' ? arg : String(arg))).join(' ');
+
 export const setupConsoleOverride = () => {
   if (typeof window === 'undefined') return;
 
@@ -18,15 +23,15 @@ export const setupConsoleOverride = () => {
     'chrome-extension://',
   ];
 
-  const shouldFilterMessage = (...args: any[]): boolean => {
-    const message = args.join(' ').toLowerCase();
+  const shouldFilterMessage = (...args: unknown[]): boolean => {
+    const message = stringifyArgs(args).toLowerCase();
     return extensionErrorPatterns.some(pattern => 
       message.includes(pattern.toLowerCase())
     );
   };
 
   // Override console.error
-  console.error = (...args: any[]) => {
+  console.error = (...args: unknown[]) => {
     if (shouldFilterMessage(...args)) {
       // Silently filter out extension errors
       return;
@@ -35,7 +40,7 @@ export const setupConsoleOverride = () => {
   };
 
   // Override console.warn
-  console.warn = (...args: any[]) => {
+  console.warn = (...args: unknown[]) => {
     if (shouldFilterMessage(...args)) {
       // Silently filter out extension warnings
       return;
@@ -44,7 +49,7 @@ export const setupConsoleOverride = () => {
   };
 
   // Override console.log for extension-related logs
-  console.log = (...args: any[]) => {
+  console.log = (...args: unknown[]) => {
     if (shouldFilterMessage(...args)) {
       // Silently filter out extension logs
       return;
@@ -53,19 +58,17 @@ export const setupConsoleOverride = () => {
   };
 
   // Add global error handlers
-  const handleGlobalError = (event: ErrorEvent) => {
+  const handleGlobalError = (event: ErrorEvent): void => {
     if (shouldFilterMessage(event.error, event.filename, event.message)) {
       event.preventDefault();
       event.stopPropagation();
-      return false;
     }
   };
 
-  const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+  const handleUnhandledRejection = (event: PromiseRejectionEvent): void => {
     if (shouldFilterMessage(event.reason)) {
       event.preventDefault();
       event.stopPropagation();
-      return false;
     }
   };
 
@@ -126,8 +129,8 @@ export const suppressExtensionErrors = () => {
   window.fetch = async (...args) => {
     try {
       return await originalFetch.apply(window, args);
-    } catch (error: any) {
-      if (error?.toString().includes(suppressExtensionId)) {
+    } catch (error: unknown) {
+      if (getErrorMessage(error, '').includes(suppressExtensionId)) {
         return new Response('{}', { status: 200, statusText: 'OK' });
       }
       throw error;
@@ -136,19 +139,24 @@ export const suppressExtensionErrors = () => {
 
   // Suppress WebSocket errors from extensions
   const originalWebSocket = window.WebSocket;
-  window.WebSocket = function(url: string, protocols?: string | string[]) {
-    if (url.includes(suppressExtensionId)) {
+  const patchedWebSocket = function(url: string | URL, protocols?: string | string[]) {
+    const urlString = typeof url === 'string' ? url : url.toString();
+
+    if (urlString.includes(suppressExtensionId)) {
       // Return a dummy WebSocket that does nothing
+      const noop = () => {};
       return {
         close: () => {},
         send: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
+        addEventListener: noop,
+        removeEventListener: noop,
         readyState: 3, // CLOSED
-      } as any;
+      } as unknown as WebSocket;
     }
-    return new originalWebSocket(url, protocols);
-  } as any;
+    return new originalWebSocket(urlString, protocols);
+  } as unknown as typeof WebSocket;
+
+  window.WebSocket = patchedWebSocket;
 
   // Copy static properties
   Object.setPrototypeOf(window.WebSocket, originalWebSocket);

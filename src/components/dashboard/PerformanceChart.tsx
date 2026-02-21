@@ -45,16 +45,29 @@ const timeframes = [
   { label: "All", months: 24 },
 ];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
+interface PerformanceTooltipPayloadItem {
+  value?: number;
+}
+
+interface PerformanceTooltipProps {
+  active?: boolean;
+  payload?: PerformanceTooltipPayloadItem[];
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: PerformanceTooltipProps) => {
+  const currentValue = payload?.[0]?.value;
+  const projectedValue = payload?.[1]?.value;
+
+  if (active && typeof currentValue === "number") {
     return (
       <div className="glass-card rounded-lg p-4 shadow-lg border border-border">
         <p className="text-sm text-muted-foreground mb-2">{label}</p>
         <p className="text-lg font-bold text-primary">
-          ${payload[0].value.toLocaleString()}
+          ${currentValue.toLocaleString()}
         </p>
         <p className="text-sm text-muted-foreground mt-1">
-          Projected: ${payload[1]?.value?.toLocaleString()}
+          Projected: {typeof projectedValue === "number" ? `$${projectedValue.toLocaleString()}` : "N/A"}
         </p>
       </div>
     );
@@ -130,7 +143,7 @@ export const PerformanceChart = () => {
               axisLine={false}
               tickLine={false}
               tick={{ fill: "hsl(215, 20%, 55%)", fontSize: 12 }}
-              tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
+              tickFormatter={(value: number) => `$${(value / 1000000).toFixed(1)}M`}
               dx={-10}
             />
             <Tooltip content={<CustomTooltip />} />

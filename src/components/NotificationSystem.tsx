@@ -2,7 +2,8 @@
 
 import React, { useEffect } from 'react';
 import { toast } from 'sonner';
-import { useTransactionStore, Transaction } from '@/store/transactionStore';
+import { useTransactionStore } from '@/store/transactionStore';
+import type { Transaction } from '@/store/transactionStore';
 import { CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
 
 export const NotificationSystem: React.FC = () => {

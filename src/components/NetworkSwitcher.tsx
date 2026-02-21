@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
-import { SUPPORTED_CHAINS } from '@/config/chains';
+import { SUPPORTED_CHAINS, toChainId } from '@/config/chains';
 
 export const NetworkSwitcher: React.FC = () => {
   const { isSwitchingNetwork } = useWalletStore();
@@ -12,7 +12,10 @@ export const NetworkSwitcher: React.FC = () => {
 
   const handleNetworkSwitch = async (chainId: number) => {
     setIsOpen(false);
-    await switchChain(chainId as any);
+    const parsedChainId = toChainId(chainId);
+    if (parsedChainId) {
+      await switchChain(parsedChainId);
+    }
   };
 
   return (
