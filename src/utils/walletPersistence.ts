@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useWalletStore } from '@/store/walletStore';
-import { ChainId } from '@/config/chains';
+import { toChainId } from '@/config/chains';
 
 export const useWalletPersistence = () => {
   const {
@@ -12,29 +12,44 @@ export const useWalletPersistence = () => {
     chainId,
     setConnected,
     setDisconnected,
-    setError,
   } = useWalletStore();
 
   useEffect(() => {
-    const checkWalletConnection = async () => {
-      if (typeof window === 'undefined' || !window.ethereum) {
+    const provider = window.ethereum;
+
+    const checkWalletConnection = async (): Promise<void> => {
+      if (!provider) {
         return;
       }
 
       try {
-        const accounts = await window.ethereum.request({
+        const accounts = await provider.request<string[]>({
           method: 'eth_accounts',
         });
 
+        if (!Array.isArray(accounts) || accounts.some((account) => typeof account !== 'string')) {
+          throw new Error('Invalid wallet accounts response');
+        }
+
         if (accounts.length > 0 && isConnected && address) {
-          const currentChainId = await window.ethereum.request({
+          const currentChainId = await provider.request<string>({
             method: 'eth_chainId',
           });
-          
+
+          if (typeof currentChainId !== 'string') {
+            throw new Error('Invalid wallet chain response');
+          }
+
           const currentChainIdNumber = parseInt(currentChainId, 16);
+          const parsedChainId = toChainId(currentChainIdNumber);
           
-          if (accounts[0].toLowerCase() === address.toLowerCase()) {
-            setConnected(accounts[0], walletType, currentChainIdNumber as ChainId);
+          if (!parsedChainId) {
+            setDisconnected();
+            return;
+          }
+
+          if (accounts[0]?.toLowerCase() === address.toLowerCase()) {
+            setConnected(accounts[0], walletType, parsedChainId);
           } else {
             setDisconnected();
           }
@@ -51,35 +66,60 @@ export const useWalletPersistence = () => {
 
     checkWalletConnection();
 
-    if (window.ethereum) {
-      const handleAccountsChanged = (accounts: string[]) => {
-        if (accounts.length === 0) {
-          setDisconnected();
-        } else if (accounts[0] !== address) {
-          setConnected(accounts[0], walletType, chainId);
-        }
-      };
-
-      const handleChainChanged = (chainId: string) => {
-        const newChainId = parseInt(chainId, 16);
-        setConnected(address || '', walletType, newChainId as ChainId);
-      };
-
-      const handleDisconnect = () => {
-        setDisconnected();
-      };
-
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
-      window.ethereum.on('chainChanged', handleChainChanged);
-      window.ethereum.on('disconnect', handleDisconnect);
-
-      return () => {
-        if (window.ethereum.removeListener) {
-          window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-          window.ethereum.removeListener('chainChanged', handleChainChanged);
-          window.ethereum.removeListener('disconnect', handleDisconnect);
-        }
-      };
+    if (!provider) {
+      return undefined;
     }
-  }, [isConnected, address, walletType, chainId, setConnected, setDisconnected, setError]);
+
+    const handleAccountsChanged = (accountsValue: unknown) => {
+      if (!Array.isArray(accountsValue)) {
+        setDisconnected();
+        return;
+      }
+
+      const accounts = accountsValue.filter(
+        (account): account is string => typeof account === 'string'
+      );
+
+      if (accounts.length === 0) {
+        setDisconnected();
+      } else if (accounts[0] && accounts[0] !== address) {
+        setConnected(accounts[0], walletType, chainId);
+      }
+    };
+
+    const handleChainChanged = (newChainHex: unknown) => {
+      if (typeof newChainHex !== 'string') {
+        setDisconnected();
+        return;
+      }
+
+      if (!address) {
+        setDisconnected();
+        return;
+      }
+
+      const newChainId = parseInt(newChainHex, 16);
+      const parsedChainId = toChainId(newChainId);
+      if (!parsedChainId) {
+        setDisconnected();
+        return;
+      }
+
+      setConnected(address, walletType, parsedChainId);
+    };
+
+    const handleDisconnect = () => {
+      setDisconnected();
+    };
+
+    provider.on?.('accountsChanged', handleAccountsChanged);
+    provider.on?.('chainChanged', handleChainChanged);
+    provider.on?.('disconnect', handleDisconnect);
+
+    return () => {
+      provider.removeListener?.('accountsChanged', handleAccountsChanged);
+      provider.removeListener?.('chainChanged', handleChainChanged);
+      provider.removeListener?.('disconnect', handleDisconnect);
+    };
+  }, [isConnected, address, walletType, chainId, setConnected, setDisconnected]);
 };

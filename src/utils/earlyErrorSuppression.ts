@@ -1,3 +1,6 @@
+const stringifyArgs = (args: readonly unknown[]): string =>
+  args.map((arg) => (typeof arg === 'string' ? arg : String(arg))).join(' ');
+
 // This file should be imported as early as possible in the application
 // It immediately starts suppressing extension errors
 
@@ -13,18 +16,18 @@ if (typeof window !== 'undefined') {
     'chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa',
   ];
   
-  const shouldSuppress = (...args: any[]): boolean => {
-    const message = args.join(' ').toLowerCase();
+  const shouldSuppress = (...args: unknown[]): boolean => {
+    const message = stringifyArgs(args).toLowerCase();
     return suppressPatterns.some(pattern => message.includes(pattern.toLowerCase()));
   };
   
   // Override console methods immediately
-  console.error = (...args: any[]) => {
+  console.error = (...args: unknown[]) => {
     if (shouldSuppress(...args)) return;
     originalConsoleError.apply(console, args);
   };
   
-  console.warn = (...args: any[]) => {
+  console.warn = (...args: unknown[]) => {
     if (shouldSuppress(...args)) return;
     originalConsoleWarn.apply(console, args);
   };
@@ -47,7 +50,7 @@ if (typeof window !== 'undefined') {
   
   // Override window.onerror
   const originalOnError = window.onerror;
-  window.onerror = (message: any, source?: string, lineno?: number, colno?: number, error?: Error) => {
+  window.onerror = (message, source, lineno, colno, error) => {
     if (shouldSuppress(message, source, error)) {
       return true; // Suppress the error
     }

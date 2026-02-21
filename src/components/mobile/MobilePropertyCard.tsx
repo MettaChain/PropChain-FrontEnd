@@ -18,30 +18,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MobilePropertyViewer } from "./MobilePropertyViewer";
-
-interface Property {
-  id: string;
-  name: string;
-  location: string;
-  type: string;
-  value: number;
-  tokens: number;
-  roi: number;
-  monthlyIncome: number;
-  images: string[];
-  videos?: string[];
-  description: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  sqft?: number;
-  yearBuilt?: number;
-  amenities?: string[];
-}
+import type { MobileProperty } from "@/types/mobileProperty";
 
 interface MobilePropertyCardProps {
-  property: Property;
+  property: MobileProperty;
   index: number;
-  onView?: (property: Property) => void;
+  onView?: (property: MobileProperty) => void;
 }
 
 export const MobilePropertyCard = ({

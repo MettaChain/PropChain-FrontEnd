@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SavedSearch } from '@/types/property';
 import { propertyService } from '@/lib/propertyService';
+import { getErrorMessage } from '@/utils/typeGuards';
 
 /**
  * Saved Searches Store
@@ -32,8 +33,8 @@ export const useSavedSearchStore = create<SavedSearchState>()(
         try {
           const searches = await propertyService.getSavedSearches(userId);
           set({ searches, isLoading: false });
-        } catch (error: any) {
-          set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+          set({ error: getErrorMessage(error, 'Failed to load saved searches'), isLoading: false });
         }
       },
 
@@ -51,8 +52,8 @@ export const useSavedSearchStore = create<SavedSearchState>()(
             searches: state.searches.filter(s => s.id !== searchId),
             isLoading: false,
           }));
-        } catch (error: any) {
-          set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+          set({ error: getErrorMessage(error, 'Failed to remove saved search'), isLoading: false });
         }
       },
 

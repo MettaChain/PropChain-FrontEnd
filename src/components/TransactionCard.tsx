@@ -15,7 +15,7 @@ import {
   RotateCcw,
   X,
 } from 'lucide-react';
-import { Transaction, TransactionStatus } from '@/store/transactionStore';
+import type { Transaction } from '@/store/transactionStore';
 import { useChain } from '@/providers/ChainAwareProvider';
 
 interface TransactionCardProps {

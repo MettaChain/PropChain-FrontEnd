@@ -1,3 +1,8 @@
+import {
+  isBlockchainNetwork,
+  isPropertyType,
+  isSortOption,
+} from '@/types/property';
 import type { SearchFilters, SortOption } from '@/types/property';
 
 /**
@@ -51,10 +56,20 @@ export function urlParamsToFilters(searchParams: URLSearchParams): {
   }
 
   const types = searchParams.get('types');
-  if (types) filters.propertyTypes = types.split(',') as any[];
+  if (types) {
+    filters.propertyTypes = types
+      .split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter(isPropertyType);
+  }
 
   const chains = searchParams.get('chains');
-  if (chains) filters.blockchains = chains.split(',') as any[];
+  if (chains) {
+    filters.blockchains = chains
+      .split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter(isBlockchainNetwork);
+  }
 
   const minRoi = searchParams.get('minRoi');
   const maxRoi = searchParams.get('maxRoi');
@@ -80,7 +95,7 @@ export function urlParamsToFilters(searchParams: URLSearchParams): {
   }
 
   const sort = searchParams.get('sort');
-  if (sort) sortBy = sort as SortOption;
+  if (sort && isSortOption(sort)) sortBy = sort;
 
   return { filters, sortBy };
 }
@@ -193,13 +208,13 @@ export function isValidSearchQuery(query: string): boolean {
 /**
  * Debounce function
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
+export function debounce<TArgs extends unknown[], TResult>(
+  func: (...args: TArgs) => TResult,
   wait: number
-): (...args: Parameters<T>) => void {
+): (...args: TArgs) => void {
   let timeout: NodeJS.Timeout | null = null;
 
-  return function executedFunction(...args: Parameters<T>) {
+  return function executedFunction(...args: TArgs) {
     const later = () => {
       timeout = null;
       func(...args);

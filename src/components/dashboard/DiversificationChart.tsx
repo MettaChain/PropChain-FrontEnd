@@ -17,13 +17,26 @@ const geographicData = [
   { name: "Other", value: 10, color: "hsl(280, 65%, 60%)" },
 ];
 
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
+interface PieTooltipPayloadItem {
+  name?: string;
+  value?: number;
+  payload?: { color?: string };
+}
+
+interface PieTooltipProps {
+  active?: boolean;
+  payload?: PieTooltipPayloadItem[];
+}
+
+const CustomTooltip = ({ active, payload }: PieTooltipProps) => {
+  const firstPayload = payload?.[0];
+
+  if (active && firstPayload && typeof firstPayload.value === "number") {
     return (
       <div className="glass-card rounded-lg p-3 shadow-lg border border-border">
-        <p className="text-sm font-medium">{payload[0].name}</p>
-        <p className="text-lg font-bold" style={{ color: payload[0].payload.color }}>
-          {payload[0].value}%
+        <p className="text-sm font-medium">{firstPayload.name}</p>
+        <p className="text-lg font-bold" style={{ color: firstPayload.payload?.color }}>
+          {firstPayload.value}%
         </p>
       </div>
     );

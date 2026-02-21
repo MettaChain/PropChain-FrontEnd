@@ -32,3 +32,8 @@ export const CHAIN_CONFIG = {
 export type ChainId = keyof typeof CHAIN_CONFIG;
 
 export const DEFAULT_CHAIN_ID: ChainId = 1;
+
+export const isChainId = (value: number): value is ChainId => value in CHAIN_CONFIG;
+
+export const toChainId = (value: number): ChainId | null =>
+  isChainId(value) ? value : null;

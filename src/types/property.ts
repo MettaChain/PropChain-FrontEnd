@@ -3,9 +3,13 @@
  * Core data structures for the property search and filtering system
  */
 
-export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed-use';
-export type PropertyStatus = 'active' | 'sold' | 'pending';
-export type BlockchainNetwork = 'ethereum' | 'polygon' | 'bsc';
+export const PROPERTY_TYPES = ['residential', 'commercial', 'industrial', 'mixed-use'] as const;
+export const PROPERTY_STATUSES = ['active', 'sold', 'pending'] as const;
+export const BLOCKCHAIN_NETWORKS = ['ethereum', 'polygon', 'bsc'] as const;
+
+export type PropertyType = (typeof PROPERTY_TYPES)[number];
+export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
+export type BlockchainNetwork = (typeof BLOCKCHAIN_NETWORKS)[number];
 
 export interface PropertyLocation {
   address: string;
@@ -82,14 +86,17 @@ export interface SearchFilters {
   status: PropertyStatus[];
 }
 
-export type SortOption = 
-  | 'price-asc' 
-  | 'price-desc' 
-  | 'roi-desc' 
-  | 'roi-asc'
-  | 'newest' 
-  | 'oldest'
-  | 'volume-desc';
+export const SORT_OPTIONS = [
+  'price-asc',
+  'price-desc',
+  'roi-desc',
+  'roi-asc',
+  'newest',
+  'oldest',
+  'volume-desc',
+] as const;
+
+export type SortOption = (typeof SORT_OPTIONS)[number];
 
 export type ViewMode = 'grid' | 'list' | 'map';
 
@@ -167,3 +174,15 @@ export const SORT_LABELS: Record<SortOption, string> = {
   'oldest': 'Oldest First',
   'volume-desc': 'Transaction Volume',
 };
+
+export const isPropertyType = (value: string): value is PropertyType =>
+  PROPERTY_TYPES.includes(value as PropertyType);
+
+export const isPropertyStatus = (value: string): value is PropertyStatus =>
+  PROPERTY_STATUSES.includes(value as PropertyStatus);
+
+export const isBlockchainNetwork = (value: string): value is BlockchainNetwork =>
+  BLOCKCHAIN_NETWORKS.includes(value as BlockchainNetwork);
+
+export const isSortOption = (value: string): value is SortOption =>
+  SORT_OPTIONS.includes(value as SortOption);
