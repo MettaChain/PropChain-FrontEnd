@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import {
   X,
@@ -58,7 +59,6 @@ export const MobilePropertyViewer = ({
   const [showInfo, setShowInfo] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
 
   // Reset state when property changes
   useEffect(() => {
@@ -194,12 +194,13 @@ export const MobilePropertyViewer = ({
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <img
-              ref={imageRef}
+            <Image
               src={property.images[currentImageIndex]}
               alt={`${property.name} - Image ${currentImageIndex + 1}`}
+              width={1200}
+              height={900}
+              sizes="100vw"
               className="max-w-full max-h-full object-contain"
-              draggable={false}
             />
           </motion.div>
 
@@ -273,11 +274,14 @@ export const MobilePropertyViewer = ({
                     : "border-transparent"
                 }`}
               >
-                <img
-                  src={image}
-                  alt={`Thumbnail ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
+                  <Image
+                    src={image}
+                    alt={`Thumbnail ${index + 1}`}
+                    width={64}
+                    height={64}
+                    sizes="64px"
+                    className="w-full h-full object-cover"
+                  />
               </button>
             ))}
           </div>

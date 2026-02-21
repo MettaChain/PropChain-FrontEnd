@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
+    "build:analyze": "node scripts/run-analyze-build.mjs",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "perf:budgets": "node scripts/check-performance-budgets.mjs",
+    "perf:ci": "npm run build:analyze && npm run perf:budgets"
   },
   "dependencies": {
     "@coinbase/wallet-sdk": "^4.3.7",

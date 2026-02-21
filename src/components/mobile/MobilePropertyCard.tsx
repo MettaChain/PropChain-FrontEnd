@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   MapPin,
@@ -91,9 +92,11 @@ export const MobilePropertyCard = ({
       >
         {/* Image Container */}
         <div className="relative h-48 overflow-hidden">
-          <img
+          <Image
             src={property.images[0]}
             alt={property.name}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
           />
 
