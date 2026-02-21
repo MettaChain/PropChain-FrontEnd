@@ -23,7 +23,7 @@ import {
   TransactionButton,
 } from "@/components/ChainAwareProps";
 import { LoadingState } from "@/components/LoadingSpinner";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ErrorBoundaryPresets } from "@/components/error/EnhancedErrorBoundary";
 
 function HomeContent() {
   const { t } = useTranslation("common");
@@ -275,10 +275,10 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <ErrorBoundary>
+    <ErrorBoundaryPresets.ui enableRetry maxRetries={3}>
       <ChainAwareProvider>
         <HomeContent />
       </ChainAwareProvider>
-    </ErrorBoundary>
+    </ErrorBoundaryPresets.ui>
   );
 }
