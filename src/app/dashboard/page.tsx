@@ -1,22 +1,47 @@
 "use client";
 
 import { useState } from "react";
-// import { Header } from "@/components/dashboard/Header";
-// import { Sidebar } from "@/components/dashboard/Sidebar";
-import { PortfolioOverview } from "@/components/dashboard/PortfolioOverview";
-import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
-import { DiversificationChart } from "@/components/dashboard/DiversificationChart";
-import { PropertiesList } from "@/components/dashboard/PropertiesList";
-import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
-import { IncomeTracker } from "@/components/dashboard/IncomeTracker";
-
-import { RiskAnalysis } from "@/components/dashboard/RiskAnalysis";
-import { PortfolioReport } from "@/components/dashboard/PortfolioReport";
-import { DataRefreshWrapper } from "@/components/dashboard/DataRefreshWrapper";
+import dynamic from "next/dynamic";
 import { WalletConnector } from "@/components/WalletConnector";
 import { TransactionQueue } from "@/components/TransactionQueue";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const PortfolioOverview = dynamic(
+  () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
+  { loading: () => <WidgetSkeleton className="h-40" /> }
+);
+const PerformanceChart = dynamic(
+  () => import("@/components/dashboard/PerformanceChart").then((m) => m.PerformanceChart),
+  { loading: () => <WidgetSkeleton className="h-[360px]" /> }
+);
+const DiversificationChart = dynamic(
+  () => import("@/components/dashboard/DiversificationChart").then((m) => m.DiversificationChart),
+  { loading: () => <WidgetSkeleton className="h-[360px]" /> }
+);
+const PropertiesList = dynamic(
+  () => import("@/components/dashboard/PropertiesList").then((m) => m.PropertiesList),
+  { loading: () => <WidgetSkeleton className="h-[420px]" /> }
+);
+const RecentTransactions = dynamic(
+  () => import("@/components/dashboard/RecentTransactions").then((m) => m.RecentTransactions),
+  { loading: () => <WidgetSkeleton className="h-[240px]" /> }
+);
+const IncomeTracker = dynamic(
+  () => import("@/components/dashboard/IncomeTracker").then((m) => m.IncomeTracker),
+  { loading: () => <WidgetSkeleton className="h-[340px]" /> }
+);
+const RiskAnalysis = dynamic(
+  () => import("@/components/dashboard/RiskAnalysis").then((m) => m.RiskAnalysis),
+  { loading: () => <WidgetSkeleton className="h-[300px]" /> }
+);
+const PortfolioReport = dynamic(
+  () => import("@/components/dashboard/PortfolioReport").then((m) => m.PortfolioReport),
+  { loading: () => <WidgetSkeleton className="h-[160px]" /> }
+);
+const DataRefreshWrapper = dynamic(
+  () => import("@/components/dashboard/DataRefreshWrapper").then((m) => m.DataRefreshWrapper)
+);
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -121,3 +146,11 @@ const Index = () => {
 };
 
 export default Index;
+
+function WidgetSkeleton({ className = "h-40" }: { className?: string }) {
+  return (
+    <div
+      className={`w-full rounded-xl bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 animate-pulse ${className}`}
+    />
+  );
+}

@@ -1,10 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from "next/dynamic";
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
-import { WalletModal } from './WalletModal';
-import { NetworkSwitcher } from './NetworkSwitcher';
+
+const WalletModal = dynamic(
+  () => import("./WalletModal").then((m) => m.WalletModal),
+  { ssr: false }
+);
+const NetworkSwitcher = dynamic(
+  () => import("./NetworkSwitcher").then((m) => m.NetworkSwitcher),
+  { ssr: false }
+);
 
 export const WalletConnector: React.FC = () => {
   const {

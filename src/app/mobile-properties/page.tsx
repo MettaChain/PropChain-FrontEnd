@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import {
   Search,
-  Filter,
   MapPin,
   Camera,
   Download,
@@ -19,10 +19,22 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MobilePropertyCard } from "@/components/mobile/MobilePropertyCard";
-import { LocationBasedDiscovery } from "@/components/mobile/LocationBasedDiscovery";
-import { ARPropertyPreview } from "@/components/mobile/ARPropertyPreview";
-import { OfflinePropertyCache } from "@/components/mobile/OfflinePropertyCache";
 import type { MobileProperty } from "@/types/mobileProperty";
+
+const LocationBasedDiscovery = dynamic(
+  () => import("@/components/mobile/LocationBasedDiscovery").then((m) => m.LocationBasedDiscovery),
+  { loading: () => <SectionSkeleton /> }
+);
+const ARPropertyPreview = dynamic(
+  () => import("@/components/mobile/ARPropertyPreview").then((m) => m.ARPropertyPreview),
+  { ssr: false }
+);
+const OfflinePropertyCache = dynamic(
+  () => import("@/components/mobile/OfflinePropertyCache").then((m) => m.OfflinePropertyCache),
+  { loading: () => <SectionSkeleton /> }
+);
+
+
 
 // Enhanced property data with mobile-specific features
 const properties: MobileProperty[] = [
@@ -392,9 +404,12 @@ export default function MobilePropertiesPage() {
                     className="bg-white dark:bg-gray-800 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center gap-4">
-                      <img
+                      <Image
                         src={property.images[0]}
                         alt={property.name}
+                        width={64}
+                        height={64}
+                        sizes="64px"
                         className="w-16 h-16 rounded-lg object-cover"
                       />
                       <div className="flex-1">
@@ -444,6 +459,14 @@ export default function MobilePropertiesPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SectionSkeleton() {
+  return (
+    <div className="p-4">
+      <div className="h-64 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-pulse" />
     </div>
   );
 }

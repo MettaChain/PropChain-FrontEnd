@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
 import { useWalletPersistence } from "@/utils/walletPersistence";
 import { setupExtensionErrorHandling } from "@/utils/extensionDetection";
 import {
@@ -257,9 +256,7 @@ function HomeContent() {
 export default function Home() {
   return (
     <ErrorBoundary>
-      <ChainAwareProvider>
-        <HomeContent />
-      </ChainAwareProvider>
+      <HomeContent />
     </ErrorBoundary>
   );
 }
