@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@/utils/earlyErrorSuppression";
 import { ClientProviders } from "@/components/ClientProviders";
+import { headers } from "next/headers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,13 +21,20 @@ export const metadata: Metadata = {
     "Seamless multi-chain wallet connectivity for real estate tokenization on Ethereum, Polygon, and BSC",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const acceptLanguage = headersList.get("accept-language") || "";
+
+  // Extract preferred language from Accept-Language header
+  const preferredLang = acceptLanguage.split(",")[0].split("-")[0] || "en";
+  const isRTL = ["ar", "he"].includes(preferredLang);
+
   return (
-    <html lang="en">
+    <html lang={preferredLang} dir={isRTL ? "rtl" : "ltr"}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
