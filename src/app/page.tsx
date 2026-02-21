@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
 import { useWalletPersistence } from "@/utils/walletPersistence";
 import { setupExtensionErrorHandling } from "@/utils/extensionDetection";
@@ -13,6 +14,7 @@ import {
   globalErrorSuppressor,
 } from "@/utils/manualErrorSuppressor";
 import { WalletConnector } from "@/components/WalletConnector";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   ChainAware,
   ChainSpecific,
@@ -24,6 +26,8 @@ import { LoadingState } from "@/components/LoadingSpinner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function HomeContent() {
+  const { t } = useTranslation("common");
+
   useWalletPersistence();
 
   useEffect(() => {
@@ -57,7 +61,10 @@ function HomeContent() {
                 PropChain
               </h1>
             </div>
-            <WalletConnector />
+            <div className="flex items-center gap-3">
+              <LanguageSwitcher />
+              <WalletConnector />
+            </div>
           </div>
         </div>
       </header>
@@ -65,19 +72,29 @@ function HomeContent() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Multi-Chain Real Estate Platform
+            {t("app.tagline")}
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Experience seamless wallet connectivity across Ethereum, Polygon, and Binance Smart Chain
+            {t("app.subtitle")}
           </p>
           <a
             href="/properties"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
-            Browse Properties
+            {t("navigation.browseProperties")}
           </a>
         </div>
 
@@ -86,11 +103,10 @@ function HomeContent() {
             <div className="text-center py-12">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-md mx-auto">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Connect Your Wallet
+                  {t("wallet.connectYourWallet")}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Connect your Web3 wallet to access multi-chain real estate
-                  features
+                  {t("app.subtitle")}
                 </p>
                 <WalletConnector />
               </div>
@@ -101,12 +117,12 @@ function HomeContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Wallet Information
+                  {t("wallet.walletInformation")}
                 </h3>
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Address
+                      {t("wallet.address")}
                     </p>
                     <p className="font-mono text-sm text-gray-900 dark:text-white">
                       {address?.slice(0, 8)}...{address?.slice(-6)}
@@ -114,7 +130,7 @@ function HomeContent() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Balance
+                      {t("wallet.balance")}
                     </p>
                     <p className="font-semibold text-gray-900 dark:text-white">
                       {balance} {chainSymbol}
@@ -122,7 +138,7 @@ function HomeContent() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Network
+                      {t("wallet.network")}
                     </p>
                     <MultiChainBadge>
                       <span className="text-sm">{chainName}</span>
@@ -133,18 +149,18 @@ function HomeContent() {
 
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Chain-Specific Features
+                  {t("chains.chainSpecificFeatures")}
                 </h3>
                 <ChainSpecific chainId={1}>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-blue-600" />
                       <span className="text-sm font-medium">
-                        Ethereum Mainnet
+                        {t("chains.ethereum")}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      High security, extensive DeFi ecosystem
+                      {t("chains.ethereumDescription")}
                     </p>
                     <GasEstimation />
                   </div>
@@ -154,10 +170,12 @@ function HomeContent() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-purple-600" />
-                      <span className="text-sm font-medium">Polygon</span>
+                      <span className="text-sm font-medium">
+                        {t("chains.polygon")}
+                      </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Low fees, fast transactions
+                      {t("chains.polygonDescription")}
                     </p>
                     <GasEstimation />
                   </div>
@@ -167,10 +185,12 @@ function HomeContent() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                      <span className="text-sm font-medium">BSC</span>
+                      <span className="text-sm font-medium">
+                        {t("chains.bsc")}
+                      </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Low fees, high throughput
+                      {t("chains.bscDescription")}
                     </p>
                     <GasEstimation />
                   </div>
@@ -179,14 +199,14 @@ function HomeContent() {
 
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Sample Transaction
+                  {t("transactions.sampleTransaction")}
                 </h3>
                 <div className="space-y-4">
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Test a sample transaction on {chainName}
+                    {t("transactions.executeTransaction")} {chainName}
                   </p>
                   <TransactionButton onTransaction={handleSampleTransaction}>
-                    Execute Transaction
+                    {t("transactions.executeTransaction")}
                   </TransactionButton>
                   <GasEstimation gasLimit="50000" />
                 </div>
@@ -194,13 +214,13 @@ function HomeContent() {
 
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 md:col-span-2 lg:col-span-3">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Multi-Chain Features
+                  {t("chains.multiChainFeatures")}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="text-2xl mb-2">🔗</div>
                     <h4 className="font-medium text-gray-900 dark:text-white mb-1">
-                      Multi-Wallet Support
+                      {t("wallet.multiWalletSupport")}
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       MetaMask, WalletConnect, Coinbase
@@ -209,19 +229,19 @@ function HomeContent() {
                   <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="text-2xl mb-2">⚡</div>
                     <h4 className="font-medium text-gray-900 dark:text-white mb-1">
-                      Network Switching
+                      {t("wallet.networkSwitching")}
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Seamless chain switching
+                      {t("chains.seamlessChainSwitching")}
                     </p>
                   </div>
                   <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="text-2xl mb-2">💾</div>
                     <h4 className="font-medium text-gray-900 dark:text-white mb-1">
-                      Persistent State
+                      {t("wallet.persistentState")}
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Connection survives refreshes
+                      {t("chains.connectionSurvivesRefreshes")}
                     </p>
                   </div>
                 </div>
@@ -230,18 +250,17 @@ function HomeContent() {
                 <div className="border-t border-gray-200 dark:border-gray-600 pt-6">
                   <div className="text-center">
                     <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                      📱 Mobile-First Property Experience
+                      📱 {t("mobile.mobileFirstPropertyExperience")}
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                      Experience our touch-optimized property viewing with AR
-                      preview, location discovery, and offline support
+                      {t("mobile.touchOptimizedPropertyViewing")}
                     </p>
                     <a
                       href="/mobile-properties"
                       className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
                       <span className="mr-2">📱</span>
-                      View Mobile Properties
+                      {t("navigation.viewMobileProperties")}
                     </a>
                   </div>
                 </div>
