@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ChainId, DEFAULT_CHAIN_ID } from '@/config/chains';
+import { DEFAULT_CHAIN_ID } from '@/config/chains';
+import type { ChainId } from '@/config/chains';
 
 export type WalletType = 'metamask' | 'walletconnect' | 'coinbase' | null;
 

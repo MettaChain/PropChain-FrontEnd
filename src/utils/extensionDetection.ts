@@ -1,4 +1,5 @@
 'use client';
+import { isRecord } from './typeGuards';
 
 export interface WalletExtension {
   name: string;
@@ -37,10 +38,16 @@ export const getPreferredWallet = (): WalletExtension | null => {
   return extensions.find(ext => ext.isInstalled) || null;
 };
 
-export const isExtensionError = (error: any): boolean => {
+const stringifyError = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+  if (value instanceof Error) return value.message || value.toString();
+  return String(value);
+};
+
+export const isExtensionError = (error: unknown): boolean => {
   if (!error) return false;
   
-  const errorString = error.toString().toLowerCase();
+  const errorString = stringifyError(error).toLowerCase();
   const extensionErrorPatterns = [
     'chrome-extension://',
     'evmask.js',
@@ -52,17 +59,22 @@ export const isExtensionError = (error: any): boolean => {
   return extensionErrorPatterns.some(pattern => errorString.includes(pattern));
 };
 
-export const sanitizeExtensionError = (error: any): string => {
+export const sanitizeExtensionError = (error: unknown): string => {
   if (!isExtensionError(error)) {
-    return error?.message || 'Unknown error occurred';
+    if (isRecord(error) && typeof error.message === 'string') {
+      return error.message;
+    }
+    return 'Unknown error occurred';
   }
   
   // Provide user-friendly messages for extension errors
-  if (error.toString().includes('evmAsk.js')) {
+  const errorString = stringifyError(error);
+
+  if (errorString.includes('evmAsk.js')) {
     return 'Wallet extension error. Please try refreshing the page or restarting your browser.';
   }
   
-  if (error.toString().includes('chrome-extension://')) {
+  if (errorString.includes('chrome-extension://')) {
     return 'Browser extension conflict detected. Please disable other Web3 extensions and try again.';
   }
   
@@ -74,8 +86,8 @@ export const setupExtensionErrorHandling = () => {
   
   // Override console.error to filter out extension errors
   const originalConsoleError = console.error;
-  console.error = (...args: any[]) => {
-    const errorString = args.join(' ').toLowerCase();
+  console.error = (...args: unknown[]) => {
+    const errorString = args.map(stringifyError).join(' ').toLowerCase();
     
     // Filter out known extension errors that don't affect functionality
     if (errorString.includes('chrome-extension://') || 

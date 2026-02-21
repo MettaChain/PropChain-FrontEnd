@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+
+import Image from "next/image";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import type { PanInfo } from "framer-motion";
+
 import {
   X,
   Heart,
@@ -19,28 +23,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-interface Property {
-  id: string;
-  name: string;
-  location: string;
-  type: string;
-  value: number;
-  tokens: number;
-  roi: number;
-  monthlyIncome: number;
-  images: string[];
-  videos?: string[];
-  description: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  sqft?: number;
-  yearBuilt?: number;
-  amenities?: string[];
-}
+import type { MobileProperty } from "@/types/mobileProperty";
 
 interface MobilePropertyViewerProps {
-  property: Property;
+  property: MobileProperty;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -58,7 +44,6 @@ export const MobilePropertyViewer = ({
   const [showInfo, setShowInfo] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
 
   // Reset state when property changes
   useEffect(() => {
@@ -69,7 +54,7 @@ export const MobilePropertyViewer = ({
     setShowInfo(false);
   }, [property.id]);
 
-  const handleSwipe = (event: any, info: PanInfo) => {
+  const handleSwipe = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 50;
 
     if (Math.abs(info.offset.x) > threshold) {
@@ -194,12 +179,13 @@ export const MobilePropertyViewer = ({
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <img
-              ref={imageRef}
+            <Image
               src={property.images[currentImageIndex]}
               alt={`${property.name} - Image ${currentImageIndex + 1}`}
+              width={1200}
+              height={900}
+              sizes="100vw"
               className="max-w-full max-h-full object-contain"
-              draggable={false}
             />
           </motion.div>
 
@@ -273,11 +259,14 @@ export const MobilePropertyViewer = ({
                     : "border-transparent"
                 }`}
               >
-                <img
-                  src={image}
-                  alt={`Thumbnail ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
+                  <Image
+                    src={image}
+                    alt={`Thumbnail ${index + 1}`}
+                    width={64}
+                    height={64}
+                    sizes="64px"
+                    className="w-full h-full object-cover"
+                  />
               </button>
             ))}
           </div>

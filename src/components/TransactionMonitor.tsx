@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { useTransactionStore } from '@/store/transactionStore';
+import type { Transaction } from '@/store/transactionStore';
 
-const TransactionWatcher = ({ transaction }: { transaction: any }) => {
+const TransactionWatcher = ({ transaction }: { transaction: Transaction }) => {
   const { updateTransaction } = useTransactionStore();
 
   // For demo purposes, we'll simulate transaction monitoring
@@ -21,6 +22,8 @@ const TransactionWatcher = ({ transaction }: { transaction: any }) => {
 
       return () => clearTimeout(timer);
     }
+
+    return undefined;
   }, [transaction.id, transaction.status, updateTransaction]);
 
   return null;

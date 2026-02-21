@@ -1,5 +1,8 @@
 'use client';
 
+const stringifyArgs = (args: readonly unknown[]): string =>
+  args.map((arg) => (typeof arg === 'string' ? arg : String(arg))).join(' ');
+
 export const ManualErrorSuppressor = () => {
   if (typeof window === 'undefined') return;
 
@@ -17,8 +20,8 @@ export const ManualErrorSuppressor = () => {
       'Unexpected error'
     ];
     
-    const shouldSuppress = (...args: any[]): boolean => {
-      const message = args.join(' ').toLowerCase();
+    const shouldSuppress = (...args: unknown[]): boolean => {
+      const message = stringifyArgs(args).toLowerCase();
       return patterns.some(pattern => message.includes(pattern.toLowerCase()));
     };
     
@@ -27,17 +30,17 @@ export const ManualErrorSuppressor = () => {
     const originalConsoleWarn = console.warn;
     const originalConsoleLog = console.log;
     
-    console.error = (...args: any[]) => {
+    console.error = (...args: unknown[]) => {
       if (shouldSuppress(...args)) return;
       originalConsoleError.apply(console, args);
     };
     
-    console.warn = (...args: any[]) => {
+    console.warn = (...args: unknown[]) => {
       if (shouldSuppress(...args)) return;
       originalConsoleWarn.apply(console, args);
     };
     
-    console.log = (...args: any[]) => {
+    console.log = (...args: unknown[]) => {
       if (shouldSuppress(...args)) return;
       originalConsoleLog.apply(console, args);
     };
@@ -46,7 +49,7 @@ export const ManualErrorSuppressor = () => {
   };
 
   // Add to window for manual access
-  (window as any).suppressExtensionErrors = clearConsoleAndSuppress;
+  window.suppressExtensionErrors = clearConsoleAndSuppress;
   
   // Auto-activate on load
   setTimeout(clearConsoleAndSuppress, 1000);
