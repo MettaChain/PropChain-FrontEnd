@@ -3,6 +3,7 @@ import { useSearchStore } from '@/store/searchStore';
 import { propertyService } from '@/lib/propertyService';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { filtersToUrlParams, urlParamsToFilters } from '@/utils/searchUtils';
+import { getErrorMessage } from '@/utils/typeGuards';
 
 /**
  * Custom hook for property search functionality
@@ -83,8 +84,8 @@ export function usePropertySearch() {
       );
 
       setProperties(result.properties, result.total);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch properties');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to fetch properties'));
       setProperties([], 0);
     }
   };

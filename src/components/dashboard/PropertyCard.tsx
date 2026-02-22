@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { MapPin, TrendingUp, TrendingDown, Building2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,9 +52,11 @@ export const PropertyCard = ({ property, index }: PropertyCardProps) => {
       className="glass-card rounded-xl overflow-hidden hover:border-primary/30 transition-all duration-300 group"
     >
       <div className="relative h-40 overflow-hidden">
-        <img
+        <Image
           src={property.image}
           alt={property.name}
+          fill
+          sizes="(max-width: 768px) 100vw, 33vw"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />

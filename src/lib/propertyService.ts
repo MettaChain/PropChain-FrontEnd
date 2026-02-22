@@ -1,5 +1,8 @@
 import type {
+  BlockchainNetwork,
   Property,
+  PropertyStatus,
+  PropertyType,
   SearchFilters,
   PropertySearchResult,
   SortOption,
@@ -7,6 +10,13 @@ import type {
   SavedSearch,
 } from '@/types/property';
 import { MOCK_PROPERTIES, getUniqueLocations } from './mockData';
+import {
+  isBlockchainNetwork,
+  isPropertyStatus,
+  isPropertyType,
+  isSortOption,
+} from '@/types/property';
+import { isRecord } from '@/utils/typeGuards';
 
 /**
  * Property Service
@@ -103,7 +113,7 @@ class PropertyService {
     
     // Get from localStorage
     const saved = localStorage.getItem(`propchain-saved-searches-${userId}`);
-    return saved ? JSON.parse(saved) : [];
+    return parseSavedSearches(saved);
   }
 
   /**
@@ -275,3 +285,111 @@ class PropertyService {
 
 // Export singleton instance
 export const propertyService = new PropertyService();
+
+const toNumberArray = (value: unknown): number[] =>
+  Array.isArray(value) ? value.filter((item): item is number => typeof item === 'number') : [];
+
+const toTuple = (value: unknown, fallback: [number, number]): [number, number] => {
+  if (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === 'number' &&
+    typeof value[1] === 'number'
+  ) {
+    return [value[0], value[1]];
+  }
+
+  return fallback;
+};
+
+const isSearchFilters = (value: unknown): value is SearchFilters => {
+  if (!isRecord(value)) return false;
+
+  const propertyTypes = Array.isArray(value.propertyTypes)
+    ? value.propertyTypes.filter(
+        (item): item is PropertyType => typeof item === 'string' && isPropertyType(item)
+      )
+    : [];
+
+  const blockchains = Array.isArray(value.blockchains)
+    ? value.blockchains.filter(
+        (item): item is BlockchainNetwork =>
+          typeof item === 'string' && isBlockchainNetwork(item)
+      )
+    : [];
+
+  const status = Array.isArray(value.status)
+    ? value.status.filter(
+        (item): item is PropertyStatus => typeof item === 'string' && isPropertyStatus(item)
+      )
+    : [];
+
+  return (
+    typeof value.query === 'string' &&
+    typeof value.roiMin === 'number' &&
+    typeof value.roiMax === 'number' &&
+    typeof value.location === 'string' &&
+    propertyTypes.length === (Array.isArray(value.propertyTypes) ? value.propertyTypes.length : 0) &&
+    blockchains.length === (Array.isArray(value.blockchains) ? value.blockchains.length : 0) &&
+    status.length === (Array.isArray(value.status) ? value.status.length : 0) &&
+    Array.isArray(value.priceRange) &&
+    Array.isArray(value.squareFeetRange) &&
+    Array.isArray(value.bedrooms) &&
+    Array.isArray(value.bathrooms)
+  );
+};
+
+const normalizeFilters = (value: SearchFilters): SearchFilters => ({
+  query: value.query,
+  priceRange: toTuple(value.priceRange, [0, 10000000]),
+  propertyTypes: value.propertyTypes.filter(isPropertyType),
+  blockchains: value.blockchains.filter(isBlockchainNetwork),
+  roiMin: value.roiMin,
+  roiMax: value.roiMax,
+  location: value.location,
+  bedrooms: toNumberArray(value.bedrooms),
+  bathrooms: toNumberArray(value.bathrooms),
+  squareFeetRange: toTuple(value.squareFeetRange, [0, 50000]),
+  status: value.status.filter(isPropertyStatus),
+});
+
+const toSavedSearch = (value: unknown): SavedSearch | null => {
+  if (!isRecord(value) || !isSearchFilters(value.filters)) {
+    return null;
+  }
+
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.name !== 'string' ||
+    typeof value.createdAt !== 'string' ||
+    typeof value.userId !== 'string' ||
+    typeof value.sortBy !== 'string' ||
+    !isSortOption(value.sortBy)
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    name: value.name,
+    filters: normalizeFilters(value.filters),
+    sortBy: value.sortBy,
+    createdAt: value.createdAt,
+    userId: value.userId,
+  };
+};
+
+const parseSavedSearches = (raw: string | null): SavedSearch[] => {
+  if (!raw) return [];
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((item) => toSavedSearch(item))
+      .filter((item): item is SavedSearch => item !== null);
+  } catch {
+    return [];
+  }
+};

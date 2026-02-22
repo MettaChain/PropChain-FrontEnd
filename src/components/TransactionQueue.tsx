@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useTransactionStore, Transaction } from '@/store/transactionStore';
+import { useTransactionStore } from '@/store/transactionStore';
+import type { Transaction } from '@/store/transactionStore';
 import { TransactionCard } from './TransactionCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

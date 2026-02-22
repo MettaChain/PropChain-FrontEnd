@@ -1,12 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  SearchFilters,
-  SortOption,
-  ViewMode,
-  Property,
-  DEFAULT_FILTERS,
-} from '@/types/property';
+import { DEFAULT_FILTERS } from '@/types/property';
+import type { SearchFilters, SortOption, ViewMode, Property } from '@/types/property';
 
 /**
  * Search Store
@@ -52,17 +47,14 @@ export type SearchStore = SearchState & SearchActions;
 
 const DEFAULT_STATE = {
   filters: {
-    query: '',
-    priceRange: [0, 10000000] as [number, number],
-    propertyTypes: [],
-    blockchains: [],
-    roiMin: 0,
-    roiMax: 100,
-    location: '',
-    bedrooms: [],
-    bathrooms: [],
-    squareFeetRange: [0, 50000] as [number, number],
-    status: ['active'] as any[],
+    ...DEFAULT_FILTERS,
+    priceRange: [...DEFAULT_FILTERS.priceRange] as [number, number],
+    squareFeetRange: [...DEFAULT_FILTERS.squareFeetRange] as [number, number],
+    propertyTypes: [...DEFAULT_FILTERS.propertyTypes],
+    blockchains: [...DEFAULT_FILTERS.blockchains],
+    bedrooms: [...DEFAULT_FILTERS.bedrooms],
+    bathrooms: [...DEFAULT_FILTERS.bathrooms],
+    status: [...DEFAULT_FILTERS.status],
   },
   sortBy: 'newest' as SortOption,
   viewMode: 'grid' as ViewMode,

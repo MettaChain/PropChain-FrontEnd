@@ -18,22 +18,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-
-interface Property {
-  id: string;
-  name: string;
-  location: string;
-  type: string;
-  value: number;
-  sqft?: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  description: string;
-  arModel?: string; // URL to 3D model
-}
+import type { MobileProperty } from "@/types/mobileProperty";
 
 interface ARPropertyPreviewProps {
-  property: Property;
+  property: MobileProperty;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -68,8 +56,8 @@ export const ARPropertyPreview = ({
 
   const checkARSupport = () => {
     // Check for WebXR AR support
-    if ("xr" in navigator) {
-      (navigator as any).xr
+    if (navigator.xr) {
+      navigator.xr
         .isSessionSupported("immersive-ar")
         .then((supported: boolean) => {
           setIsARSupported(supported);
@@ -120,12 +108,12 @@ export const ARPropertyPreview = ({
   };
 
   const handleARSession = async () => {
-    if (!isARSupported) return;
+    if (!isARSupported || !navigator.xr) return;
 
     try {
       // This is a simplified AR implementation
       // In a real app, you would use WebXR or a library like AR.js or 8th Wall
-      const session = await (navigator as any).xr.requestSession(
+      const session = await navigator.xr.requestSession(
         "immersive-ar",
         {
           requiredFeatures: ["local", "hit-test"],
