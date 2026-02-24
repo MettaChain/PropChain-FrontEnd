@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ErrorReportingData } from '@/types/errors';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { ErrorReportingData } from '@/types/errors';
+import { logger } from '@/utils/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log error (in production, this would go to your analytics service)
-    console.error('Error Report:', {
+    logger.error('Error Report:', {
       id: body.errorId,
       category: body.category,
       severity: body.severity,
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Error reporting failed:', error);
+    logger.error('Error reporting failed:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

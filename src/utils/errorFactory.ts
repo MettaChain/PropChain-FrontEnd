@@ -1,4 +1,4 @@
-import { AppError, ErrorCategory, ErrorSeverity, ErrorRecoveryAction } from '@/types/errors';
+import { type AppError, ErrorCategory, ErrorSeverity, ErrorRecoveryAction } from '@/types/errors';
 
 export class ErrorFactory {
   static createError(
@@ -175,7 +175,7 @@ export class ErrorFactory {
   }
 
   static fromError(
-    error: Error | any,
+    error: Error | { message?: string; stack?: string; technicalDetails?: string; toString(): string },
     category: ErrorCategory = ErrorCategory.UNKNOWN,
     options: Partial<AppError> = {}
   ): AppError {
@@ -190,7 +190,7 @@ export class ErrorFactory {
       {
         ...options,
         stack: error?.stack,
-        technicalDetails: error?.technicalDetails || error?.toString(),
+        technicalDetails: (error as any)?.technicalDetails || error?.toString(),
       }
     );
   }
@@ -210,7 +210,7 @@ export class ErrorFactory {
     return Math.abs(hash).toString(36);
   }
 
-  private static generateUserFriendlyMessage(error: any, category: ErrorCategory): string {
+  private static generateUserFriendlyMessage(error: Error | { message?: string }, category: ErrorCategory): string {
     // Common error patterns and user-friendly messages
     if (error?.message) {
       const message = error.message.toLowerCase();

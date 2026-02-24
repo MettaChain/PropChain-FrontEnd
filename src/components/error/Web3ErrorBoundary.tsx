@@ -2,8 +2,10 @@
 
 import React, {
   Component,
+} from "react";
+import type {
   ReactNode,
-  ComponentDidCatch as ReactComponentDidCatch,
+  ErrorInfo,
 } from "react";
 import {
   AlertTriangle,
@@ -13,10 +15,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
+import { logger } from "@/utils/logger";
+import type {
   AppError,
   ErrorBoundaryState,
+} from "@/types/errors";
+import {
   ErrorRecoveryAction,
+  ErrorCategory,
 } from "@/types/errors";
 import { ErrorFactory } from "@/utils/errorFactory";
 import { errorReporting } from "@/utils/errorReporting";
@@ -50,7 +56,7 @@ export class Web3ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    const appError = ErrorFactory.fromError(error, "web3" as any);
+    const appError = ErrorFactory.fromError(error, ErrorCategory.WEB3);
     return {
       hasError: true,
       error: appError,
@@ -59,9 +65,9 @@ export class Web3ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ReactComponentDidCatch) {
-    const appError = ErrorFactory.fromError(error, "web3" as any, {
-      componentStack: errorInfo.componentStack,
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    const appError = ErrorFactory.fromError(error, ErrorCategory.WEB3, {
+      componentStack: errorInfo.componentStack || undefined,
       context: {
         errorBoundary: "Web3ErrorBoundary",
         errorInfo,
@@ -90,12 +96,12 @@ export class Web3ErrorBoundary extends Component<Props, State> {
 
   private handleRetry = async (): Promise<boolean> => {
     if (!this.state.error || !this.state.error.isRecoverable) {
-      return;
+      return false;
     }
 
     const maxRetries = this.props.maxRetries || 3;
     if (this.state.retryCount >= maxRetries) {
-      return;
+      return false;
     }
 
     this.setState({ isRecovering: true });
@@ -113,16 +119,19 @@ export class Web3ErrorBoundary extends Component<Props, State> {
           isRecovering: false,
           recoveryAction: null,
         });
+        return true;
       } else {
         // Increment retry count and show error again
         this.setState((prevState) => ({
           retryCount: prevState.retryCount + 1,
           isRecovering: false,
         }));
+        return false;
       }
     } catch (recoveryError) {
-      console.error("Recovery failed:", recoveryError);
+      logger.error("Recovery failed:", recoveryError);
       this.setState({ isRecovering: false });
+      return false;
     }
   };
 
@@ -228,7 +237,7 @@ export class Web3ErrorBoundary extends Component<Props, State> {
       case "medium":
         return "default";
       case "low":
-        return "secondary";
+        return "default";
       default:
         return "default";
     }
@@ -241,7 +250,7 @@ export class Web3ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-[400px] flex items-center justify-center p-4">
+        <div className="min-h-100 flex items-center justify-center p-4">
           <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-red-200 dark:border-red-800">
             <div className="p-6">
               {/* Error Header */}
@@ -260,7 +269,7 @@ export class Web3ErrorBoundary extends Component<Props, State> {
               </div>
 
               {/* Error Message */}
-              <Alert variant={this.getErrorSeverity() as any} className="mb-6">
+              <Alert variant={this.getErrorSeverity()} className="mb-6">
                 <AlertDescription className="text-sm">
                   {this.getErrorMessage()}
                 </AlertDescription>

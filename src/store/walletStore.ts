@@ -36,7 +36,7 @@ export type WalletStore = WalletState & WalletActions;
 
 export const useWalletStore = create<WalletStore>()(
   persist(
-    (set: (partial: WalletStore | Partial<WalletStore> | ((state: WalletStore) => Partial<WalletStore>)) => void, get: () => WalletStore) => ({
+    (set, get) => ({
       isConnected: false,
       address: null,
       walletType: null,

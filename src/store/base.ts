@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, PersistOptions } from 'zustand/middleware';
+import { persist, type PersistOptions } from 'zustand/middleware';
 
 // Base state interface for common properties
 export interface BaseState {

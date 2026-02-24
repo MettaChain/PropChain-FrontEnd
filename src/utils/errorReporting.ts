@@ -1,4 +1,5 @@
-import { AppError, ErrorCategory, ErrorSeverity, ErrorReportingData, ErrorMetrics } from '@/types/errors';
+import { type AppError, ErrorCategory, ErrorSeverity, type ErrorReportingData, type ErrorMetrics } from '@/types/errors';
+import { logger } from './logger';
 
 class ErrorReportingService {
   private static instance: ErrorReportingService;
@@ -65,10 +66,7 @@ class ErrorReportingService {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.group(`🚨 ${error.category.toUpperCase()} ERROR [${error.severity.toUpperCase()}]`);
-      console.error('Error:', error);
-      console.error('Context:', error.context);
-      console.groupEnd();
+      logger.debug(`[${error.category.toUpperCase()}] ERROR [${error.severity.toUpperCase()}]:`, error);
     }
   }
 
@@ -105,10 +103,10 @@ class ErrorReportingService {
         },
         body: JSON.stringify(data),
       }).catch(err => {
-        console.warn('Failed to report error to analytics:', err);
+        logger.warn('Failed to report error to analytics:', err);
       });
     } catch (error) {
-      console.warn('Error reporting service unavailable:', error);
+      logger.warn('Error reporting service unavailable:', error);
     }
   }
 
@@ -181,7 +179,7 @@ class ErrorReportingService {
 
       return recovered;
     } catch (recoveryError) {
-      console.warn('Recovery attempt failed:', recoveryError);
+      logger.warn('Recovery attempt failed:', recoveryError);
       return false;
     }
   }

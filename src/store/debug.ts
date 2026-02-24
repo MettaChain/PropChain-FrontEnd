@@ -1,4 +1,5 @@
 // State debugging and monitoring utilities
+import { logger } from '@/utils/logger';
 
 // Interface for state change logging
 export interface StateLogEntry {
@@ -33,13 +34,11 @@ class StateLogger {
 
     // Also log to console for immediate visibility during development
     if (process.env.NODE_ENV !== 'production') {
-      console.group(`%c${entry.storeName} - ${entry.action}`, 'color: #008800; font-weight: bold;');
-      console.log('%cPrevious State:', 'color: #999;', entry.prevState);
-      console.log('%cNext State:', 'color: #008800; font-weight: bold;', entry.nextState);
-      if (entry.payload) {
-        console.log('%cPayload:', 'color: #000088;', entry.payload);
-      }
-      console.groupEnd();
+      logger.debug(`[${entry.storeName}] ${entry.action}:`, {
+        prevState: entry.prevState,
+        nextState: entry.nextState,
+        payload: entry.payload
+      });
     }
   }
 
@@ -125,22 +124,22 @@ export class StateInspector {
     );
     
     if (addedKeys.length > 0) {
-      console.log('%cAdded Keys:', 'color: #00aa00;', addedKeys);
+      logger.debug('Added Keys:', addedKeys);
     }
     
     if (removedKeys.length > 0) {
-      console.log('%cRemoved Keys:', 'color: #aa0000;', removedKeys);
+      logger.debug('Removed Keys:', removedKeys);
     }
     
     if (changedKeys.length > 0) {
-      console.log('%cChanged Keys:', 'color: #0000aa;', changedKeys);
+      logger.debug('Changed Keys:', changedKeys);
       changedKeys.forEach(key => {
-        console.log(`  ${key}:`, prevState[key], '->', nextState[key]);
+        logger.debug(`  ${key}:`, { from: prevState[key], to: nextState[key] });
       });
     }
     
     if (addedKeys.length === 0 && removedKeys.length === 0 && changedKeys.length === 0) {
-      console.log('%cNo changes detected', 'color: #888;');
+      logger.debug('No changes detected');
     }
     
     console.groupEnd();
@@ -183,7 +182,7 @@ export class StatePerformanceMonitor {
     
     // Log slow updates (>16ms - one frame at 60fps)
     if (end - start > 16) {
-      console.warn(`%cSlow state update detected in ${storeName}: ${action} took ${(end - start).toFixed(2)}ms`, 'color: #ff6600;');
+      logger.warn(`Slow state update detected in ${storeName}: ${action} took ${(end - start).toFixed(2)}ms`);
     }
     
     return result;
@@ -242,11 +241,11 @@ export const debugUtils = {
   validateState: (state: any, expectedShape: any): boolean => {
     for (const key in expectedShape) {
       if (!(key in state)) {
-        console.error(`Missing expected property: ${key}`);
+        logger.error(`Missing expected property: ${key}`);
         return false;
       }
       if (typeof state[key] !== typeof expectedShape[key] && expectedShape[key] !== undefined) {
-        console.warn(`Type mismatch for property: ${key}`);
+        logger.warn(`Type mismatch for property: ${key}`);
       }
     }
     return true;

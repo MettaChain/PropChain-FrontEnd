@@ -3,15 +3,9 @@
 import { WagmiProvider } from "wagmi";
 import { config } from "@/config/wagmi";
 import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
-import { TransactionMonitor } from "@/components/TransactionMonitor";
-import { NotificationSystem } from "@/components/NotificationSystem";
-import { Toaster } from "@/components/ui/sonner";
+import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 import "@/lib/i18n";
 import dynamic from "next/dynamic";
-import { WagmiProvider } from 'wagmi';
-import { config } from '@/config/wagmi';
-import { ChainAwareProvider } from '@/providers/ChainAwareProvider';
-import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 
 interface ClientProvidersProps {
   children: React.ReactNode;
