@@ -3,8 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 
 import Image from "next/image";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import type { PanInfo } from "framer-motion";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 
 import {
   X,

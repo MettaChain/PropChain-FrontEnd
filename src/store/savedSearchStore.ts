@@ -49,10 +49,6 @@ export const useSavedSearchStore = create<SavedSearchStore>()(
             (error) => set({ error }),
             (loading) => set({ isLoading: loading })
           );
-        } catch (error: any) {
-          // Error is already handled by withAsyncAction
-          const searches = await propertyService.getSavedSearches(userId);
-          set({ searches, isLoading: false });
         } catch (error: unknown) {
           set({ error: getErrorMessage(error, 'Failed to load saved searches'), isLoading: false });
         }
@@ -78,13 +74,6 @@ export const useSavedSearchStore = create<SavedSearchStore>()(
             (error) => set({ error }),
             (loading) => set({ isLoading: loading })
           );
-        } catch (error: any) {
-          // Error is already handled by withAsyncAction
-          await propertyService.deleteSavedSearch(userId, searchId);
-          set((state) => ({
-            searches: state.searches.filter(s => s.id !== searchId),
-            isLoading: false,
-          }));
         } catch (error: unknown) {
           set({ error: getErrorMessage(error, 'Failed to remove saved search'), isLoading: false });
         }

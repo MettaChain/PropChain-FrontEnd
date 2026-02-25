@@ -7,6 +7,7 @@ import {
 } from "./error/EnhancedErrorBoundary";
 import { AppError, ErrorCategory } from "@/types/errors";
 import { getWalletErrorMessage } from "@/utils/errorHandling";
+import { ErrorFactory } from "@/utils/errorFactory";
 
 interface Props {
   children: ReactNode;
@@ -33,10 +34,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    return { hasError: true, error };
+    const appError = ErrorFactory.fromError(error);
+    return { hasError: true, error: appError };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ComponentDidCatchInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 

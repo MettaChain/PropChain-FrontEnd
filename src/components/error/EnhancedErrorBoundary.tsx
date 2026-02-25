@@ -44,9 +44,9 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ComponentDidCatchInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     const appError = ErrorFactory.fromError(error, this.props.category, {
-      componentStack: errorInfo.componentStack,
+      componentStack: errorInfo.componentStack || undefined,
       context: {
         errorBoundary: 'EnhancedErrorBoundary',
         errorInfo,
@@ -62,7 +62,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     }
   }
 
-  private getErrorBoundary = () => {
+  private getErrorBoundary = (): React.ReactNode => {
     const { category, ...commonProps } = this.props;
 
     // If category is specified, use the specific boundary

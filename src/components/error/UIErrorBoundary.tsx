@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Component, ComponentDidCatch, ReactNode } from "react";
+import React, { Component, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -54,9 +54,9 @@ export class UIErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ComponentDidCatch) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     const appError = ErrorFactory.fromError(error, "ui" as any, {
-      componentStack: errorInfo.componentStack,
+      componentStack: errorInfo.componentStack || undefined,
       context: {
         errorBoundary: "UIErrorBoundary",
         errorInfo,

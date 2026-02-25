@@ -3,7 +3,6 @@
 import React, {
   Component,
   ReactNode,
-  ComponentDidCatch as ReactComponentDidCatch,
 } from "react";
 import {
   AlertTriangle,
@@ -59,9 +58,9 @@ export class Web3ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ReactComponentDidCatch) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     const appError = ErrorFactory.fromError(error, "web3" as any, {
-      componentStack: errorInfo.componentStack,
+      componentStack: errorInfo.componentStack || undefined,
       context: {
         errorBoundary: "Web3ErrorBoundary",
         errorInfo,
@@ -90,12 +89,12 @@ export class Web3ErrorBoundary extends Component<Props, State> {
 
   private handleRetry = async (): Promise<boolean> => {
     if (!this.state.error || !this.state.error.isRecoverable) {
-      return;
+      return false;
     }
 
     const maxRetries = this.props.maxRetries || 3;
     if (this.state.retryCount >= maxRetries) {
-      return;
+      return false;
     }
 
     this.setState({ isRecovering: true });
@@ -113,16 +112,19 @@ export class Web3ErrorBoundary extends Component<Props, State> {
           isRecovering: false,
           recoveryAction: null,
         });
+        return true;
       } else {
         // Increment retry count and show error again
         this.setState((prevState) => ({
           retryCount: prevState.retryCount + 1,
           isRecovering: false,
         }));
+        return false;
       }
     } catch (recoveryError) {
       console.error("Recovery failed:", recoveryError);
       this.setState({ isRecovering: false });
+      return false;
     }
   };
 

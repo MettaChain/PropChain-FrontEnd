@@ -32,7 +32,7 @@ export function PerformanceMonitor() {
   });
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return undefined;
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
@@ -78,6 +78,8 @@ export function PerformanceMonitor() {
         resourceObserver.disconnect();
       };
     }
+    
+    return undefined;
   }, [addMetric]);
 
   return null;

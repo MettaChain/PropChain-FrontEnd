@@ -3,7 +3,6 @@
 import React, {
   Component,
   ReactNode,
-  ComponentDidCatch as ReactComponentDidCatch,
 } from "react";
 import { Wifi, WifiOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -82,9 +81,9 @@ export class NetworkErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ReactComponentDidCatch) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     const appError = ErrorFactory.fromError(error, "network" as any, {
-      componentStack: errorInfo.componentStack,
+      componentStack: errorInfo.componentStack || undefined,
       context: {
         errorBoundary: "NetworkErrorBoundary",
         errorInfo,
