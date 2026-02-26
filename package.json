@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-     "typecheck": "tsc --noEmit --incremental false",
+    "typecheck": "tsc --noEmit --incremental false",
     "build": "npm run typecheck && next build",
     "build:analyze": "node scripts/run-analyze-build.mjs",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "perf:budgets": "node scripts/check-performance-budgets.mjs",
-    "perf:ci": "npm run build:analyze && npm run perf:budgets"
+    "perf:ci": "npm run build:analyze && npm run perf:budgets",
+    "validate:env": "node scripts/validate-env.js"
   },
   "dependencies": {
     "@coinbase/wallet-sdk": "^4.3.7",
