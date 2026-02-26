@@ -1,17 +1,16 @@
 "use client";
 
-import React, { Component, ReactNode } from "react";
+import React, { Component } from "react";
+import type { ReactNode } from "react";
 import { Camera, Smartphone, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  AppError,
-  ErrorBoundaryState,
-  ErrorRecoveryAction,
-} from "@/types/errors";
+import type { AppError, ErrorBoundaryState } from "@/types/errors";
+import { ErrorRecoveryAction, ErrorCategory } from "@/types/errors";
 import { ErrorFactory } from "@/utils/errorFactory";
 import { errorReporting } from "@/utils/errorReporting";
 import { useTranslation } from "react-i18next";
+import { logger } from "@/utils/logger";
 
 interface Props {
   children: ReactNode;
@@ -53,7 +52,7 @@ export class ARErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    const appError = ErrorFactory.fromError(error, "ar" as any);
+    const appError = ErrorFactory.fromError(error, ErrorCategory.AR);
     return {
       hasError: true,
       error: appError,
@@ -61,9 +60,9 @@ export class ARErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
-    const appError = ErrorFactory.fromError(error, "ar" as any, {
-      componentStack: errorInfo.componentStack,
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    const appError = ErrorFactory.fromError(error, ErrorCategory.AR, {
+      componentStack: errorInfo.componentStack ?? undefined,
       context: {
         errorBoundary: "ARErrorBoundary",
         errorInfo,
@@ -154,7 +153,7 @@ export class ARErrorBoundary extends Component<Props, State> {
         }));
       }
     } catch (recoveryError) {
-      console.error("AR recovery failed:", recoveryError);
+      logger.error("AR recovery failed:", recoveryError);
       this.setState({ isRecovering: false });
     }
   };
@@ -169,7 +168,7 @@ export class ARErrorBoundary extends Component<Props, State> {
       // Retry AR initialization after permission granted
       this.handleRetry();
     } catch (error) {
-      console.error("Camera permission denied:", error);
+      logger.error("Camera permission denied:", error);
     }
   };
 
@@ -188,7 +187,7 @@ export class ARErrorBoundary extends Component<Props, State> {
     // Show AR support warning if AR is not supported
     if (!this.state.isARSupported && !this.state.hasError) {
       return (
-        <div className="min-h-[400px] flex items-center justify-center p-4">
+        <div className="min-h-100 flex items-center justify-center p-4">
           <div className="max-w-lg w-full bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
             <div className="text-center">
               <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -243,7 +242,7 @@ export class ARErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-[400px] flex items-center justify-center p-4">
+        <div className="min-h-100 flex items-center justify-center p-4">
           <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-purple-200 dark:border-purple-800">
             <div className="p-6">
               {/* Error Header */}

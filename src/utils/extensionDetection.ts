@@ -1,5 +1,6 @@
 'use client';
 import { isRecord } from './typeGuards';
+import { logger } from './logger';
 
 export interface WalletExtension {
   name: string;
@@ -103,14 +104,14 @@ export const setupExtensionErrorHandling = () => {
   window.addEventListener('error', (event) => {
     if (isExtensionError(event.error)) {
       event.preventDefault();
-      console.warn('Extension error filtered:', sanitizeExtensionError(event.error));
+      logger.warn('Extension error filtered:', sanitizeExtensionError(event.error));
     }
   });
   
   window.addEventListener('unhandledrejection', (event) => {
     if (isExtensionError(event.reason)) {
       event.preventDefault();
-      console.warn('Extension promise rejection filtered:', sanitizeExtensionError(event.reason));
+      logger.warn('Extension promise rejection filtered:', sanitizeExtensionError(event.reason));
     }
   });
 };

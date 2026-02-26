@@ -3,6 +3,7 @@
 import React from 'react';
 import { useChain } from '@/providers/ChainAwareProvider';
 import { useWalletStore } from '@/store/walletStore';
+import { logger } from '@/utils/logger';
 
 interface ChainAwareProps {
   children: (props: {
@@ -133,7 +134,7 @@ export const TransactionButton: React.FC<TransactionButtonProps> = ({
     try {
       await onTransaction();
     } catch (error) {
-      console.error('Transaction failed:', error);
+      logger.error('Transaction failed:', error);
     } finally {
       setIsPending(false);
     }

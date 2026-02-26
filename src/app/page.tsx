@@ -13,6 +13,7 @@ import {
   ManualErrorSuppressor,
   globalErrorSuppressor,
 } from "@/utils/manualErrorSuppressor";
+import { logger } from "@/utils/logger";
 import { WalletConnector } from "@/components/WalletConnector";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
@@ -39,13 +40,12 @@ function HomeContent() {
 
     // Make manual suppressor available globally
     window.suppressErrors = () => {
-      console.clear();
-      console.log("🔧 Manual error suppression activated");
+      logger.info('Manual error suppression activated');
     };
   }, []);
 
   const handleSampleTransaction = async () => {
-    console.log("Sample transaction executed");
+    logger.info('Sample transaction executed');
   };
 
   return (

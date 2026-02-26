@@ -146,8 +146,14 @@ export const useI18nFormatting = () => {
 };
 
 // Get locale-specific formatting options
+interface LocaleFormatOptions {
+  currency: string;
+  date: Intl.DateTimeFormatOptions;
+  shortDate: Intl.DateTimeFormatOptions;
+}
+
 export const getLocaleFormatOptions = (locale: string) => {
-  const localeFormats: Record<string, any> = {
+  const localeFormats: Record<string, LocaleFormatOptions> = {
     'en': {
       currency: 'USD',
       date: { year: 'numeric', month: 'long', day: 'numeric' },

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import dynamic from "next/dynamic";
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
+import { logger } from '@/utils/logger';
 
 const WalletModal = dynamic(
   () => import("./WalletModal").then((m) => m.WalletModal),
@@ -50,7 +51,7 @@ export const WalletConnector: React.FC = () => {
         setBalance(balanceInEth.toFixed(4));
       }
     } catch (error) {
-      console.error('Failed to fetch balance:', error);
+      logger.error('Failed to fetch balance:', error);
     }
   };
 

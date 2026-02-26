@@ -18,7 +18,7 @@ function getRating(name: string, value: number): "good" | "needs-improvement" | 
   return "needs-improvement";
 }
 
-export function PerformanceMonitor() {
+export function PerformanceMonitor(): React.ReactElement | null {
   const addMetric = usePerformanceStore((state) => state.addMetric);
 
   useReportWebVitals((metric) => {
@@ -78,6 +78,8 @@ export function PerformanceMonitor() {
         resourceObserver.disconnect();
       };
     }
+
+    return;
   }, [addMetric]);
 
   return null;

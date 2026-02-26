@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useWalletStore } from '@/store/walletStore';
 import { toChainId } from '@/config/chains';
+import { logger } from './logger';
 
 export const useWalletPersistence = () => {
   const {
@@ -57,7 +58,7 @@ export const useWalletPersistence = () => {
           setDisconnected();
         }
       } catch (error) {
-        console.error('Failed to check wallet connection:', error);
+        logger.error('Failed to check wallet connection:', error);
         if (isConnected) {
           setDisconnected();
         }
