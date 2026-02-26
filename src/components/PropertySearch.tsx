@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { propertyService } from '@/lib/propertyService';
 import type { AutocompleteResult } from '@/types/property';
+import { logger } from '@/utils/logger';
 
 interface PropertySearchProps {
   value: string;
@@ -57,7 +58,7 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
       const results = await propertyService.getAutocompleteSuggestions(query);
       setSuggestions(results);
     } catch (error) {
-      console.error('Failed to fetch suggestions:', error);
+      logger.error('Failed to fetch suggestions:', error);
       setSuggestions([]);
     } finally {
       setIsLoading(false);

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { logger } from "@/utils/logger";
 import {
   Camera,
   X,
@@ -95,7 +96,7 @@ export const ARPropertyPreview = ({
         videoRef.current.play();
       }
     } catch (error) {
-      console.error("Error accessing camera:", error);
+      logger.error("Error accessing camera:", error);
       setError("Unable to access camera");
     }
   };
@@ -121,9 +122,9 @@ export const ARPropertyPreview = ({
       );
 
       // Handle AR session
-      console.log("AR session started:", session);
+      logger.debug("AR session started:", session);
     } catch (error) {
-      console.error("Error starting AR session:", error);
+      logger.error("Error starting AR session:", error);
       setError("Failed to start AR session");
     }
   };
@@ -178,7 +179,7 @@ export const ARPropertyPreview = ({
               files: [file],
             });
           } catch (error) {
-            console.log("Error sharing:", error);
+            logger.debug("Error sharing:", error);
           }
         }
       });

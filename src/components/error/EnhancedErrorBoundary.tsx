@@ -1,7 +1,9 @@
 'use client';
 
-import React, { Component, ReactNode } from 'react';
-import { AppError, ErrorCategory, ErrorSeverity } from '@/types/errors';
+import React, { Component } from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
+import { ErrorCategory } from '@/types/errors';
+import type { AppError } from '@/types/errors';
 import { Web3ErrorBoundary } from './Web3ErrorBoundary';
 import { NetworkErrorBoundary } from './NetworkErrorBoundary';
 import { ARErrorBoundary } from './ARErrorBoundary';
@@ -44,7 +46,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const appError = ErrorFactory.fromError(error, this.props.category, {
       componentStack: errorInfo.componentStack || undefined,
       context: {
@@ -62,7 +64,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     }
   }
 
-  private getErrorBoundary = (): React.ReactNode => {
+  private getErrorBoundary = (): ReactNode => {
     const { category, ...commonProps } = this.props;
 
     // If category is specified, use the specific boundary

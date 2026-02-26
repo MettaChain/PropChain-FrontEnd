@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { logger } from "@/utils/logger";
 import {
   MapPin,
   TrendingUp,
@@ -46,7 +47,7 @@ export const MobilePropertyCard = ({
           url: window.location.href,
         });
       } catch (error) {
-        console.log("Error sharing:", error);
+        logger.debug("Error sharing:", error);
       }
     } else {
       navigator.clipboard.writeText(window.location.href);

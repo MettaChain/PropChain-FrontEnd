@@ -2,16 +2,23 @@
 
 import React, {
   Component,
+} from "react";
+import type {
   ReactNode,
+  ErrorInfo,
 } from "react";
 import { Wifi, WifiOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
+import type {
   AppError,
   ErrorBoundaryState,
-  ErrorRecoveryAction,
 } from "@/types/errors";
+import {
+  ErrorRecoveryAction,
+  ErrorCategory,
+} from "@/types/errors";
+import { logger } from "@/utils/logger";
 import { ErrorFactory } from "@/utils/errorFactory";
 import { errorReporting } from "@/utils/errorReporting";
 import { useTranslation } from "react-i18next";
@@ -73,7 +80,7 @@ export class NetworkErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    const appError = ErrorFactory.fromError(error, "network" as any);
+    const appError = ErrorFactory.fromError(error, ErrorCategory.NETWORK);
     return {
       hasError: true,
       error: appError,
@@ -81,8 +88,8 @@ export class NetworkErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    const appError = ErrorFactory.fromError(error, "network" as any, {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    const appError = ErrorFactory.fromError(error, ErrorCategory.NETWORK, {
       componentStack: errorInfo.componentStack || undefined,
       context: {
         errorBoundary: "NetworkErrorBoundary",
@@ -177,7 +184,7 @@ export class NetworkErrorBoundary extends Component<Props, State> {
         }, delay);
       }
     } catch (recoveryError) {
-      console.error("Network recovery failed:", recoveryError);
+      logger.error("Network recovery failed:", recoveryError);
       this.setState({ isRecovering: false });
     }
   };
@@ -232,7 +239,7 @@ export class NetworkErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-[400px] flex items-center justify-center p-4">
+        <div className="min-h-96 flex items-center justify-center p-4">
           <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-orange-200 dark:border-orange-800">
             <div className="p-6">
               {/* Connection Status */}

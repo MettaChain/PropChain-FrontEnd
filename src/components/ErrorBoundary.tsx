@@ -1,12 +1,15 @@
 "use client";
 
-import React, { Component, ReactNode } from "react";
+import React, { Component } from "react";
+import type { ReactNode, ErrorInfo } from "react";
 import {
   EnhancedErrorBoundary,
   ErrorBoundaryPresets,
 } from "./error/EnhancedErrorBoundary";
-import { AppError, ErrorCategory } from "@/types/errors";
+import type { AppError } from "@/types/errors";
+import { ErrorCategory } from "@/types/errors";
 import { getWalletErrorMessage } from "@/utils/errorHandling";
+import { logger } from "@/utils/logger";
 import { ErrorFactory } from "@/utils/errorFactory";
 
 interface Props {
@@ -34,12 +37,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    const appError = ErrorFactory.fromError(error);
-    return { hasError: true, error: appError };
+    return { hasError: true, error: ErrorFactory.fromError(error, ErrorCategory.UI) };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    logger.error("ErrorBoundary caught an error:", { error, errorInfo });
   }
 
   render() {

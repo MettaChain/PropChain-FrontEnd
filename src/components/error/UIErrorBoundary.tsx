@@ -1,17 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { Component, ReactNode } from "react";
+import React, { Component } from "react";
+import type { ReactNode, ErrorInfo } from "react";
 import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
+import type {
   AppError,
   ErrorBoundaryState,
+} from "@/types/errors";
+import {
   ErrorRecoveryAction,
+  ErrorCategory,
 } from "@/types/errors";
 import { ErrorFactory } from "@/utils/errorFactory";
 import { errorReporting } from "@/utils/errorReporting";
 import { useTranslation } from "react-i18next";
+import { logger } from "@/utils/logger";
 
 interface Props {
   children: ReactNode;
@@ -46,7 +52,7 @@ export class UIErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    const appError = ErrorFactory.fromError(error, "ui" as any);
+    const appError = ErrorFactory.fromError(error, ErrorCategory.UI);
     return {
       hasError: true,
       error: appError,
@@ -54,8 +60,8 @@ export class UIErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    const appError = ErrorFactory.fromError(error, "ui" as any, {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    const appError = ErrorFactory.fromError(error, ErrorCategory.UI, {
       componentStack: errorInfo.componentStack || undefined,
       context: {
         errorBoundary: "UIErrorBoundary",
@@ -118,7 +124,7 @@ export class UIErrorBoundary extends Component<Props, State> {
         }));
       }
     } catch (recoveryError) {
-      console.error("UI recovery failed:", recoveryError);
+      logger.error("UI recovery failed:", recoveryError);
       this.setState({ isRecovering: false });
     }
   };
@@ -195,7 +201,7 @@ export class UIErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-[400px] flex items-center justify-center p-4">
+        <div className="min-h-screen flex items-center justify-center p-4">
           <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
             <div className="p-6">
               {/* Error Header */}

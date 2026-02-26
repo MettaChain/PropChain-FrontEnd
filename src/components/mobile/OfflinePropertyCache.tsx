@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { logger } from "@/utils/logger";
 import {
   Download,
   Trash2,
@@ -124,7 +125,7 @@ export const OfflinePropertyCache = ({
         setStorageUsed(totalSize);
       }
     } catch (error) {
-      console.error("Error loading cached properties:", error);
+      logger.error("Error loading cached properties:", error);
     }
   };
 
@@ -135,7 +136,7 @@ export const OfflinePropertyCache = ({
         setStorageQuota(estimate.quota || 0);
         setStorageUsed(estimate.usage || 0);
       } catch (error) {
-        console.error("Error checking storage quota:", error);
+        logger.error("Error checking storage quota:", error);
       }
     }
   };
@@ -192,7 +193,7 @@ export const OfflinePropertyCache = ({
 
       setStorageUsed((prev) => prev + estimatedSize);
     } catch (error) {
-      console.error("Error downloading property:", error);
+      logger.error("Error downloading property:", error);
     } finally {
       setIsDownloading((prev) => ({ ...prev, [property.id]: false }));
       setDownloadProgress((prev) => ({ ...prev, [property.id]: 100 }));

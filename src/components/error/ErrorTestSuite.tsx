@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EnhancedErrorBoundary, ErrorBoundaryPresets } from './EnhancedErrorBoundary';
 import { ErrorFactory } from '@/utils/errorFactory';
-import { AppError, ErrorCategory, ErrorSeverity } from '@/types/errors';
+import { AppError, ErrorCategory, ErrorSeverity, ErrorRecoveryAction } from '@/types/errors';
 import { Bug, Wifi, Camera, Wallet, AlertTriangle } from 'lucide-react';
 
 interface TestScenario {
@@ -37,7 +37,7 @@ export function ErrorTestSuite() {
           'Unable to connect to your wallet. Please ensure MetaMask is installed and unlocked.',
           {
             context: { walletType: 'MetaMask', chainId: 1 },
-            recoveryAction: 'reconnect' as any,
+            recoveryAction: ErrorRecoveryAction.RECONNECT,
           }
         );
       },
@@ -55,7 +55,7 @@ export function ErrorTestSuite() {
           'Network request timed out. Please check your connection and try again.',
           {
             context: { timeout: 30000, url: '/api/properties' },
-            recoveryAction: 'retry' as any,
+            recoveryAction: ErrorRecoveryAction.RETRY,
           }
         );
       },
@@ -73,7 +73,7 @@ export function ErrorTestSuite() {
           'Camera permission is required for AR features. Please grant camera access to continue.',
           {
             context: { permission: 'camera', device: 'mobile' },
-            recoveryAction: 'grant_permission' as any,
+            recoveryAction: ErrorRecoveryAction.GRANT_PERMISSION,
             isRecoverable: true,
           }
         );
@@ -92,7 +92,7 @@ export function ErrorTestSuite() {
           'Please enter a valid email address.',
           {
             context: { field: 'email', value: 'invalid-email' },
-            recoveryAction: 'retry' as any,
+            recoveryAction: ErrorRecoveryAction.RETRY,
           }
         );
       },
@@ -110,7 +110,7 @@ export function ErrorTestSuite() {
           'A component failed to load properly. Refreshing the page may help.',
           {
             context: { component: 'PropertyCard', props: { id: 123 } },
-            recoveryAction: 'refresh' as any,
+            recoveryAction: ErrorRecoveryAction.REFRESH,
           }
         );
       },
@@ -128,7 +128,7 @@ export function ErrorTestSuite() {
           'Location access is required for property discovery. Please enable location services.',
           {
             context: { permission: 'geolocation', feature: 'nearby-properties' },
-            recoveryAction: 'grant_permission' as any,
+            recoveryAction: ErrorRecoveryAction.GRANT_PERMISSION,
           }
         );
       },
@@ -146,7 +146,7 @@ export function ErrorTestSuite() {
           'Unable to load property images. Please check your connection and try again.',
           {
             context: { resource: 'image', url: '/api/properties/123/image' },
-            recoveryAction: 'refresh' as any,
+            recoveryAction: ErrorRecoveryAction.REFRESH,
           }
         );
       },
@@ -159,12 +159,12 @@ export function ErrorTestSuite() {
     try {
       scenario.triggerError();
       setTestResults(prev => [...prev, { id: scenario.id, success: false }]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Expected behavior - error should be caught by boundary
-      setTestResults(prev => [...prev, { 
-        id: scenario.id, 
+      setTestResults(prev => [...prev, {
+        id: scenario.id,
         success: true,
-        error: error.message 
+        error: error instanceof Error ? error.message : 'Unknown error'
       }]);
     }
     

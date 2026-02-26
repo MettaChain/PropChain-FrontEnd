@@ -63,5 +63,5 @@ if (typeof window !== 'undefined') {
 
 export const initializeEarlyErrorSuppression = () => {
   // This function can be called to ensure suppression is active
-  console.log('Extension error suppression initialized');
+  // Note: Early error suppression is already active from module load
 };

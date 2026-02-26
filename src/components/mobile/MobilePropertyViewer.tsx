@@ -3,8 +3,9 @@
 import React, { useState, useRef, useEffect } from "react";
 
 import Image from "next/image";
-import { motion, AnimatePresence, type PanInfo } from "framer-motion";
-
+import { motion, AnimatePresence } from "framer-motion";
+import type { PanInfo } from "framer-motion";
+import { logger } from "@/utils/logger";
 import {
   X,
   Heart,
@@ -90,7 +91,7 @@ export const MobilePropertyViewer = ({
           url: window.location.href,
         });
       } catch (error) {
-        console.log("Error sharing:", error);
+        logger.debug("Error sharing:", error);
       }
     } else {
       // Fallback for browsers that don't support Web Share API

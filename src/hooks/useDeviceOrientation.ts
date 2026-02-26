@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { logger } from "@/utils/logger";
 
 type DeviceOrientationEventWithPermission = DeviceOrientationEventConstructor & {
   requestPermission?: () => Promise<"granted" | "denied">;
@@ -105,7 +106,7 @@ export const useDeviceOrientation = (): UseDeviceOrientationReturn => {
       }
     } catch (err) {
       setError("Failed to request device orientation permission");
-      console.error("Device orientation permission error:", err);
+      logger.error("Device orientation permission error:", err);
       return false;
     }
   };

@@ -1,5 +1,7 @@
 'use client';
 
+import { logger } from './logger';
+
 const stringifyArgs = (args: readonly unknown[]): string =>
   args.map((arg) => (typeof arg === 'string' ? arg : String(arg))).join(' ');
 
@@ -45,7 +47,7 @@ export const ManualErrorSuppressor = () => {
       originalConsoleLog.apply(console, args);
     };
     
-    console.log('🔧 Extension error suppression activated');
+    logger.info('Extension error suppression activated');
   };
 
   // Add to window for manual access

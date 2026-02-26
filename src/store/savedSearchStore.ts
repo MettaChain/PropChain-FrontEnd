@@ -39,19 +39,15 @@ export const useSavedSearchStore = create<SavedSearchStore>()(
       lastUpdated: null,
 
       loadSearches: async (userId: string) => {
-        try {
-          await withAsyncAction(
-            async () => {
-              const searches = await propertyService.getSavedSearches(userId);
-              set({ searches, lastUpdated: Date.now() });
-              return searches;
-            },
-            (error) => set({ error }),
-            (loading) => set({ isLoading: loading })
-          );
-        } catch (error: unknown) {
-          set({ error: getErrorMessage(error, 'Failed to load saved searches'), isLoading: false });
-        }
+        await withAsyncAction(
+          async () => {
+            const searches = await propertyService.getSavedSearches(userId);
+            set({ searches, lastUpdated: Date.now() });
+            return searches;
+          },
+          (error) => set({ error }),
+          (loading) => set({ isLoading: loading })
+        );
       },
 
       addSearch: (search: SavedSearch) => {
@@ -62,21 +58,17 @@ export const useSavedSearchStore = create<SavedSearchStore>()(
       },
 
       removeSearch: async (searchId: string, userId: string) => {
-        try {
-          await withAsyncAction(
-            async () => {
-              await propertyService.deleteSavedSearch(userId, searchId);
-              set((state) => ({
-                searches: state.searches.filter(s => s.id !== searchId),
-                lastUpdated: Date.now(),
-              }));
-            },
-            (error) => set({ error }),
-            (loading) => set({ isLoading: loading })
-          );
-        } catch (error: unknown) {
-          set({ error: getErrorMessage(error, 'Failed to remove saved search'), isLoading: false });
-        }
+        await withAsyncAction(
+          async () => {
+            await propertyService.deleteSavedSearch(userId, searchId);
+            set((state) => ({
+              searches: state.searches.filter(s => s.id !== searchId),
+              lastUpdated: Date.now(),
+            }));
+          },
+          (error) => set({ error }),
+          (loading) => set({ isLoading: loading })
+        );
       },
 
       clearSearches: () => {
