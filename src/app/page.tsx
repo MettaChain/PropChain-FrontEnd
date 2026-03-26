@@ -5,14 +5,9 @@ import { useTranslation } from "react-i18next";
 import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
 import { useWalletPersistence } from "@/utils/walletPersistence";
 import { setupExtensionErrorHandling } from "@/utils/extensionDetection";
-import {
-  setupConsoleOverride,
-  suppressExtensionErrors,
-} from "@/utils/consoleOverride";
-import {
-  ManualErrorSuppressor,
-  globalErrorSuppressor,
-} from "@/utils/manualErrorSuppressor";
+import { structuredLogger } from "@/utils/structuredLogger";
+import { errorMonitoring } from "@/utils/errorMonitoringService";
+import { ErrorCategory, ErrorSeverity } from "@/types/errors";
 import { logger } from "@/utils/logger";
 import { WalletConnector } from "@/components/WalletConnector";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -33,14 +28,68 @@ function HomeContent() {
 
   useEffect(() => {
     setupExtensionErrorHandling();
-    setupConsoleOverride();
-    suppressExtensionErrors();
-    ManualErrorSuppressor();
-    globalErrorSuppressor();
+    
+    // Initialize structured logging and error monitoring
+    structuredLogger.info('Application initialized', {
+      component: 'HomeContent',
+      action: 'initialization',
+      metadata: { timestamp: new Date().toISOString() },
+    });
 
-    // Make manual suppressor available globally
-    window.suppressErrors = () => {
-      logger.info('Manual error suppression activated');
+    // Set up global error handling
+    const handleUnhandledError = (event: ErrorEvent) => {
+      const error = new Error(event.message);
+      error.stack = event.error?.stack;
+      
+      const appError = {
+        id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        category: ErrorCategory.UI,
+        severity: ErrorSeverity.HIGH,
+        message: event.message,
+        userMessage: 'An unexpected error occurred',
+        timestamp: new Date(),
+        context: {
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+        },
+        stack: error.stack,
+        isRecoverable: false,
+        shouldReport: true,
+      };
+      
+      errorMonitoring.monitorError(appError);
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const error = new Error(event.reason?.message || 'Unhandled promise rejection');
+      
+      const appError = {
+        id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        category: ErrorCategory.NETWORK,
+        severity: ErrorSeverity.MEDIUM,
+        message: error.message,
+        userMessage: 'A network error occurred',
+        timestamp: new Date(),
+        context: {
+          reason: event.reason,
+        },
+        stack: error.stack,
+        isRecoverable: true,
+        shouldReport: true,
+      };
+      
+      errorMonitoring.monitorError(appError);
+    };
+
+    // Add global error listeners
+    window.addEventListener('error', handleUnhandledError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener('error', handleUnhandledError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
   }, []);
 
