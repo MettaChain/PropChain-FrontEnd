@@ -1,0 +1,145 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  unit-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run type check
+      run: npm run typecheck
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run unit tests with coverage
+      run: npm run test:ci
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+        
+    - name: Archive test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.node-version }}
+        path: |
+          coverage/
+          test-results/
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps ${{ matrix.browser }}
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Run E2E tests
+      run: npx playwright test --project=${{ matrix.browser }}
+      
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: e2e-results-${{ matrix.browser }}
+        path: |
+          test-results/
+          playwright-report/
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Run performance tests
+      run: npm run perf:ci
+      
+    - name: Upload performance results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-results
+        path: |
+          .next/analyze/
+          performance-results/
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Run security audit
+      run: npm audit --audit-level=moderate
+      
+    - name: Run dependency check
+      run: npx audit-ci --moderate
