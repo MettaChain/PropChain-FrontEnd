@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useWalletStore } from '@/store/walletStore';
 import { getWalletErrorMessage } from '@/utils/errorHandling';
 import { toChainId } from '@/config/chains';
 import { getErrorCode } from '@/utils/typeGuards';
+import { useSecurity } from '@/hooks/useSecurity';
+import { AlertTriangle, Shield, X, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -13,26 +15,61 @@ interface WalletModalProps {
 
 export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => {
   const { setConnecting, setConnected, setError } = useWalletStore();
+  const { validateWalletConnection } = useSecurity();
+  const [securityValidation, setSecurityValidation] = useState<{
+    isValid: boolean;
+    warnings: string[];
+    blocks: string[];
+  } | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   type SupportedWalletId = 'metamask' | 'walletconnect' | 'coinbase';
 
   const connectWallet = async (walletType: SupportedWalletId) => {
     try {
+      setIsConnecting(true);
       setConnecting(true);
       setError(null);
+      setSecurityValidation(null);
+
+      let address: string;
+      let chainIdNumber: number;
 
       if (walletType === 'metamask') {
-        await connectMetaMask();
+        const result = await connectMetaMask();
+        address = result.address;
+        chainIdNumber = result.chainId;
       } else if (walletType === 'walletconnect') {
-        await connectWalletConnect();
+        throw new Error('WalletConnect v2 integration needed. Please implement with @walletconnect/web3-provider v2');
       } else if (walletType === 'coinbase') {
-        await connectCoinbase();
+        const result = await connectCoinbase();
+        address = result.address;
+        chainIdNumber = result.chainId;
+      } else {
+        throw new Error('Unsupported wallet type');
       }
+
+      // Security validation before connecting
+      const validation = await validateWalletConnection(address, walletType, chainIdNumber);
+      setSecurityValidation(validation);
+
+      if (!validation.isValid) {
+        // Don't connect if security validation fails
+        throw new Error('Security validation failed');
+      }
+
+      const parsedChainId = toChainId(chainIdNumber);
+      if (!parsedChainId) {
+        throw new Error(`Unsupported network (chain ${chainIdNumber})`);
+      }
+
+      setConnected(address, walletType, parsedChainId);
+      onClose();
     } catch (error: unknown) {
       setError(getWalletErrorMessage(error));
     } finally {
+      setIsConnecting(false);
       setConnecting(false);
-      onClose();
     }
   };
 
@@ -60,13 +97,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       const address = accounts[0];
       const chainIdNumber = parseInt(chainId, 16);
-      const parsedChainId = toChainId(chainIdNumber);
 
-      if (!parsedChainId) {
-        throw new Error(`Unsupported network (chain ${chainIdNumber})`);
-      }
-
-      setConnected(address, 'metamask', parsedChainId);
+      return { address, chainId: chainIdNumber };
     } catch (error: unknown) {
       if (getErrorCode(error) === 4001) {
         throw new Error('User rejected the connection request');
@@ -75,8 +107,70 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     }
   };
 
-  const connectWalletConnect = async () => {
-    throw new Error('WalletConnect v2 integration needed. Please implement with @walletconnect/web3-provider v2');
+  const renderSecurityStatus = () => {
+    if (!securityValidation) return null;
+
+    const { isValid, warnings, blocks } = securityValidation;
+
+    if (!isValid) {
+      return (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <X className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
+                Connection Blocked
+              </h4>
+              <div className="space-y-1">
+                {blocks.map((block, index) => (
+                  <p key={index} className="text-sm text-red-700 dark:text-red-300">
+                    • {block}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (warnings.length > 0) {
+      return (
+        <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                Security Warnings
+              </h4>
+              <div className="space-y-1">
+                {warnings.map((warning, index) => (
+                  <p key={index} className="text-sm text-yellow-700 dark:text-yellow-300">
+                    • {warning}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+        <div className="flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-medium text-green-800 dark:text-green-200">
+              Security Verified
+            </h4>
+            <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+              Connection passed all security checks
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const connectCoinbase = async () => {
@@ -103,13 +197,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
       const address = accounts[0];
       const chainIdNumber = parseInt(chainId, 16);
-      const parsedChainId = toChainId(chainIdNumber);
 
-      if (!parsedChainId) {
-        throw new Error(`Unsupported network (chain ${chainIdNumber})`);
-      }
-
-      setConnected(address, 'coinbase', parsedChainId);
+      return { address, chainId: chainIdNumber };
     } catch (error: unknown) {
       if (getErrorCode(error) === 4001) {
         throw new Error('User rejected the connection request');
@@ -163,19 +252,20 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6">
+          {renderSecurityStatus()}
+          
           <div className="space-y-3">
             {wallets.map((wallet) => (
               <button
                 key={wallet.id}
                 onClick={() => connectWallet(wallet.id)}
-                className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                disabled={isConnecting}
+                className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl`}>
                   {wallet.icon}
@@ -188,22 +278,20 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                     {wallet.description}
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                {isConnecting && (
+                  <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                )}
               </button>
             ))}
           </div>
 
           <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
+              <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
               <div className="text-sm text-blue-800 dark:text-blue-200">
-                <p className="font-medium mb-1">New to Web3?</p>
+                <p className="font-medium mb-1">Enhanced Security Active</p>
                 <p className="text-blue-700 dark:text-blue-300">
-                  Select a wallet provider above to get started with blockchain transactions.
+                  All connections are validated with domain verification, phishing protection, and security checks.
                 </p>
               </div>
             </div>
