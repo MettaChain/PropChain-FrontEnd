@@ -17,6 +17,13 @@ import {
   isSortOption,
 } from '@/types/property';
 import { isRecord } from '@/utils/typeGuards';
+import {
+  getCachedProperty,
+  setCachedProperty,
+  getCachedSearchResult,
+  cacheSearchResult,
+} from './propertyCache';
+import { isNetworkOnline } from './cacheManager';
 
 /**
  * Property Service
@@ -26,12 +33,57 @@ import { isRecord } from '@/utils/typeGuards';
 class PropertyService {
   /**
    * Search properties with filters and sorting
+   * Implements stale-while-revalidate caching strategy
    */
   async searchProperties(
     filters: SearchFilters,
     sortBy: SortOption = 'newest',
     page: number = 1,
-    resultsPerPage: number = 12
+    resultsPerPage: number = 12,
+    options: { useCache?: boolean; strategy?: 'cache-first' | 'network-first' | 'stale-while-revalidate' } = {}
+  ): Promise<PropertySearchResult> {
+    const { useCache = true, strategy = 'stale-while-revalidate' } = options;
+    const cacheKey = { filters, sortBy, page, resultsPerPage };
+
+    // Try to get from cache first if enabled
+    if (useCache) {
+      const cached = await getCachedSearchResult(filters, sortBy);
+      
+      if (cached) {
+        // For cache-first, return immediately
+        if (strategy === 'cache-first') {
+          return cached;
+        }
+        
+        // For stale-while-revalidate, return cache but refresh in background
+        if (strategy === 'stale-while-revalidate' && isNetworkOnline()) {
+          this.fetchAndCacheSearch(filters, sortBy, page, resultsPerPage).catch((error) => {
+            // Silent fail for background refresh
+            console.warn('Background refresh failed:', error);
+          });
+        }
+        
+        return cached;
+      }
+    }
+
+    // If offline and no cache, we can't fetch
+    if (!isNetworkOnline() && strategy !== 'cache-first') {
+      throw new Error('No network connection and no cached data available');
+    }
+
+    // Fetch from network
+    return this.fetchAndCacheSearch(filters, sortBy, page, resultsPerPage);
+  }
+
+  /**
+   * Fetch search results from network and cache them
+   */
+  private async fetchAndCacheSearch(
+    filters: SearchFilters,
+    sortBy: SortOption,
+    page: number,
+    resultsPerPage: number
   ): Promise<PropertySearchResult> {
     // Simulate API delay
     await this.delay(300);
@@ -51,20 +103,81 @@ class PropertyService {
     const endIndex = startIndex + resultsPerPage;
     const paginatedResults = results.slice(startIndex, endIndex);
 
-    return {
+    const result: PropertySearchResult = {
       properties: paginatedResults,
       total,
       page,
       totalPages,
     };
+
+    // Cache the result
+    try {
+      await cacheSearchResult(filters, sortBy, result);
+    } catch (error) {
+      // Non-critical: log but don't fail
+      console.warn('Failed to cache search result:', error);
+    }
+
+    return result;
   }
 
   /**
    * Get a single property by ID
+   * Implements cache-first strategy with fallback to network
    */
-  async getPropertyById(id: string): Promise<Property | null> {
+  async getPropertyById(
+    id: string,
+    options: { useCache?: boolean; strategy?: 'cache-first' | 'network-first' | 'stale-while-revalidate' } = {}
+  ): Promise<Property | null> {
+    const { useCache = true, strategy = 'cache-first' } = options;
+
+    // Try cache first if enabled
+    if (useCache) {
+      const cached = await getCachedProperty(id);
+      
+      if (cached.data) {
+        // Return fresh cache immediately
+        if (!cached.stale || strategy === 'cache-first') {
+          return cached.data;
+        }
+        
+        // For stale-while-revalidate, return stale but refresh in background
+        if (strategy === 'stale-while-revalidate' && isNetworkOnline()) {
+          this.fetchAndCacheProperty(id).catch(() => {
+            // Silent fail for background refresh
+          });
+        }
+        
+        return cached.data;
+      }
+    }
+
+    // If offline and no cache, we can't fetch
+    if (!isNetworkOnline()) {
+      return null;
+    }
+
+    // Fetch from network
+    return this.fetchAndCacheProperty(id);
+  }
+
+  /**
+   * Fetch property from network and cache it
+   */
+  private async fetchAndCacheProperty(id: string): Promise<Property | null> {
     await this.delay(200);
-    return MOCK_PROPERTIES.find(p => p.id === id) || null;
+    const property = MOCK_PROPERTIES.find(p => p.id === id) || null;
+    
+    if (property) {
+      try {
+        await setCachedProperty(property);
+      } catch (error) {
+        // Non-critical: log but don't fail
+        console.warn('Failed to cache property:', error);
+      }
+    }
+    
+    return property;
   }
 
   /**
