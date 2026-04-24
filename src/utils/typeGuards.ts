@@ -1,14 +1,14 @@
 export type UnknownRecord = Record<string, unknown>;
 
 export const isRecord = (value: unknown): value is UnknownRecord => {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 };
 
 export const hasStringField = <K extends string>(
-  value: UnknownRecord,
+  value: unknown,
   key: K,
 ): value is UnknownRecord & Record<K, string> => {
-  return typeof value[key] === "string";
+  return isRecord(value) && typeof value[key] === "string";
 };
 
 export const getErrorMessage = (

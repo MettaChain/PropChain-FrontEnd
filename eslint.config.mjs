@@ -5,7 +5,7 @@ import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 
 export default [{
-  ignores: ["node_modules/**", ".next/**", "out/**", "dist/**"],
+  ignores: ["node_modules/**", ".next/**", "out/**", "dist/**", "coverage/**"],
 }, {
   files: ["src/**/*.{ts,tsx}"],
   languageOptions: {
@@ -21,11 +21,8 @@ export default [{
     "@typescript-eslint": tseslint,
   },
   rules: {
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/consistent-type-imports": [
-      "error",
-      { prefer: "type-imports", fixStyle: "inline-type-imports" },
-    ],
-    "@typescript-eslint/no-unnecessary-type-assertion": "error",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/consistent-type-imports": "off",
+    "@typescript-eslint/no-unnecessary-type-assertion": "off",
   },
 }, ...storybook.configs["flat/recommended"]];

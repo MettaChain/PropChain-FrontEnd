@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
     ],
     formats: ["image/avif", "image/webp"],
   },
+  turbopack: {},
   async headers() {
     return [
       {

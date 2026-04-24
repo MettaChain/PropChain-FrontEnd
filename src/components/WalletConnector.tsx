@@ -47,7 +47,7 @@ export const WalletConnector: React.FC = () => {
           throw new Error('Invalid balance response');
         }
 
-        const balanceInEth = parseInt(balance, 16) / Math.pow(10, 18);
+        const balanceInEth = Number(BigInt(balance) / BigInt(10 ** 18));
         setBalance(balanceInEth.toFixed(4));
       }
     } catch (error) {

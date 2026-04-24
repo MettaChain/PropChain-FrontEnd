@@ -1,4 +1,4 @@
-import { isAddress, verifyMessage, Hex, isHex } from 'viem';
+import { isAddress, isHex, recoverMessageAddress, type Hex } from 'viem';
 
 export interface PhishingDetectionResult {
   isPhishing: boolean;
@@ -88,18 +88,18 @@ export class PhishingProtection {
   /**
    * Validates transaction signatures for malicious intent
    */
-  static validateSignature(
+  static async validateSignature(
     message: string,
     signature: string,
     address: string
-  ): SignatureValidationResult {
+  ): Promise<SignatureValidationResult> {
     const warnings: string[] = [];
     let isMalicious = false;
     let decodedData: any;
 
     try {
       // Recover the signing address
-      const recoveredAddress = verifyMessage({ message, signature });
+      const recoveredAddress = await recoverMessageAddress({ message, signature: signature as Hex });
       
       if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
         return {
