@@ -8,6 +8,7 @@ import type {
   SortOption,
   AutocompleteResult,
   SavedSearch,
+  NotificationFrequency,
 } from '@/types/property';
 import { MOCK_PROPERTIES, getUniqueLocations } from './mockData';
 import {
@@ -15,6 +16,7 @@ import {
   isPropertyStatus,
   isPropertyType,
   isSortOption,
+  isNotificationFrequency,
 } from '@/types/property';
 import { isRecord } from '@/utils/typeGuards';
 import {
@@ -236,7 +238,10 @@ class PropertyService {
     userId: string,
     name: string,
     filters: SearchFilters,
-    sortBy: SortOption
+    sortBy: SortOption,
+    notificationFrequency: NotificationFrequency = 'daily',
+    emailNotifications: boolean = true,
+    inAppNotifications: boolean = true
   ): Promise<SavedSearch> {
     await this.delay(200);
 
@@ -247,6 +252,10 @@ class PropertyService {
       sortBy,
       createdAt: new Date().toISOString(),
       userId,
+      notificationFrequency,
+      emailNotifications,
+      inAppNotifications,
+      isActive: true,
     };
 
     const existing = await this.getSavedSearches(userId);
@@ -477,7 +486,12 @@ const toSavedSearch = (value: unknown): SavedSearch | null => {
     typeof value.createdAt !== 'string' ||
     typeof value.userId !== 'string' ||
     typeof value.sortBy !== 'string' ||
-    !isSortOption(value.sortBy)
+    !isSortOption(value.sortBy) ||
+    typeof value.notificationFrequency !== 'string' ||
+    !isNotificationFrequency(value.notificationFrequency) ||
+    typeof value.emailNotifications !== 'boolean' ||
+    typeof value.inAppNotifications !== 'boolean' ||
+    typeof value.isActive !== 'boolean'
   ) {
     return null;
   }
@@ -489,6 +503,11 @@ const toSavedSearch = (value: unknown): SavedSearch | null => {
     sortBy: value.sortBy,
     createdAt: value.createdAt,
     userId: value.userId,
+    notificationFrequency: value.notificationFrequency,
+    emailNotifications: value.emailNotifications,
+    inAppNotifications: value.inAppNotifications,
+    isActive: value.isActive,
+    lastNotified: typeof value.lastNotified === 'string' ? value.lastNotified : undefined,
   };
 };
 

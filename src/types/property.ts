@@ -111,6 +111,9 @@ export interface SearchState {
   error: string | null;
 }
 
+export const NOTIFICATION_FREQUENCIES = ['instant', 'daily', 'weekly'] as const;
+export type NotificationFrequency = (typeof NOTIFICATION_FREQUENCIES)[number];
+
 export interface SavedSearch {
   id: string;
   name: string;
@@ -118,6 +121,11 @@ export interface SavedSearch {
   sortBy: SortOption;
   createdAt: string;
   userId: string; // Wallet address
+  notificationFrequency: NotificationFrequency;
+  emailNotifications: boolean;
+  inAppNotifications: boolean;
+  isActive: boolean;
+  lastNotified?: string;
 }
 
 export interface PropertySearchResult {
@@ -132,6 +140,24 @@ export interface AutocompleteResult {
   value: string;
   label: string;
   id?: string;
+}
+
+export interface PropertyAlert {
+  id: string;
+  savedSearchId: string;
+  savedSearchName: string;
+  matchingProperties: Property[];
+  newPropertiesCount: number;
+  createdAt: string;
+  isRead: boolean;
+  userId: string;
+}
+
+export interface NotificationSettings {
+  email: string;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  defaultFrequency: NotificationFrequency;
 }
 
 // Default filter values
@@ -175,6 +201,13 @@ export const SORT_LABELS: Record<SortOption, string> = {
   'volume-desc': 'Transaction Volume',
 };
 
+// Notification frequency labels
+export const NOTIFICATION_FREQUENCY_LABELS: Record<NotificationFrequency, string> = {
+  instant: 'Instant',
+  daily: 'Daily',
+  weekly: 'Weekly',
+};
+
 export const isPropertyType = (value: string): value is PropertyType =>
   PROPERTY_TYPES.includes(value as PropertyType);
 
@@ -186,3 +219,6 @@ export const isBlockchainNetwork = (value: string): value is BlockchainNetwork =
 
 export const isSortOption = (value: string): value is SortOption =>
   SORT_OPTIONS.includes(value as SortOption);
+
+export const isNotificationFrequency = (value: string): value is NotificationFrequency =>
+  NOTIFICATION_FREQUENCIES.includes(value as NotificationFrequency);
