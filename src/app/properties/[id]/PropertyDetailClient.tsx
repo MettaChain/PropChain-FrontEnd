@@ -5,6 +5,11 @@ import Link from 'next/link';
 import QRCode from 'qrcode';
 import type { Property } from '@/types/property';
 import { WalletConnector } from '@/components/WalletConnector';
+import { PriceAlertBell } from '@/components/PriceAlertBell';
+import { SetPriceAlertModal } from '@/components/property/SetPriceAlertModal';
+import { useNotificationStore } from '@/store/notificationStore';
+import { toast } from 'sonner';
+import type { PriceAlertType } from '@/types/property';
 
 interface Props {
   property: Property;
@@ -14,6 +19,27 @@ export function PropertyDetailClient({ property }: Props) {
   const qrRef = useRef<HTMLCanvasElement>(null);
   const [qrGenerated, setQrGenerated] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const { priceAlerts, addPriceAlert } = useNotificationStore();
+  const existingAlert = priceAlerts.find((a) => a.propertyId === property.id);
+
+  const handleSetAlert = (alertType: PriceAlertType, targetPrice: number, emailNotification: boolean) => {
+    addPriceAlert({
+      id: `alert-${property.id}-${Date.now()}`,
+      propertyId: property.id,
+      propertyName: property.name,
+      propertyImage: property.images[0],
+      alertType,
+      targetPrice,
+      currentPrice: property.price.perToken,
+      createdAt: new Date().toISOString(),
+      isActive: true,
+      isTriggered: false,
+      userId: '',
+      emailNotification,
+    });
+    toast.success('Price alert set successfully');
+  };
 
   const shareUrl =
     typeof window !== 'undefined'
@@ -49,7 +75,10 @@ export function PropertyDetailClient({ property }: Props) {
               </div>
               <span className="text-xl font-bold text-gray-900 dark:text-white">PropChain</span>
             </Link>
-            <WalletConnector />
+            <div className="flex items-center gap-2">
+              <PriceAlertBell />
+              <WalletConnector />
+            </div>
           </div>
         </div>
       </header>
@@ -183,6 +212,23 @@ export function PropertyDetailClient({ property }: Props) {
                 Purchase Tokens
               </button>
 
+              <button
+                type="button"
+                onClick={() => setIsAlertModalOpen(true)}
+                className="w-full border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center gap-2"
+                aria-label={existingAlert ? 'Manage price alert' : 'Set price alert'}
+              >
+                {existingAlert ? (
+                  <>
+                    <span>🔔</span> Manage Alert
+                  </>
+                ) : (
+                  <>
+                    <span>🔔</span> Set Price Alert
+                  </>
+                )}
+              </button>
+
               <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
                 Token: {property.tokenInfo.tokenSymbol} · {property.blockchain}
               </p>
@@ -250,6 +296,18 @@ export function PropertyDetailClient({ property }: Props) {
           </div>
         </div>
       </main>
+
+      <SetPriceAlertModal
+        property={property}
+        isOpen={isAlertModalOpen}
+        onOpenChange={setIsAlertModalOpen}
+        onSetAlert={handleSetAlert}
+        existingAlert={existingAlert ? {
+          alertType: existingAlert.alertType,
+          targetPrice: existingAlert.targetPrice,
+          isActive: existingAlert.isActive,
+        } : undefined}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PropertyDetail } from '@/components/PropertyDetail';
 import { WalletConnector } from '@/components/WalletConnector';
+import { PriceAlertBell } from '@/components/PriceAlertBell';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -50,12 +51,13 @@ function PropertyDetailContent() {
                 </h1>
               </div>
             </div>
-            <WalletConnector />
+            <div className="flex items-center gap-2">
+              <PriceAlertBell />
+              <WalletConnector />
+            </div>
           </div>
         </div>
       </header>
-
-      {/* Property Detail */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PropertyDetail propertyId={propertyId} />
       </div>
