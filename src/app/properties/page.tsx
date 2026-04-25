@@ -1,40 +1,39 @@
-'use client';
+"use client";
 
-import React, { Suspense } from 'react';
-import { SearchFilterForm } from '@/components/forms/SearchFilterForm';
-import { SearchResults } from '@/components/SearchResults';
-import { WalletConnector } from '@/components/WalletConnector';
-import { NotificationCenter } from '@/components/NotificationCenter';
-import { Button } from '@/components/ui/button';
-import { usePropertySearch } from '@/hooks/usePropertySearchQuery';
-import { useSearchStore } from '@/store/searchStore';
-import { useNotificationStore } from '@/store/notificationStore';
-import { useWalletStore } from '@/store/walletStore';
-import { useNotificationChecker } from '@/hooks/useNotificationChecker';
-import { useFavoritesStore } from '@/store/favoritesStore';
-import Link from 'next/link';
-import { Heart } from 'lucide-react';
+import React, { Suspense } from "react";
+import { SearchFilterForm } from "@/components/forms/SearchFilterForm";
+import { SearchResults } from "@/components/SearchResults";
+import { WalletConnector } from "@/components/WalletConnector";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { Button } from "@/components/ui/button";
+import { usePropertySearch } from "@/hooks/usePropertySearchQuery";
+import { useSearchStore } from "@/store/searchStore";
+import { useNotificationStore } from "@/store/notificationStore";
+import { useWalletStore } from "@/store/walletStore";
+import { useNotificationChecker } from "@/hooks/useNotificationChecker";
+import { useFavoritesStore } from "@/store/favoritesStore";
+import Link from "next/link";
+import { Heart } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import PropertyPageSkeleton from "@/components/PropertyPageSkeleton";
 
 function PropertiesContent() {
-  const { viewMode: storeViewMode, setViewMode: setStoreViewMode } = useSearchStore();
+  const { viewMode: storeViewMode, setViewMode: setStoreViewMode } =
+    useSearchStore();
   const { address } = useWalletStore();
-  const { 
-    alerts, 
-    addAlert, 
-    markAsRead, 
-    markAllAsRead, 
-    clearAlert 
-  } = useNotificationStore();
-  
+  const { alerts, markAsRead, markAllAsRead, clearAlert } =
+    useNotificationStore();
+
   // Set up notification checker
   useNotificationChecker();
-  
+
   // Ensure viewMode is only 'grid' or 'list' for now (map view not implemented yet)
-  const viewMode: 'grid' | 'list' = storeViewMode === 'map' ? 'grid' : storeViewMode;
-  const setViewMode = (mode: 'grid' | 'list') => setStoreViewMode(mode);
-  
+  const viewMode: "grid" | "list" =
+    storeViewMode === "map" ? "grid" : storeViewMode;
+  const setViewMode = (mode: "grid" | "list") => setStoreViewMode(mode);
+
   const { favorites } = useFavoritesStore();
-  
+
   const {
     filters,
     sortBy,
@@ -44,7 +43,7 @@ function PropertiesContent() {
     totalPages,
     isLoading,
     error,
-    setFilters,
+    setFilter,
     clearFilters,
     setSortBy,
     setPage,
@@ -53,7 +52,7 @@ function PropertiesContent() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-3">
@@ -66,7 +65,11 @@ function PropertiesContent() {
             </Link>
             <div className="flex items-center gap-3">
               <Link href="/secondary-market">
-                <Button variant="ghost" size="sm" className="text-blue-600 font-semibold">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-blue-600 font-semibold"
+                >
                   Secondary Market
                 </Button>
               </Link>
@@ -94,12 +97,11 @@ function PropertiesContent() {
                 )}
               </Link>
               <WalletConnector />
-            </div> 
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
@@ -107,7 +109,7 @@ function PropertiesContent() {
           </h1>
           <SearchFilterForm
             filters={filters}
-            onApplyFilters={setFilters}
+            onApplyFilters={setFilter}
             onClearFilters={clearFilters}
           />
         </div>
@@ -136,14 +138,7 @@ function PropertiesContent() {
 
 export default function PropertiesPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading properties...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<PropertyPageSkeleton />}>
       <PropertiesContent />
     </Suspense>
   );

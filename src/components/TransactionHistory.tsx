@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTransactionStore } from '@/store/transactionStore';
 import type { Transaction, TransactionType, TransactionStatus } from '@/store/transactionStore';
-import { TransactionCard } from './TransactionCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,6 +15,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const TRANSACTION_TYPES: TransactionType[] = ['purchase', 'transfer', 'management', 'other'];
 const TRANSACTION_STATUSES: TransactionStatus[] = ['pending', 'processing', 'confirmed', 'failed', 'cancelled'];
@@ -27,7 +28,7 @@ const isTransactionStatus = (value: string): value is TransactionStatus =>
   TRANSACTION_STATUSES.includes(value as TransactionStatus);
 
 export const TransactionHistory: React.FC = () => {
-  const { transactions = [], getTransactionsByType } = useTransactionStore();
+  const { transactions, getTransactionsByType, isLoading } = useTransactionStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');
@@ -70,15 +71,9 @@ export const TransactionHistory: React.FC = () => {
   }, [transactions, typeFilter, statusFilter, searchTerm, dateRange, getTransactionsByType]);
 
   const calculateRealizedGainsLosses = (transaction: Transaction): number => {
-    // For tax reporting purposes, this would typically involve:
-    // 1. Getting the acquisition cost basis
-    // 2. Getting the sale proceeds
-    // 3. Calculating the difference
-    // For now, we'll simulate this with a basic calculation
     if (transaction.type === 'transfer' && transaction.value) {
-      // Simulate a simple gain/loss calculation
       const value = parseFloat(transaction.value);
-      return value * 0.1; // Simulated 10% gain/loss
+      return value * 0.1;
     }
     return 0;
   };
@@ -108,11 +103,11 @@ export const TransactionHistory: React.FC = () => {
       const data = prepareExportData();
       const csvContent = [
         Object.keys(data[0] || {}).join(','),
-        ...data.map(row => 
+        ...data.map(row =>
           Object.values(row).map(value => `"${value}"`).join(',')
         )
       ].join('\n');
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const fileName = `transaction-history-${format(new Date(), 'yyyy-MM-dd')}.csv`;
       saveAs(blob, fileName);
@@ -129,13 +124,12 @@ export const TransactionHistory: React.FC = () => {
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Transaction History');
-      
-      // Auto-size columns
+
       const colWidths = Object.keys(data[0] || {}).map(key => ({
         wch: Math.max(key.length, ...data.map(row => String((row as any)[key]).length))
       }));
       ws['!cols'] = colWidths;
-      
+
       const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const fileName = `transaction-history-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
@@ -147,13 +141,12 @@ export const TransactionHistory: React.FC = () => {
     }
   };
 
-  const handleExport = (format: 'csv' | 'excel') => {
+  const handleExport = (fmt: 'csv' | 'excel') => {
     if (filteredTransactions.length === 0) {
       toast.warning('No transactions to export');
       return;
     }
-    
-    if (format === 'csv') {
+    if (fmt === 'csv') {
       exportToCSV();
     } else {
       exportToExcel();
@@ -161,9 +154,10 @@ export const TransactionHistory: React.FC = () => {
   };
 
   const handleRetry = async (_transaction: Transaction) => {
-    // Implement retry logic
     toast.info('Retry functionality not yet implemented');
   };
+
+  const rowsToRender = isLoading ? [] : filteredTransactions;
 
   return (
     <Card className="w-full">
@@ -171,7 +165,7 @@ export const TransactionHistory: React.FC = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             Transaction History
-            <Badge variant="secondary">{filteredTransactions.length}</Badge>
+            <Badge variant="secondary">{isLoading ? '…' : filteredTransactions.length}</Badge>
           </CardTitle>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowDateRange(!showDateRange)}>
@@ -190,7 +184,6 @@ export const TransactionHistory: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -292,28 +285,64 @@ export const TransactionHistory: React.FC = () => {
           </div>
         )}
 
-        {/* Transaction List */}
-        <div className="space-y-4 max-h-96 overflow-y-auto">
-          {filteredTransactions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
-                ? 'No transactions match your filters'
-                : 'No transactions found'
-              }
-            </div>
-          ) : (
-            filteredTransactions.map((transaction) => (
-              <TransactionCard
-                key={transaction.id}
-                transaction={transaction}
-                onRetry={transaction.status === 'failed' ? handleRetry : undefined}
-              />
-            ))
-          )}
+        {/* Transaction Table */}
+        <div className="max-h-96 overflow-y-auto rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Hash</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell">From</TableHead>
+                <TableHead className="hidden md:table-cell">To</TableHead>
+                <TableHead className="text-right">Time</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : rowsToRender.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                    {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
+                      ? 'No transactions match your filters'
+                      : 'No transactions found'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rowsToRender.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell className="font-mono text-xs">
+                      {tx.hash.slice(0, 10)}…{tx.hash.slice(-8)}
+                    </TableCell>
+                    <TableCell className="capitalize">{tx.type}</TableCell>
+                    <TableCell className="capitalize">{tx.status}</TableCell>
+                    <TableCell className="hidden md:table-cell font-mono text-xs">
+                      {tx.from.slice(0, 10)}…{tx.from.slice(-8)}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell font-mono text-xs">
+                      {tx.to ? `${tx.to.slice(0, 10)}…${tx.to.slice(-8)}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-right text-xs text-muted-foreground">
+                      {new Date(tx.timestamp).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
 
-        {/* Summary */}
-        {filteredTransactions.length > 0 && (
+        {!isLoading && filteredTransactions.length > 0 && (
           <div className="pt-4 border-t">
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Total Transactions: {filteredTransactions.length}</span>

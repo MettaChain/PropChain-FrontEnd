@@ -5,6 +5,9 @@ import dynamic from "next/dynamic";
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
 import { logger } from '@/utils/logger';
+import { useKycStore } from '@/store/kycStore';
+import { KycStatusBadge } from '@/components/kyc/KycStatusBadge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const WalletModal = dynamic(
   () => import("./WalletModal").then((m) => m.WalletModal),
@@ -26,6 +29,7 @@ export const WalletConnector: React.FC = () => {
     setBalance,
   } = useWalletStore();
 
+  const { profile } = useKycStore();
   const { currentChain, chainConfig } = useChain();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -65,10 +69,12 @@ export const WalletConnector: React.FC = () => {
   };
 
   if (isConnected && address) {
+    const balanceRaw = useWalletStore.getState().balance;
+    const balanceText = balanceRaw ? parseFloat(balanceRaw).toFixed(3) : null;
     return (
       <div className="flex items-center gap-3">
         <NetworkSwitcher />
-        
+
         <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
           <div
             className="w-3 h-3 rounded-full"
@@ -78,7 +84,7 @@ export const WalletConnector: React.FC = () => {
             {chainConfig.symbol}
           </span>
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            {parseFloat(useWalletStore.getState().balance || '0').toFixed(3)}
+            {balanceText ?? <Skeleton className="h-4 w-10 inline-block align-middle" />}
           </span>
         </div>
 
@@ -87,6 +93,8 @@ export const WalletConnector: React.FC = () => {
             {formatAddress(address)}
           </span>
         </div>
+
+        <KycStatusBadge status={profile.status} thresholdEth={profile.thresholdEth} compact />
 
         <button
           onClick={handleDisconnect}
@@ -113,8 +121,8 @@ export const WalletConnector: React.FC = () => {
       >
         {isConnecting ? (
           <>
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Connecting...
+            <Skeleton className="w-4 h-4 rounded-full bg-white/40" />
+            <Skeleton className="h-4 w-20 bg-white/40" />
           </>
         ) : (
           'Connect Wallet'
