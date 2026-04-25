@@ -28,6 +28,10 @@ const RecentTransactions = dynamic(
   () => import("@/components/dashboard/RecentTransactions").then((m) => m.RecentTransactions),
   { loading: () => <WidgetSkeleton className="h-[240px]" /> }
 );
+const YieldChart = dynamic(
+  () => import("@/components/dashboard/YieldChart").then((m) => m.YieldChart),
+  { loading: () => <WidgetSkeleton className="h-[340px]" /> }
+);
 const IncomeTracker = dynamic(
   () => import("@/components/dashboard/IncomeTracker").then((m) => m.IncomeTracker),
   { loading: () => <WidgetSkeleton className="h-[340px]" /> }
@@ -108,8 +112,10 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Income Tracker */}
-            <IncomeTracker />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <YieldChart />
+              <IncomeTracker />
+            </div>
 
              {/* Risk Analysis */}
           <RiskAnalysis />

@@ -164,13 +164,20 @@ export const PortfolioOverview = () => {
         changeType: monthlyIncome > 0 ? "negative" : "neutral",
         icon: <DollarSign className="w-5 h-5" />,
       },
+      {
+        title: "Unrealized Gains",
+        value: formatCurrency(portfolio.totalValueUSD * 0.15), // Mock calculation
+        change: "+5.2% total",
+        changeType: "positive",
+        icon: <TrendingUp className="w-5 h-5" />,
+      },
     ];
   };
 
   const metrics = calculateMetrics();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
       {metrics.map((metric, index) => (
         <MetricCard key={metric.title} {...metric} delay={index * 0.1} />
       ))}
