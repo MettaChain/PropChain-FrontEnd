@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { PropertyCard } from './PropertyCard';
-import type { Property, ViewMode, SortOption } from '@/types/property';
+import { SaveSearchButton } from './SaveSearchButton';
+import type { Property, ViewMode, SortOption, SearchFilters } from '@/types/property';
 import { SORT_LABELS } from '@/types/property';
 
 interface SearchResultsProps {
@@ -14,6 +15,7 @@ interface SearchResultsProps {
   sortBy: SortOption;
   page: number;
   totalPages: number;
+  filters: SearchFilters;
   onViewModeChange: (mode: 'grid' | 'list') => void;
   onSortChange: (sort: SortOption) => void;
   onPageChange: (page: number) => void;
@@ -28,6 +30,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   sortBy,
   page,
   totalPages,
+  filters,
   onViewModeChange,
   onSortChange,
   onPageChange,
@@ -62,6 +65,13 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* Save Search Button */}
+          <SaveSearchButton 
+            filters={filters} 
+            sortBy={sortBy}
+            className="flex-shrink-0"
+          />
+
           {/* Sort Dropdown */}
           <select
             value={sortBy}

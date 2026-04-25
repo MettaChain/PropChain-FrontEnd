@@ -5,12 +5,29 @@ import { PropertySearch } from '@/components/PropertySearch';
 import { FilterSidebar } from '@/components/FilterSidebar';
 import { SearchResults } from '@/components/SearchResults';
 import { WalletConnector } from '@/components/WalletConnector';
+import { NotificationCenter } from '@/components/NotificationCenter';
+import { Button } from '@/components/ui/button';
 import { usePropertySearch } from '@/hooks/usePropertySearch';
 import { useSearchStore } from '@/store/searchStore';
+import { useNotificationStore } from '@/store/notificationStore';
+import { useWalletStore } from '@/store/walletStore';
+import { useNotificationChecker } from '@/hooks/useNotificationChecker';
+import { notificationService } from '@/lib/notificationService';
 import Link from 'next/link';
 
 function PropertiesContent() {
   const { viewMode: storeViewMode, setViewMode: setStoreViewMode } = useSearchStore();
+  const { address } = useWalletStore();
+  const { 
+    alerts, 
+    addAlert, 
+    markAsRead, 
+    markAllAsRead, 
+    clearAlert 
+  } = useNotificationStore();
+  
+  // Set up notification checker
+  useNotificationChecker();
   
   // Ensure viewMode is only 'grid' or 'list' for now (map view not implemented yet)
   const viewMode: 'grid' | 'list' = storeViewMode === 'map' ? 'grid' : storeViewMode;
@@ -45,7 +62,20 @@ function PropertiesContent() {
                 PropChain
               </h1>
             </Link>
-            <WalletConnector />
+            <div className="flex items-center gap-3">
+              <Link href="/dashboard/saved-searches">
+                <Button variant="ghost" size="sm">
+                  Saved Searches
+                </Button>
+              </Link>
+              <NotificationCenter
+                alerts={alerts}
+                onMarkAsRead={markAsRead}
+                onMarkAllAsRead={markAllAsRead}
+                onClearAlert={clearAlert}
+              />
+              <WalletConnector />
+            </div>
           </div>
         </div>
       </header>
@@ -82,6 +112,7 @@ function PropertiesContent() {
             sortBy={sortBy}
             page={page}
             totalPages={totalPages}
+            filters={filters}
             onViewModeChange={setViewMode}
             onSortChange={setSortBy}
             onPageChange={setPage}
