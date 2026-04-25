@@ -1,26 +1,28 @@
 'use client';
 
 import React from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { PropertyDetail } from '@/components/PropertyDetail';
 import { WalletConnector } from '@/components/WalletConnector';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { PropertyDetailsSkeleton } from '@/components/PropertyDetailsSkeleton'; // Adjust path if your skeleton is located elsewhere
+import { Skeleton } from '@/components/ui/skeleton';
 
 function PropertyDetailContent() {
   const params = useParams();
-  const router = useRouter();
   const propertyId = params.id as string;
 
   if (!propertyId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Property not found
           </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            The property you're looking for doesn't exist or may have been removed.
+          </p>
           <Link href="/properties">
             <Button>Back to Properties</Button>
           </Link>
@@ -56,7 +58,7 @@ function PropertyDetailContent() {
         </div>
       </header>
 
-      {/* Property Detail */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PropertyDetail propertyId={propertyId} />
       </div>
@@ -64,9 +66,61 @@ function PropertyDetailContent() {
   );
 }
 
+// Good enough structured skeleton for the property detail page
+function PropertyDetailSkeleton() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Hero / Image Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Skeleton className="aspect-video w-full rounded-2xl" />
+        
+        <div className="space-y-6">
+          <div>
+            <Skeleton className="h-10 w-3/4 mb-3" />
+            <Skeleton className="h-8 w-1/3" />
+          </div>
+
+          <div className="flex gap-4">
+            <Skeleton className="h-12 flex-1" />
+            <Skeleton className="h-12 flex-1" />
+          </div>
+
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-4/5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Details Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="space-y-4 p-6 border rounded-2xl">
+            <Skeleton className="h-5 w-1/2" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        ))}
+      </div>
+
+      {/* Description / More Info */}
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-48" />
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-11/12" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PropertyDetailPage() {
   return (
-    <React.Suspense fallback={<PropertyDetailsSkeleton />}>
+    <React.Suspense fallback={<PropertyDetailSkeleton />}>
       <PropertyDetailContent />
     </React.Suspense>
   );

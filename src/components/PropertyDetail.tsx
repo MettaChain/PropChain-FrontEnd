@@ -11,6 +11,7 @@ import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from 
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
 import { toast } from 'sonner';
+import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -366,6 +367,13 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
             </CardContent>
           </Card>
         </div>
+      </div>
+      {/* Investment Calculator */}
+      <div id="calculator" className="mt-12">
+        <MortgageCalculator 
+          propertyPrice={property.price.perToken} 
+          defaultYield={property.metrics.roi} 
+        />
       </div>
     </div>
   );
