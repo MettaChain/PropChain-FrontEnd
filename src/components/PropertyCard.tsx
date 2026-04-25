@@ -8,6 +8,8 @@ import type { Property } from '@/types/property';
 import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
+import { useDeveloperStore } from '@/store/developerStore';
+import { DeveloperBadge } from '@/components/DeveloperBadge';
 
 interface PropertyCardProps {
   property: Property;
@@ -20,6 +22,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 }) => {
   const isListView = viewMode === 'list';
   const { addItem } = useCartStore();
+  const { getDeveloperByProperty } = useDeveloperStore();
+  const developer = getDeveloperByProperty(property.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -84,6 +88,16 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {PROPERTY_TYPE_LABELS[property.propertyType]}
           </span>
+          {developer && (
+            <DeveloperBadge
+              status={developer.verificationStatus}
+              developerName={developer.name}
+              compact
+            />
+          )}
+          {!developer && (
+            <DeveloperBadge status="unverified" compact />
+          )}
         </div>
 
         {/* Title */}
