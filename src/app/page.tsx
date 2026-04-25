@@ -161,6 +161,26 @@ function HomeContent() {
             </div>
           )}
         </ChainAware>
+
+        {/* Feature links — Issues #75, #76, #85, #89 */}
+        <nav aria-label="Platform features" className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            { href: '/properties', emoji: '🏠', label: 'Browse Properties', desc: 'Shareable property pages with QR codes' },
+            { href: '/governance', emoji: '🗳️', label: 'Governance', desc: 'Vote on property management decisions' },
+            { href: '/tax-report', emoji: '📄', label: 'Tax Reports', desc: 'Form 8949 & Schedule D PDF export' },
+            { href: '/accessibility', emoji: '♿', label: 'Accessibility', desc: 'WCAG 2.1 AA compliance demo' },
+          ].map(({ href, emoji, label, desc }) => (
+            <a
+              key={href}
+              href={href}
+              className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <div className="text-2xl mb-2" aria-hidden="true">{emoji}</div>
+              <p className="font-semibold text-gray-900 dark:text-white text-sm">{label}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{desc}</p>
+            </a>
+          ))}
+        </nav>
       </main>
     </div>
   );
