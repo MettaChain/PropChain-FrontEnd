@@ -136,7 +136,6 @@ export const SavedSearchCard: React.FC<SavedSearchCardProps> = ({ search, onDele
               <Switch
                 checked={search.emailNotifications}
                 disabled
-                size="sm"
               />
               <span className="text-xs text-gray-500">
                 {search.emailNotifications ? 'On' : 'Off'}

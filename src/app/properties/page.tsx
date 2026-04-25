@@ -7,7 +7,7 @@ import { SearchResults } from '@/components/SearchResults';
 import { WalletConnector } from '@/components/WalletConnector';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { Button } from '@/components/ui/button';
-import { usePropertySearch } from '@/hooks/usePropertySearch';
+import { usePropertySearch } from '@/hooks/usePropertySearchQuery';
 import { useSearchStore } from '@/store/searchStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useWalletStore } from '@/store/walletStore';
