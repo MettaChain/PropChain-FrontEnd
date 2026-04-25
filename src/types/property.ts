@@ -72,6 +72,26 @@ export interface Property {
   verified?: boolean;
 }
 
+export interface SecondaryMarketListing {
+  id: string;
+  propertyId: string;
+  propertyName: string;
+  sellerAddress: string;
+  tokenCount: number;
+  pricePerToken: number;
+  currency: string;
+  listedDate: string;
+  blockchain: BlockchainNetwork;
+  propertyImage?: string;
+}
+
+export interface OrderBookEntry {
+  price: number;
+  amount: number;
+  total: number;
+  type: 'buy' | 'sell';
+}
+
 export interface SearchFilters {
   query: string;
   priceRange: [number, number];

@@ -63,6 +63,11 @@ function PropertiesContent() {
               </h1>
             </Link>
             <div className="flex items-center gap-3">
+              <Link href="/secondary-market">
+                <Button variant="ghost" size="sm" className="text-blue-600 font-semibold">
+                  Secondary Market
+                </Button>
+              </Link>
               <Link href="/dashboard/saved-searches">
                 <Button variant="ghost" size="sm">
                   Saved Searches

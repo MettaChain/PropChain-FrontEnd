@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Home, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Home, RefreshCw, AlertTriangle, Search } from 'lucide-react';
 import type { AppError } from '@/types/errors';
 import { ErrorCategory } from '@/types/errors';
 import { getWalletErrorMessage } from '@/utils/errorHandling';
@@ -84,10 +85,10 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
             Error in: <span className="font-medium">{routeName}</span>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               onClick={onRetry}
-              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
               Try Again
@@ -95,11 +96,18 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
             
             <button
               onClick={onNavigateHome}
-              className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <Home className="w-4 h-4" />
               Go Home
             </button>
+
+            <Link href="/properties" className="sm:col-span-2">
+              <button className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-transparent hover:border-gray-300 dark:hover:border-gray-600 text-gray-600 dark:text-gray-400 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                <Search className="w-4 h-4" />
+                Browse All Properties
+              </button>
+            </Link>
           </div>
 
           {process.env.NODE_ENV === 'development' && error.context && (
