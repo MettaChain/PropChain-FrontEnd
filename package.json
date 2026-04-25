@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "perf:budgets": "node scripts/check-performance-budgets.mjs",
-    "perf:ci": "npm run build:analyze && npm run perf:budgets",
+    "perf:ci": "npm run build && npm run perf:budgets",
     "validate:env": "node scripts/validate-env.js",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
