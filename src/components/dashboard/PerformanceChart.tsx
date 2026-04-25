@@ -12,24 +12,30 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const generateData = (months: number) => {
+const generateData = (days: number) => {
   const data = [];
   let value = 2000000;
   const now = new Date();
 
-  for (let i = months; i >= 0; i--) {
+  // Use more points for shorter timeframes
+  const steps = days <= 30 ? days : 12;
+
+  for (let i = steps; i >= 0; i--) {
     const date = new Date(now);
-    date.setMonth(date.getMonth() - i);
+    if (days <= 30) {
+      date.setDate(date.getDate() - i);
+    } else {
+      date.setMonth(date.getMonth() - Math.floor(i * (days / 365) * 12 / steps));
+    }
 
     // Add some realistic variation
     const change = (Math.random() - 0.4) * 100000;
     value = Math.max(value + change, 1500000);
 
     data.push({
-      date: date.toLocaleDateString("en-US", {
-        month: "short",
-        year: "2-digit",
-      }),
+      date: days <= 30 
+        ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        : date.toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
       value: Math.round(value),
       projected: Math.round(value * 1.08),
     });
@@ -38,11 +44,11 @@ const generateData = (months: number) => {
 };
 
 const timeframes = [
-  { label: "1M", months: 1 },
-  { label: "3M", months: 3 },
-  { label: "6M", months: 6 },
-  { label: "1Y", months: 12 },
-  { label: "All", months: 24 },
+  { label: "7D", days: 7 },
+  { label: "30D", days: 30 },
+  { label: "90D", days: 90 },
+  { label: "1Y", days: 365 },
+  { label: "All", days: 730 },
 ];
 
 interface PerformanceTooltipPayloadItem {
@@ -78,7 +84,7 @@ const CustomTooltip = ({ active, payload, label }: PerformanceTooltipProps) => {
 export const PerformanceChart = () => {
   const [activeTimeframe, setActiveTimeframe] = useState("1Y");
   const selectedTimeframe = timeframes.find((t) => t.label === activeTimeframe);
-  const data = generateData(selectedTimeframe?.months || 12);
+  const data = generateData(selectedTimeframe?.days || 365);
 
   return (
     <motion.div
