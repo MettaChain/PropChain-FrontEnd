@@ -31,7 +31,7 @@ test.describe('Property Purchase Flow', () => {
     await page.goto('/');
     
     // Connect wallet first
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
     await page.getByText('MetaMask').click();
     

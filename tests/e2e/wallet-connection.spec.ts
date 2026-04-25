@@ -6,13 +6,13 @@ test.describe('Wallet Connection Flow', () => {
   });
 
   test('should display connect wallet button when not connected', async ({ page }) => {
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await expect(connectButton).toBeVisible();
     await expect(connectButton).toBeEnabled();
   });
 
   test('should open wallet modal when connect button is clicked', async ({ page }) => {
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
 
     // Check that wallet modal opens
@@ -26,7 +26,7 @@ test.describe('Wallet Connection Flow', () => {
   });
 
   test('should close wallet modal when close button is clicked', async ({ page }) => {
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
 
     const modal = page.locator('[role="dialog"]');
@@ -66,7 +66,7 @@ test.describe('Wallet Connection Flow', () => {
       };
     });
 
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
 
     // Click MetaMask option
@@ -100,7 +100,7 @@ test.describe('Wallet Connection Flow', () => {
       };
     });
 
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
 
     await page.getByText('MetaMask').click();
@@ -131,7 +131,7 @@ test.describe('Wallet Connection Flow', () => {
       };
     });
 
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
 
     await page.getByText('MetaMask').click();
@@ -165,7 +165,7 @@ test.describe('Wallet Connection Flow', () => {
     });
 
     // Connect first
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
     await page.getByText('MetaMask').click();
 
@@ -177,7 +177,7 @@ test.describe('Wallet Connection Flow', () => {
     await disconnectButton.click();
 
     // Should show connect button again
-    await expect(page.getByRole('button', { name: 'Connect Wallet' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Connect Wallet' }).first()).toBeVisible();
     await expect(page.getByText('0x1234...7890')).not.toBeVisible();
   });
 
@@ -208,7 +208,7 @@ test.describe('Wallet Connection Flow', () => {
     });
 
     // Connect wallet
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
     await page.getByText('MetaMask').click();
 
@@ -238,7 +238,7 @@ test.describe('Wallet Connection Flow', () => {
       delete (window as any).ethereum;
     });
 
-    const connectButton = page.getByRole('button', { name: 'Connect Wallet' });
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
 
     // Should still show wallet options
