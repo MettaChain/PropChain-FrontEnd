@@ -3,9 +3,11 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { ShoppingCart, Plus } from 'lucide-react';
 import type { Property } from '@/types/property';
 import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
+import { useCartStore } from '@/store/cartStore';
 
 interface PropertyCardProps {
   property: Property;
@@ -17,6 +19,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   viewMode = 'grid' 
 }) => {
   const isListView = viewMode === 'list';
+  const { addItem } = useCartStore();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(property, 1);
+  };
 
   return (
     <Link
@@ -152,9 +161,20 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               {formatPrice(property.price.total)}
             </p>
           </div>
-          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-            View Details
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleAddToCart}
+              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center gap-1"
+              disabled={property.tokenInfo.available === 0}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <Plus className="w-3 h-3" />
+              <span className="hidden sm:inline">Add to Cart</span>
+            </button>
+            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+              View Details
+            </button>
+          </div>
         </div>
       </div>
     </Link>
