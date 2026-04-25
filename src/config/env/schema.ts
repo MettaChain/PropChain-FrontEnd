@@ -63,6 +63,20 @@ const envSchema = z.object({
     .string()
     .transform((val) => val === "true")
     .default(false),
+
+  // Rate Limiting Configuration
+  RATE_LIMIT_WINDOW_MS: z
+    .string()
+    .transform((val: string) => parseInt(val, 10))
+    .default(900000), // 15 minutes
+  RATE_LIMIT_MAX_REQUESTS: z
+    .string()
+    .transform((val: string) => parseInt(val, 10))
+    .default(100), // 100 requests per window
+  RATE_LIMIT_MAX_REQUESTS_PER_WALLET: z
+    .string()
+    .transform((val: string) => parseInt(val, 10))
+    .default(50), // 50 requests per wallet per window
 });
 
 /**
@@ -173,6 +187,9 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
   NEXT_PUBLIC_SENTRY_DSN: "Sentry DSN for error tracking",
   NEXT_PUBLIC_USE_MOCK_DATA: "Use mock data mode (bypasses real API calls)",
   NEXT_PUBLIC_SKIP_AUTH: "Skip authentication for development",
+  RATE_LIMIT_WINDOW_MS: "Rate limit time window in milliseconds",
+  RATE_LIMIT_MAX_REQUESTS: "Maximum requests per IP per window",
+  RATE_LIMIT_MAX_REQUESTS_PER_WALLET: "Maximum requests per wallet per window",
 };
 
 /**
