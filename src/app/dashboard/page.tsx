@@ -6,6 +6,7 @@ import { WalletConnector } from "@/components/WalletConnector";
 import { TransactionQueue } from "@/components/TransactionQueue";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CertificatesPanel } from "@/components/dashboard/CertificatesPanel";
 
 const PortfolioOverview = dynamic(
   () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
@@ -123,15 +124,19 @@ const Index = () => {
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Transaction Management</h3>
               <Tabs defaultValue="queue" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
                   <TabsTrigger value="history">Transaction History</TabsTrigger>
+                  <TabsTrigger value="certificates">My Certificates</TabsTrigger>
                 </TabsList>
                 <TabsContent value="queue">
                   <TransactionQueue />
                 </TabsContent>
                 <TabsContent value="history">
                   <TransactionHistory />
+                </TabsContent>
+                <TabsContent value="certificates">
+                  <CertificatesPanel />
                 </TabsContent>
               </Tabs>
             </div>
