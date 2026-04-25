@@ -6,7 +6,8 @@ import { PropertyDetail } from '@/components/PropertyDetail';
 import { WalletConnector } from '@/components/WalletConnector';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { PropertyDetailsSkeleton } from '@/components/PropertyDetailsSkeleton'; // Adjust path if your skeleton is located elsewhere
 
 function PropertyDetailContent() {
   const params = useParams();
@@ -65,16 +66,7 @@ function PropertyDetailContent() {
 
 export default function PropertyDetailPage() {
   return (
-    <React.Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">Loading property details...</p>
-          </div>
-        </div>
-      }
-    >
+    <React.Suspense fallback={<PropertyDetailsSkeleton />}>
       <PropertyDetailContent />
     </React.Suspense>
   );
