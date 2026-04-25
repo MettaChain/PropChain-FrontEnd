@@ -1,19 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { usePropertyQuery } from '@/hooks/usePropertySearchQuery';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShoppingCart, Plus, Share2, Heart, ExternalLink } from 'lucide-react';
+import { ShoppingCart, Plus, Share2, Heart, ExternalLink, Bell } from 'lucide-react';
 import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
-import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
+import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS, type PriceAlertType } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
+import { useNotificationStore } from '@/store/notificationStore';
 import { toast } from 'sonner';
 import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { SetPriceAlertModal } from './property/SetPriceAlertModal';
 
 interface PropertyDetailProps {
   propertyId: string;
@@ -21,12 +23,37 @@ interface PropertyDetailProps {
 
 export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) => {
   const { addItem } = useCartStore();
+  const { priceAlerts, addPriceAlert } = useNotificationStore();
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   
   const { 
     data: property, 
     isLoading, 
     error 
   } = usePropertyQuery(propertyId);
+
+  // Check if there's an existing alert for this property
+  const existingAlert = priceAlerts.find(alert => alert.propertyId === propertyId);
+
+  const handleSetAlert = (alertType: PriceAlertType, targetPrice: number, emailNotification: boolean) => {
+    if (property) {
+      addPriceAlert({
+        id: `alert-${property.id}-${Date.now()}`,
+        propertyId: property.id,
+        propertyName: property.name,
+        propertyImage: property.images[0],
+        alertType,
+        targetPrice,
+        currentPrice: property.price.perToken,
+        createdAt: new Date().toISOString(),
+        isActive: true,
+        isTriggered: false,
+        userId: '', // Will be set from wallet
+        emailNotification,
+      });
+      toast.success('Price alert set successfully!');
+    }
+  };
 
   const handleAddToCart = () => {
     if (property) {
@@ -247,6 +274,16 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
                 Save
               </Button>
             </div>
+
+            {/* Set Price Alert Button */}
+            <Button 
+              variant={existingAlert ? "secondary" : "default"}
+              className="w-full"
+              onClick={() => setIsAlertModalOpen(true)}
+            >
+              <Bell className="w-4 h-4 mr-2" />
+              {existingAlert ? 'Manage Alert' : 'Set Price Alert'}
+            </Button>
           </div>
         </div>
       </div>
@@ -368,6 +405,7 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
           </Card>
         </div>
       </div>
+<<<<<<< HEAD
       {/* Investment Calculator */}
       <div id="calculator" className="mt-12">
         <MortgageCalculator 
@@ -375,6 +413,23 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
           defaultYield={property.metrics.roi} 
         />
       </div>
+=======
+
+      {/* Set Price Alert Modal */}
+      {property && (
+        <SetPriceAlertModal
+          property={property}
+          isOpen={isAlertModalOpen}
+          onOpenChange={setIsAlertModalOpen}
+          onSetAlert={handleSetAlert}
+          existingAlert={existingAlert ? {
+            alertType: existingAlert.alertType,
+            targetPrice: existingAlert.targetPrice,
+            isActive: existingAlert.isActive,
+          } : undefined}
+        />
+      )}
+>>>>>>> de02cf9 (feat: implement price alerts and notification system)
     </div>
   );
 };

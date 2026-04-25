@@ -180,6 +180,49 @@ export interface NotificationSettings {
   defaultFrequency: NotificationFrequency;
 }
 
+// Price Alert Types
+export const PRICE_ALERT_TYPES = ['above', 'below', 'change'] as const;
+export type PriceAlertType = (typeof PRICE_ALERT_TYPES)[number];
+
+export interface PriceAlert {
+  id: string;
+  propertyId: string;
+  propertyName: string;
+  propertyImage?: string;
+  alertType: PriceAlertType;
+  targetPrice: number;
+  currentPrice: number;
+  changePercentage?: number; // For 'change' type alerts
+  createdAt: string;
+  isActive: boolean;
+  isTriggered: boolean;
+  triggeredAt?: string;
+  userId: string;
+  emailNotification: boolean;
+}
+
+export interface PriceAlertNotification {
+  id: string;
+  alertId: string;
+  propertyId: string;
+  propertyName: string;
+  propertyImage?: string;
+  alertType: PriceAlertType;
+  targetPrice: number;
+  triggeredPrice: number;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+  userId: string;
+}
+
+// Price alert labels
+export const PRICE_ALERT_TYPE_LABELS: Record<PriceAlertType, string> = {
+  above: 'Price Above',
+  below: 'Price Below',
+  change: 'Price Change',
+};
+
 // Default filter values
 export const DEFAULT_FILTERS: SearchFilters = {
   query: '',
