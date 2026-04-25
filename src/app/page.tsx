@@ -144,8 +144,8 @@ function HomeContent() {
           {({ chainName, chainSymbol, chainColor, address, balance }) => (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <WalletInfo 
-                address={address} 
-                balance={balance} 
+                address={address || undefined} 
+                balance={balance || undefined} 
                 chainName={chainName} 
                 chainSymbol={chainSymbol} 
               />

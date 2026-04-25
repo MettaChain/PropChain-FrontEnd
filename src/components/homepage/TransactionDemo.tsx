@@ -21,7 +21,7 @@ export function TransactionDemo({ chainName, onTransaction }: TransactionDemoPro
         <p className="text-sm text-gray-600 dark:text-gray-300">
           {t("transactions.executeTransaction")} {chainName}
         </p>
-        <TransactionButton onTransaction={onTransaction}>
+        <TransactionButton onTransaction={onTransaction || (() => Promise.resolve())}>
           {t("transactions.executeTransaction")}
         </TransactionButton>
         <GasEstimation gasLimit="50000" />
