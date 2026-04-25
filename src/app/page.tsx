@@ -20,6 +20,11 @@ import {
 } from "@/components/ChainAwareProps";
 import { LoadingState } from "@/components/LoadingSpinner";
 import { ErrorBoundaryPresets } from "@/components/error/EnhancedErrorBoundary";
+import { HeroSection } from "@/components/homepage/HeroSection";
+import { WalletInfo } from "@/components/homepage/WalletInfo";
+import { ChainFeatures } from "@/components/homepage/ChainFeatures";
+import { TransactionDemo } from "@/components/homepage/TransactionDemo";
+import { MultiChainFeatures } from "@/components/homepage/MultiChainFeatures";
 
 function HomeContent() {
   const { t } = useTranslation("common");
@@ -119,33 +124,7 @@ function HomeContent() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            {t("app.tagline")}
-          </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            {t("app.subtitle")}
-          </p>
-          <a
-            href="/properties"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            {t("navigation.browseProperties")}
-          </a>
-        </div>
+        <HeroSection />
 
         <ChainAware
           fallback={
@@ -164,156 +143,21 @@ function HomeContent() {
         >
           {({ chainName, chainSymbol, chainColor, address, balance }) => (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  {t("wallet.walletInformation")}
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {t("wallet.address")}
-                    </p>
-                    <p className="font-mono text-sm text-gray-900 dark:text-white">
-                      {address?.slice(0, 8)}...{address?.slice(-6)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {t("wallet.balance")}
-                    </p>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {balance} {chainSymbol}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {t("wallet.network")}
-                    </p>
-                    <MultiChainBadge>
-                      <span className="text-sm">{chainName}</span>
-                    </MultiChainBadge>
-                  </div>
-                </div>
-              </div>
+              <WalletInfo 
+                address={address} 
+                balance={balance} 
+                chainName={chainName} 
+                chainSymbol={chainSymbol} 
+              />
 
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  {t("chains.chainSpecificFeatures")}
-                </h3>
-                <ChainSpecific chainId={1}>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-600" />
-                      <span className="text-sm font-medium">
-                        {t("chains.ethereum")}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t("chains.ethereumDescription")}
-                    </p>
-                    <GasEstimation />
-                  </div>
-                </ChainSpecific>
+              <ChainFeatures />
 
-                <ChainSpecific chainId={137}>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-purple-600" />
-                      <span className="text-sm font-medium">
-                        {t("chains.polygon")}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t("chains.polygonDescription")}
-                    </p>
-                    <GasEstimation />
-                  </div>
-                </ChainSpecific>
+              <TransactionDemo 
+                chainName={chainName} 
+                onTransaction={handleSampleTransaction} 
+              />
 
-                <ChainSpecific chainId={56}>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                      <span className="text-sm font-medium">
-                        {t("chains.bsc")}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t("chains.bscDescription")}
-                    </p>
-                    <GasEstimation />
-                  </div>
-                </ChainSpecific>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  {t("transactions.sampleTransaction")}
-                </h3>
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {t("transactions.executeTransaction")} {chainName}
-                  </p>
-                  <TransactionButton onTransaction={handleSampleTransaction}>
-                    {t("transactions.executeTransaction")}
-                  </TransactionButton>
-                  <GasEstimation gasLimit="50000" />
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 md:col-span-2 lg:col-span-3">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  {t("chains.multiChainFeatures")}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="text-2xl mb-2">🔗</div>
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-1">
-                      {t("wallet.multiWalletSupport")}
-                    </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      MetaMask, WalletConnect, Coinbase
-                    </p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="text-2xl mb-2">⚡</div>
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-1">
-                      {t("wallet.networkSwitching")}
-                    </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t("chains.seamlessChainSwitching")}
-                    </p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="text-2xl mb-2">💾</div>
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-1">
-                      {t("wallet.persistentState")}
-                    </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t("chains.connectionSurvivesRefreshes")}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Mobile Properties Link */}
-                <div className="border-t border-gray-200 dark:border-gray-600 pt-6">
-                  <div className="text-center">
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                      📱 {t("mobile.mobileFirstPropertyExperience")}
-                    </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                      {t("mobile.touchOptimizedPropertyViewing")}
-                    </p>
-                    <a
-                      href="/mobile-properties"
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                    >
-                      <span className="mr-2">📱</span>
-                      {t("navigation.viewMobileProperties")}
-                    </a>
-                  </div>
-                </div>
-              </div>
+              <MultiChainFeatures />
             </div>
           )}
         </ChainAware>
