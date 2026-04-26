@@ -7,7 +7,9 @@ import { SearchResults } from '@/components/SearchResults';
 import { WalletConnector } from '@/components/WalletConnector';
 import { usePropertySearch } from '@/hooks/usePropertySearch';
 import { useSearchStore } from '@/store/searchStore';
+import { useFavoritesStore } from '@/store/favoritesStore';
 import Link from 'next/link';
+import { Heart } from 'lucide-react';
 
 function PropertiesContent() {
   const { viewMode: storeViewMode, setViewMode: setStoreViewMode } = useSearchStore();
@@ -15,6 +17,8 @@ function PropertiesContent() {
   // Ensure viewMode is only 'grid' or 'list' for now (map view not implemented yet)
   const viewMode: 'grid' | 'list' = storeViewMode === 'map' ? 'grid' : storeViewMode;
   const setViewMode = (mode: 'grid' | 'list') => setStoreViewMode(mode);
+  
+  const { favorites } = useFavoritesStore();
   
   const {
     filters,
@@ -45,7 +49,21 @@ function PropertiesContent() {
                 PropChain
               </h1>
             </Link>
-            <WalletConnector />
+            <div className="flex items-center gap-4">
+              <Link
+                href="/watchlist"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors relative"
+              >
+                <Heart className="w-5 h-5" />
+                <span className="hidden sm:inline">Watchlist</span>
+                {favorites.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {favorites.length}
+                  </span>
+                )}
+              </Link>
+              <WalletConnector />
+            </div>
           </div>
         </div>
       </header>
