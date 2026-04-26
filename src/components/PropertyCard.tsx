@@ -3,11 +3,12 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Plus } from 'lucide-react';
+import { ShoppingCart, Plus, CheckSquare, Square } from 'lucide-react';
 import type { Property } from '@/types/property';
 import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
+import { useComparisonStore } from '@/store/comparisonStore';
 
 interface PropertyCardProps {
   property: Property;
@@ -20,11 +21,20 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 }) => {
   const isListView = viewMode === 'list';
   const { addItem } = useCartStore();
+  const { isPropertySelected, toggleProperty } = useComparisonStore();
+
+  const isSelectedForComparison = isPropertySelected(property.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addItem(property, 1);
+  };
+
+  const handleComparisonToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleProperty(property);
   };
 
   return (
@@ -58,10 +68,21 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* ROI Badge */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
           <div className="bg-blue-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-lg">
             {formatROI(property.metrics.roi)} ROI
           </div>
+          <button
+            onClick={handleComparisonToggle}
+            className="bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 p-2 rounded-lg shadow-lg transition-colors"
+            title={isSelectedForComparison ? "Remove from comparison" : "Add to comparison"}
+          >
+            {isSelectedForComparison ? (
+              <CheckSquare className="w-4 h-4" />
+            ) : (
+              <Square className="w-4 h-4" />
+            )}
+          </button>
         </div>
 
         {/* Blockchain Badge */}

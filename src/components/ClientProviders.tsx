@@ -23,6 +23,10 @@ const Toaster = dynamic(
   () => import("@/components/ui/sonner").then((m) => m.Toaster),
   { ssr: false }
 );
+const FloatingComparisonBar = dynamic(
+  () => import("@/components/FloatingComparisonBar").then((m) => m.FloatingComparisonBar),
+  { ssr: false }
+);
 
 export function ClientProviders({ children }: ClientProvidersProps) {
   return (
@@ -33,6 +37,7 @@ export function ClientProviders({ children }: ClientProvidersProps) {
         <TransactionMonitor />
         <NotificationSystem />
         <Toaster />
+        <FloatingComparisonBar />
       </ChainAwareProvider>
     </WagmiProvider>
   );
