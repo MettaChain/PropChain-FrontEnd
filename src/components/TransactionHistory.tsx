@@ -27,7 +27,7 @@ const isTransactionStatus = (value: string): value is TransactionStatus =>
   TRANSACTION_STATUSES.includes(value as TransactionStatus);
 
 export const TransactionHistory: React.FC = () => {
-  const { transactions, getTransactionsByType } = useTransactionStore();
+  const { transactions = [], getTransactionsByType } = useTransactionStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');

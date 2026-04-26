@@ -17,10 +17,21 @@ interface TransactionParams {
   requiredConfirmations?: number;
 }
 
+/**
+ * Hook for managing blockchain transactions within the application.
+ * Provides functions to queue, retry, and cancel transactions.
+ * 
+ * @returns An object containing transaction management functions.
+ */
 export const useTransaction = () => {
   const { addTransaction } = useTransactionStore();
   const { address, chainId } = useWalletStore();
 
+  /**
+   * Adds a new transaction to the monitoring queue.
+   * 
+   * @param params - The transaction details including hash, type, and optional metadata.
+   */
   const addTransactionToQueue = useCallback(
     (params: TransactionParams) => {
       if (!address) {
@@ -42,6 +53,11 @@ export const useTransaction = () => {
     [addTransaction, address, chainId]
   );
 
+  /**
+   * Attempts to retry a failed transaction.
+   * 
+   * @param _originalTransaction - The original transaction object to retry.
+   */
   const retryTransaction = useCallback(
     (_originalTransaction: Transaction) => {
       // This would need to be implemented based on the specific transaction type
@@ -51,6 +67,11 @@ export const useTransaction = () => {
     []
   );
 
+  /**
+   * Attempts to cancel a pending transaction.
+   * 
+   * @param transactionId - The ID of the transaction to cancel.
+   */
   const cancelTransaction = useCallback(
     (transactionId: string) => {
       // This would need blockchain-specific cancellation logic
