@@ -8,6 +8,7 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertificatesPanel } from "@/components/dashboard/CertificatesPanel";
 import { StakingPanel } from "@/components/dashboard/StakingPanel";
+import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
 
 const PortfolioOverview = dynamic(
   () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
@@ -130,6 +131,7 @@ const Index = () => {
             {/* Transaction Management */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Transaction Management</h3>
+              <TransactionSecuritySettings />
               <Tabs defaultValue="queue" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
