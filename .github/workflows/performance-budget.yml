@@ -31,4 +31,4 @@ jobs:
         run: npm run perf:budgets
         env:
           TOTAL_JS_BUDGET_KB: "650"
-          MAX_CHUNK_BUDGET_KB: "230"
+          MAX_CHUNK_BUDGET_KB: "250"

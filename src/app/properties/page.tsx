@@ -5,7 +5,9 @@ import { PropertySearch } from '@/components/PropertySearch';
 import { FilterSidebar } from '@/components/FilterSidebar';
 import { SearchResults } from '@/components/SearchResults';
 import { WalletConnector } from '@/components/WalletConnector';
-import { usePropertySearch } from '@/hooks/usePropertySearch';
+import { NotificationCenter } from '@/components/NotificationCenter';
+import { Button } from '@/components/ui/button';
+import { usePropertySearch } from '@/hooks/usePropertySearchQuery';
 import { useSearchStore } from '@/store/searchStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 import Link from 'next/link';
@@ -13,6 +15,17 @@ import { Heart } from 'lucide-react';
 
 function PropertiesContent() {
   const { viewMode: storeViewMode, setViewMode: setStoreViewMode } = useSearchStore();
+  const { address } = useWalletStore();
+  const { 
+    alerts, 
+    addAlert, 
+    markAsRead, 
+    markAllAsRead, 
+    clearAlert 
+  } = useNotificationStore();
+  
+  // Set up notification checker
+  useNotificationChecker();
   
   // Ensure viewMode is only 'grid' or 'list' for now (map view not implemented yet)
   const viewMode: 'grid' | 'list' = storeViewMode === 'map' ? 'grid' : storeViewMode;
@@ -100,6 +113,7 @@ function PropertiesContent() {
             sortBy={sortBy}
             page={page}
             totalPages={totalPages}
+            filters={filters}
             onViewModeChange={setViewMode}
             onSortChange={setSortBy}
             onPageChange={setPage}
