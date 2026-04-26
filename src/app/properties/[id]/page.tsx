@@ -58,7 +58,7 @@ function PropertyDetailContent() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Property Detail Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PropertyDetail propertyId={propertyId} />
       </div>
@@ -66,48 +66,48 @@ function PropertyDetailContent() {
   );
 }
 
-// Good enough structured skeleton for the property detail page
+/* Structured Skeleton that matches property detail layout */
 function PropertyDetailSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Hero / Image Section */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+      {/* Image + Basic Info Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Skeleton className="aspect-video w-full rounded-2xl" />
-        
-        <div className="space-y-6">
+        <Skeleton className="aspect-[16/9] w-full rounded-2xl" />
+
+        <div className="space-y-6 pt-2">
           <div>
-            <Skeleton className="h-10 w-3/4 mb-3" />
-            <Skeleton className="h-8 w-1/3" />
+            <Skeleton className="h-9 w-4/5 mb-4" />
+            <Skeleton className="h-7 w-1/2" />
           </div>
 
-          <div className="flex gap-4">
-            <Skeleton className="h-12 flex-1" />
-            <Skeleton className="h-12 flex-1" />
+          <div className="flex gap-3">
+            <Skeleton className="h-12 flex-1 rounded-xl" />
+            <Skeleton className="h-12 flex-1 rounded-xl" />
           </div>
 
           <div className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-4 w-4/5" />
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-11/12" />
+            <Skeleton className="h-5 w-4/5" />
           </div>
         </div>
       </div>
 
-      {/* Details Section */}
+      {/* Mortgage / Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="space-y-4 p-6 border rounded-2xl">
-            <Skeleton className="h-5 w-1/2" />
-            <Skeleton className="h-9 w-full" />
-            <Skeleton className="h-4 w-3/4" />
+          <div key={i} className="p-6 border rounded-2xl space-y-4">
+            <Skeleton className="h-6 w-2/3" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-4 w-4/5" />
           </div>
         ))}
       </div>
 
-      {/* Description / More Info */}
+      {/* Description Area */}
       <div className="space-y-4">
-        <Skeleton className="h-6 w-48" />
-        <div className="space-y-3">
+        <Skeleton className="h-7 w-48" />
+        <div className="prose space-y-3">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-11/12" />
