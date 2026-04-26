@@ -1,8 +1,7 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import { PropertySearch } from '@/components/PropertySearch';
-import { FilterSidebar } from '@/components/FilterSidebar';
+import { SearchFilterForm } from '@/components/forms/SearchFilterForm';
 import { SearchResults } from '@/components/SearchResults';
 import { WalletConnector } from '@/components/WalletConnector';
 import { usePropertySearch } from '@/hooks/usePropertySearch';
@@ -25,7 +24,7 @@ function PropertiesContent() {
     totalPages,
     isLoading,
     error,
-    setFilter,
+    setFilters,
     clearFilters,
     setSortBy,
     setPage,
@@ -52,26 +51,18 @@ function PropertiesContent() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Bar */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
             Discover Tokenized Real Estate
           </h1>
-          <PropertySearch
-            value={filters.query}
-            onChange={(value) => setFilter('query', value)}
+          <SearchFilterForm
+            filters={filters}
+            onApplyFilters={setFilters}
+            onClearFilters={clearFilters}
           />
         </div>
 
-        {/* Layout: Sidebar + Results */}
-        <div className="flex gap-8">
-          {/* Filter Sidebar */}
-          <FilterSidebar
-            filters={filters}
-            onFilterChange={setFilter}
-            onClearFilters={clearFilters}
-          />
-
+        <div className="mt-10">
           {/* Search Results */}
           <SearchResults
             properties={properties}
