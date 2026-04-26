@@ -8,6 +8,7 @@ import type { Property } from '@/types/property';
 import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
+import { useCompareStore } from '@/store/compareStore';
 
 interface PropertyCardProps {
   property: Property;
@@ -20,11 +21,24 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 }) => {
   const isListView = viewMode === 'list';
   const { addItem } = useCartStore();
+  const selectedIds = useCompareStore((state) => state.selectedIds);
+  const toggleProperty = useCompareStore((state) => state.toggleProperty);
+
+  const isCompared = selectedIds.includes(property.id);
+  const compareLimitReached = selectedIds.length >= 3 && !isCompared;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addItem(property, 1);
+  };
+
+  const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!compareLimitReached) {
+      toggleProperty(property.id);
+    }
   };
 
   return (
@@ -73,6 +87,29 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             <div className="w-2 h-2 rounded-full bg-white" />
             {BLOCKCHAIN_LABELS[property.blockchain]}
           </div>
+        </div>
+
+        {/* Compare Toggle */}
+        <div className="absolute top-3 right-3">
+          <label
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${
+              isCompared
+                ? 'border-blue-600 bg-blue-600/10 text-blue-700'
+                : 'border-white bg-white/90 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-200'
+            } ${compareLimitReached ? 'cursor-not-allowed opacity-70' : ''}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={isCompared}
+              onChange={handleCompareToggle}
+              onClick={(e) => e.stopPropagation()}
+              disabled={compareLimitReached}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              aria-label={isCompared ? 'Remove from comparison' : 'Add to comparison'}
+            />
+            <span>{isCompared ? 'Selected' : 'Compare'}</span>
+          </label>
         </div>
       </div>
 

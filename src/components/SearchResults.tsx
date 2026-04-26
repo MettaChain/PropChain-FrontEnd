@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { PropertyCard } from './PropertyCard';
+import { ComparisonBar } from './ComparisonBar';
 import type { Property, ViewMode, SortOption } from '@/types/property';
 import { SORT_LABELS } from '@/types/property';
 
@@ -47,7 +48,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   }
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 relative">
+      <ComparisonBar />
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
