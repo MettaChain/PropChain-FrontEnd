@@ -12,7 +12,8 @@ import {
   ArrowLeft,
   Upload,
   Info,
-  ShieldCheck
+  ShieldCheck,
+  Monitor
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -348,6 +349,32 @@ export default function TokenizationWizardPage() {
                 {currentStep === STEPS.length ? 'Submit for Review' : 'Next Step'}
                 {currentStep !== STEPS.length && <ArrowRight className="h-4 w-4" />}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Widget Embed Card */}
+        <Card className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                <Monitor className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
+                  Embed Investment Calculator on Your Website
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Drive more investors to your properties with our embeddable calculator widget. 
+                  Customize branding, show projected returns, and add a direct "Invest on PropChain" CTA button.
+                </p>
+                <Link href="/widget/embed-code">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    Get Embed Code
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
