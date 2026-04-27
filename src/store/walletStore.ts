@@ -19,16 +19,77 @@ export interface WalletState {
 }
 
 export interface WalletActions {
+  /**
+   * Sets the wallet as connected with the specified address and type.
+   * 
+   * @param address - The public wallet address.
+   * @param walletType - The type of wallet used (e.g., 'metamask').
+   * @param chainId - Optional chain ID the wallet is connected to.
+   */
   setConnected: (address: string, walletType: WalletType, chainId?: ChainId) => void;
+
+  /**
+   * Disconnects the wallet and resets all connection state.
+   */
   setDisconnected: () => void;
+
+  /**
+   * Updates the current chain ID.
+   * 
+   * @param chainId - The new chain ID.
+   */
   setChainId: (chainId: ChainId) => void;
+
+  /**
+   * Sets the connecting state.
+   * 
+   * @param isConnecting - True if a connection is in progress.
+   */
   setConnecting: (isConnecting: boolean) => void;
+
+  /**
+   * Sets the network switching state.
+   * 
+   * @param isSwitching - True if a network switch is in progress.
+   */
   setSwitchingNetwork: (isSwitching: boolean) => void;
+
+  /**
+   * Sets the global wallet error message.
+   * 
+   * @param error - The error message or null to clear.
+   */
   setError: (error: string | null) => void;
+
+  /**
+   * Updates the wallet balance.
+   * 
+   * @param balance - The new balance string.
+   */
   setBalance: (balance: string | null) => void;
+
+  /**
+   * Clears the current wallet error.
+   */
   clearError: () => void;
+
+  /**
+   * Sets the general loading state.
+   * 
+   * @param loading - True if loading.
+   */
   setLoading: (loading: boolean) => void;
+
+  /**
+   * Updates the last synchronization timestamp.
+   * 
+   * @param timestamp - The numeric timestamp.
+   */
   setLastUpdated: (timestamp: number) => void;
+
+  /**
+   * Resets the entire wallet store to initial state.
+   */
   reset: () => void;
 }
 

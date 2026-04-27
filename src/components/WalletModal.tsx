@@ -14,7 +14,7 @@ interface WalletModalProps {
 }
 
 export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => {
-  const { setConnecting, setConnected, setError } = useWalletStore();
+  const { setConnecting, setConnected, setError, error } = useWalletStore();
   const { validateWalletConnection } = useSecurity();
   const [securityValidation, setSecurityValidation] = useState<{
     isValid: boolean;
@@ -258,6 +258,29 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
 
         <div className="p-6">
           {renderSecurityStatus()}
+          
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    {error}
+                  </p>
+                  {error.includes('MetaMask is not installed') && (
+                    <a
+                      href="https://metamask.io/download/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                    >
+                      Click here to install MetaMask
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           
           <div className="space-y-3">
             {wallets.map((wallet) => (

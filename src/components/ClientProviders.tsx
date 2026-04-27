@@ -3,7 +3,10 @@
 import { WagmiProvider } from "wagmi";
 import { config } from "@/config/wagmi";
 import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import "@/lib/i18n";
 import dynamic from "next/dynamic";
 
@@ -39,6 +42,17 @@ export function ClientProviders({ children }: ClientProvidersProps) {
         <Toaster />
         <FloatingComparisonBar />
       </ChainAwareProvider>
+      <QueryProvider>
+        <ChainAwareProvider>
+          <PerformanceMonitor />
+          <ServiceWorkerRegistration />
+          <OfflineIndicator />
+          {children}
+          <TransactionMonitor />
+          <NotificationSystem />
+          <Toaster />
+        </ChainAwareProvider>
+      </QueryProvider>
     </WagmiProvider>
   );
 }

@@ -6,6 +6,9 @@ import { WalletConnector } from "@/components/WalletConnector";
 import { TransactionQueue } from "@/components/TransactionQueue";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CertificatesPanel } from "@/components/dashboard/CertificatesPanel";
+import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
+import { StakingPanel } from "@/components/dashboard/StakingPanel";
 
 const PortfolioOverview = dynamic(
   () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
@@ -26,6 +29,10 @@ const PropertiesList = dynamic(
 const RecentTransactions = dynamic(
   () => import("@/components/dashboard/RecentTransactions").then((m) => m.RecentTransactions),
   { loading: () => <WidgetSkeleton className="h-[240px]" /> }
+);
+const YieldChart = dynamic(
+  () => import("@/components/dashboard/YieldChart").then((m) => m.YieldChart),
+  { loading: () => <WidgetSkeleton className="h-[340px]" /> }
 );
 const IncomeTracker = dynamic(
   () => import("@/components/dashboard/IncomeTracker").then((m) => m.IncomeTracker),
@@ -107,8 +114,10 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Income Tracker */}
-            <IncomeTracker />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <YieldChart />
+              <IncomeTracker />
+            </div>
 
              {/* Risk Analysis */}
           <RiskAnalysis />
@@ -122,16 +131,25 @@ const Index = () => {
             {/* Transaction Management */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Transaction Management</h3>
+              <TransactionSecuritySettings />
               <Tabs defaultValue="queue" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
                   <TabsTrigger value="history">Transaction History</TabsTrigger>
+                  <TabsTrigger value="staking">Staking & Yield</TabsTrigger>
+                  <TabsTrigger value="certificates">My Certificates</TabsTrigger>
                 </TabsList>
                 <TabsContent value="queue">
                   <TransactionQueue />
                 </TabsContent>
                 <TabsContent value="history">
                   <TransactionHistory />
+                </TabsContent>
+                <TabsContent value="certificates">
+                  <CertificatesPanel />
+                </TabsContent>
+                <TabsContent value="staking">
+                  <StakingPanel />
                 </TabsContent>
               </Tabs>
             </div>

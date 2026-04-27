@@ -82,7 +82,14 @@ jobs:
       
     - name: Run E2E tests
       run: npx playwright test --project=${{ matrix.browser }}
-      
+
+    - name: Generate accessibility report
+      if: always()
+      run: |
+        if [ -f test-results/results.json ]; then
+          node scripts/generate-a11y-report.js || echo "Accessibility report generation skipped"
+        fi
+
     - name: Upload E2E test results
       uses: actions/upload-artifact@v4
       if: always()
@@ -91,6 +98,7 @@ jobs:
         path: |
           test-results/
           playwright-report/
+          a11y-report/
 
   performance-tests:
     name: Performance Tests

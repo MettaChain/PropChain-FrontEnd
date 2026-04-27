@@ -1,8 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
+import { ComparisonBar } from './ComparisonBar';
 import type { Property, ViewMode, SortOption } from '@/types/property';
+import { SaveSearchButton } from './SaveSearchButton';
+import type { Property, ViewMode, SortOption, SearchFilters } from '@/types/property';
 import { SORT_LABELS } from '@/types/property';
 
 interface SearchResultsProps {
@@ -14,6 +18,7 @@ interface SearchResultsProps {
   sortBy: SortOption;
   page: number;
   totalPages: number;
+  filters: SearchFilters;
   onViewModeChange: (mode: 'grid' | 'list') => void;
   onSortChange: (sort: SortOption) => void;
   onPageChange: (page: number) => void;
@@ -28,10 +33,41 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   sortBy,
   page,
   totalPages,
+  filters,
   onViewModeChange,
   onSortChange,
   onPageChange,
 }) => {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  // Determine columns based on viewMode and responsive breakpoints
+  const [columns, setColumns] = React.useState(1);
+  
+  useEffect(() => {
+    const updateColumns = () => {
+      if (viewMode === 'list') {
+        setColumns(1);
+        return;
+      }
+      if (window.innerWidth >= 1024) setColumns(3);
+      else if (window.innerWidth >= 768) setColumns(2);
+      else setColumns(1);
+    };
+
+    updateColumns();
+    window.addEventListener('resize', updateColumns);
+    return () => window.removeEventListener('resize', updateColumns);
+  }, [viewMode]);
+
+  const rowCount = Math.ceil(properties.length / columns);
+
+  const rowVirtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => viewMode === 'grid' ? 450 : 200, // Estimated height of cards
+    overscan: 5,
+  });
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -47,9 +83,11 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   }
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 relative">
+      <ComparisonBar />
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 shrink-0">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             {isLoading ? 'Searching...' : `${totalResults} Properties Found`}
@@ -62,6 +100,13 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* Save Search Button */}
+          <SaveSearchButton 
+            filters={filters} 
+            sortBy={sortBy}
+            className="flex-shrink-0"
+          />
+
           {/* Sort Dropdown */}
           <select
             value={sortBy}
@@ -107,103 +152,129 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden animate-pulse">
-              <div className="w-full h-56 bg-gray-300 dark:bg-gray-700" />
-              <div className="p-5 space-y-3">
-                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4" />
-                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2" />
-                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full" />
+      {/* Main Results Container (Virtualized) */}
+      <div 
+        ref={parentRef}
+        className="flex-1 overflow-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
+        style={{ minHeight: '500px' }}
+      >
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden animate-pulse">
+                <div className="w-full h-56 bg-gray-300 dark:bg-gray-700" />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4" />
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2" />
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full" />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!isLoading && properties.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20">
-          <svg className="w-24 h-24 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No properties found
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
-            Try adjusting your filters or search criteria to find more properties.
-          </p>
-        </div>
-      )}
-
-      {/* Results Grid/List */}
-      {!isLoading && properties.length > 0 && (
-        <>
-          <div
-            className={
-              viewMode === 'grid'
-                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-                : 'flex flex-col gap-4'
-            }
-          >
-            {properties.map((property) => (
-              <PropertyCard key={property.id} property={property} viewMode={viewMode} />
             ))}
           </div>
+        ) : properties.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <svg className="w-24 h-24 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              No properties found
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
+              Try adjusting your filters or search criteria to find more properties.
+            </p>
+          </div>
+        ) : (
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const start = virtualRow.index * columns;
+              const rowProperties = properties.slice(start, start + columns);
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-12">
-              <button
-                onClick={() => onPageChange(page - 1)}
-                disabled={page === 1}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Previous
-              </button>
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  className={cn(
+                    "grid gap-6",
+                    viewMode === 'grid' 
+                      ? columns === 3 ? "grid-cols-3" : columns === 2 ? "grid-cols-2" : "grid-cols-1"
+                      : "grid-cols-1"
+                  )}
+                >
+                  {rowProperties.map((property) => (
+                    <div key={property.id} className="pb-6">
+                      <PropertyCard property={property} viewMode={viewMode} />
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-              <div className="flex items-center gap-1">
-                {[...Array(Math.min(totalPages, 5))].map((_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (page <= 3) {
-                    pageNum = i + 1;
-                  } else if (page >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = page - 2 + i;
-                  }
+      {/* Pagination (Sticky Footer) */}
+      {!isLoading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 py-6 border-t mt-auto bg-white dark:bg-gray-900 z-10">
+          <button
+            onClick={() => onPageChange(page - 1)}
+            disabled={page === 1}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            Previous
+          </button>
 
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => onPageChange(pageNum)}
-                      className={`w-10 h-10 rounded-lg transition-colors ${
-                        page === pageNum
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
+          <div className="flex items-center gap-1">
+            {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+              let pageNum;
+              if (totalPages <= 5) pageNum = i + 1;
+              else if (page <= 3) pageNum = i + 1;
+              else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
+              else pageNum = page - 2 + i;
 
-              <button
-                onClick={() => onPageChange(page + 1)}
-                disabled={page === totalPages}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
+              return (
+                <button
+                  key={i}
+                  onClick={() => onPageChange(pageNum)}
+                  className={`w-10 h-10 rounded-lg transition-colors ${
+                    page === pageNum
+                      ? 'bg-blue-600 text-white'
+                      : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => onPageChange(page + 1)}
+            disabled={page === totalPages}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            Next
+          </button>
+        </div>
       )}
     </div>
   );
 };
+
+// Helper for class names
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(' ');
+}
+
