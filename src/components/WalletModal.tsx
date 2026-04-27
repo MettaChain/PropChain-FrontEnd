@@ -7,6 +7,8 @@ import { toChainId } from '@/config/chains';
 import { getErrorCode } from '@/utils/typeGuards';
 import { useSecurity } from '@/hooks/useSecurity';
 import { AlertTriangle, Shield, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ModalTransition } from './PageTransition';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -207,12 +209,35 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     }
   };
 
+  // Detect installed wallets
+  const detectInstalledWallets = () => {
+    const installed = new Set<SupportedWalletId>();
+    
+    // Detect MetaMask
+    if (typeof window !== 'undefined' && window.ethereum?.isMetaMask) {
+      installed.add('metamask');
+    }
+    
+    // Detect Coinbase Wallet
+    if (typeof window !== 'undefined' && window.ethereum?.isCoinbaseWallet) {
+      installed.add('coinbase');
+    }
+    
+    // WalletConnect is typically available through deep links or QR codes
+    // We'll consider it "available" but not "installed" in the traditional sense
+    
+    return installed;
+  };
+
+  const installedWallets = detectInstalledWallets();
+
   const wallets: Array<{
     id: SupportedWalletId;
     name: string;
     description: string;
     icon: string;
     color: string;
+    installUrl?: string;
   }> = [
     {
       id: 'metamask',
@@ -220,41 +245,60 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       description: 'Connect to your MetaMask wallet',
       icon: '🦊',
       color: 'bg-orange-500',
-    },
-    {
-      id: 'walletconnect',
-      name: 'WalletConnect',
-      description: 'Connect with WalletConnect',
-      icon: '🔗',
-      color: 'bg-blue-500',
+      installUrl: 'https://metamask.io/download/',
     },
     {
       id: 'coinbase',
       name: 'Coinbase Wallet',
       description: 'Connect to your Coinbase wallet',
-      icon: '🔵',
+      icon: '�',
       color: 'bg-blue-600',
+      installUrl: 'https://www.coinbase.com/wallet',
     },
-  ];
+    {
+      id: 'walletconnect',
+      name: 'WalletConnect',
+      description: 'Connect with WalletConnect',
+      icon: '�',
+      color: 'bg-blue-500',
+    },
+  ].sort((a, b) => {
+    // Sort installed wallets to top
+    const aInstalled = installedWallets.has(a.id);
+    const bInstalled = installedWallets.has(b.id);
+    
+    if (aInstalled && !bInstalled) return -1;
+    if (!aInstalled && bInstalled) return 1;
+    return 0;
+  });
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      
-      <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Connect Wallet
-          </h2>
-          <button
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <motion.div 
+            className="fixed inset-0 bg-black bg-opacity-50" 
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          
+          <ModalTransition className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Connect Wallet
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
         <div className="p-6">
           {renderSecurityStatus()}
@@ -283,29 +327,69 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
           )}
           
           <div className="space-y-3">
-            {wallets.map((wallet) => (
-              <button
-                key={wallet.id}
-                onClick={() => connectWallet(wallet.id)}
-                disabled={isConnecting}
-                className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl`}>
-                  {wallet.icon}
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-gray-900 dark:text-white">
-                    {wallet.name}
+            {wallets.map((wallet) => {
+              const isInstalled = installedWallets.has(wallet.id);
+              
+              if (isInstalled) {
+                return (
+                  <button
+                    key={wallet.id}
+                    onClick={() => connectWallet(wallet.id)}
+                    disabled={isConnecting}
+                    className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl`}>
+                      {wallet.icon}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {wallet.name}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          ✓ Installed
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {wallet.description}
+                      </div>
+                    </div>
+                    {isConnecting && (
+                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </button>
+                );
+              } else {
+                return (
+                  <div
+                    key={wallet.id}
+                    className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+                  >
+                    <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl opacity-60`}>
+                      {wallet.icon}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {wallet.name}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {wallet.description}
+                      </div>
+                    </div>
+                    {wallet.installUrl && (
+                      <a
+                        href={wallet.installUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 transition-colors"
+                      >
+                        Install
+                      </a>
+                    )}
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {wallet.description}
-                  </div>
-                </div>
-                {isConnecting && (
-                  <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                )}
-              </button>
-            ))}
+                );
+              }
+            })}
           </div>
 
           <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -319,8 +403,9 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </ModalTransition>
       </div>
-    </div>
+    </AnimatePresence>
   );
 };

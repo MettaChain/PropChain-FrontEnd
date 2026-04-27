@@ -25,7 +25,7 @@
     "test:cy": "cypress run",
     "test:cy:ui": "cypress open",
     "test:cy:component": "cypress run --component",
-    "test:cy:component:ui": "cypress open --component",
+    "test:cy:component:ui": "cypress open --component"
   },
   "dependencies": {
     "@coinbase/wallet-sdk": "^4.3.7",
