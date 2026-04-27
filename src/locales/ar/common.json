@@ -121,8 +121,8 @@
     "bscDescription": "رسوم منخفضة، إنتاجية عالية",
     "chainSpecificFeatures": "ميزات خاصة بالسلسلة",
     "multiChainFeatures": "ميزات متعددة السلاسل",
-    "seamlessChainSwitching": "تبديل سلس سلس",
-    "connectionSurvivesRefreshes": "الاتصال ي survive التحديثات"
+    "seamlessChainSwitching": "تبديل سلس بين السلاسل",
+    "connectionSurvivesRefreshes": "يبقى الاتصال نشطاً بعد التحديث"
   },
   "mobile": {
     "title": "العقارات المحمولة",
