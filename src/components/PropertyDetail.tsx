@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { usePropertyQuery } from '@/hooks/usePropertySearchQuery';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from 
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS, type PriceAlertType } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
 import { useNotificationStore } from '@/store/notificationStore';
+import { useRecentlyViewedStore } from '@/store/recentlyViewedStore';
 import { toast } from 'sonner';
 import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -24,6 +25,7 @@ interface PropertyDetailProps {
 export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) => {
   const { addItem } = useCartStore();
   const { priceAlerts, addPriceAlert } = useNotificationStore();
+  const { addProperty: addRecentlyViewed } = useRecentlyViewedStore();
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   
   const { 
@@ -31,6 +33,19 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
     isLoading, 
     error 
   } = usePropertyQuery(propertyId);
+
+  // Track property view
+  useEffect(() => {
+    if (property) {
+      addRecentlyViewed({
+        id: property.id,
+        name: property.name,
+        location: `${property.location.city}, ${property.location.state}`,
+        price: property.price.total,
+        image: property.images[0],
+      });
+    }
+  }, [property, addRecentlyViewed]);
 
   // Check if there's an existing alert for this property
   const existingAlert = priceAlerts.find(alert => alert.propertyId === propertyId);

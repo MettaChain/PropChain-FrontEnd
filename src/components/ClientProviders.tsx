@@ -7,6 +7,7 @@ import { QueryProvider } from "@/providers/QueryProvider";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { LoadingProgressBar } from "@/components/LoadingProgressBar";
 import "@/lib/i18n";
 import dynamic from "next/dynamic";
 
@@ -35,6 +36,7 @@ export function ClientProviders({ children }: ClientProvidersProps) {
   return (
     <WagmiProvider config={config}>
       <ChainAwareProvider>
+        <LoadingProgressBar />
         <PerformanceMonitor />
         {children}
         <TransactionMonitor />
@@ -44,6 +46,7 @@ export function ClientProviders({ children }: ClientProvidersProps) {
       </ChainAwareProvider>
       <QueryProvider>
         <ChainAwareProvider>
+          <LoadingProgressBar />
           <PerformanceMonitor />
           <ServiceWorkerRegistration />
           <OfflineIndicator />
