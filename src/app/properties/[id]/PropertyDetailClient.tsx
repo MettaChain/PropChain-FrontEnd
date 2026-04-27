@@ -9,6 +9,7 @@ import { PriceAlertBell } from '@/components/PriceAlertBell';
 import { SetPriceAlertModal } from '@/components/property/SetPriceAlertModal';
 import { useNotificationStore } from '@/store/notificationStore';
 import { toast } from 'sonner';
+import { useI18nFormatting } from '@/utils/i18nFormatting';
 import type { PriceAlertType } from '@/types/property';
 
 interface Props {
@@ -22,6 +23,7 @@ export function PropertyDetailClient({ property }: Props) {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const { priceAlerts, addPriceAlert } = useNotificationStore();
   const existingAlert = priceAlerts.find((a) => a.propertyId === property.id);
+  const { formatCurrency, formatNumber, formatDate } = useI18nFormatting();
 
   const handleSetAlert = (alertType: PriceAlertType, targetPrice: number, emailNotification: boolean) => {
     addPriceAlert({
@@ -59,9 +61,6 @@ export function PropertyDetailClient({ property }: Props) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const formatCurrency = (n: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -163,8 +162,9 @@ export function PropertyDetailClient({ property }: Props) {
                 {property.details.bathrooms !== undefined && (
                   <div><dt className="text-gray-500 dark:text-gray-400">Bathrooms</dt><dd className="font-medium text-gray-900 dark:text-white">{property.details.bathrooms}</dd></div>
                 )}
-                <div><dt className="text-gray-500 dark:text-gray-400">Square Feet</dt><dd className="font-medium text-gray-900 dark:text-white">{property.details.squareFeet.toLocaleString()}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Square Feet</dt><dd className="font-medium text-gray-900 dark:text-white">{formatNumber(property.details.squareFeet)} sqft</dd></div>
                 <div><dt className="text-gray-500 dark:text-gray-400">Year Built</dt><dd className="font-medium text-gray-900 dark:text-white">{property.details.yearBuilt}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Listed</dt><dd className="font-medium text-gray-900 dark:text-white">{formatDate(property.listedDate)}</dd></div>
                 <div><dt className="text-gray-500 dark:text-gray-400">Type</dt><dd className="font-medium text-gray-900 dark:text-white capitalize">{property.propertyType}</dd></div>
                 <div><dt className="text-gray-500 dark:text-gray-400">Blockchain</dt><dd className="font-medium text-gray-900 dark:text-white capitalize">{property.blockchain}</dd></div>
               </dl>
@@ -194,7 +194,7 @@ export function PropertyDetailClient({ property }: Props) {
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
                   <span>Tokens Available</span>
-                  <span>{property.tokenInfo.available.toLocaleString()} / {property.tokenInfo.totalSupply.toLocaleString()}</span>
+                  <span>{formatNumber(property.tokenInfo.available)} / {formatNumber(property.tokenInfo.totalSupply)}</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2" role="progressbar" aria-valuenow={property.tokenInfo.sold} aria-valuemin={0} aria-valuemax={property.tokenInfo.totalSupply} aria-label="Tokens sold">
                   <div

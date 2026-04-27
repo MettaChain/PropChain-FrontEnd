@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { usePropertySearch } from '@/hooks/usePropertySearchQuery';
 import { useSearchStore } from '@/store/searchStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
+import { useWalletStore } from '@/store/walletStore';
+import { useNotificationChecker } from '@/hooks/useNotificationChecker';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 
@@ -45,6 +47,7 @@ function PropertiesContent() {
     clearFilters,
     setSortBy,
     setPage,
+    loadMore,
   } = usePropertySearch();
 
   return (
@@ -108,6 +111,7 @@ function PropertiesContent() {
             onViewModeChange={setViewMode}
             onSortChange={setSortBy}
             onPageChange={setPage}
+            onLoadMore={loadMore}
           />
         </div>
       </div>
