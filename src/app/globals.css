@@ -407,3 +407,265 @@ html[lang="ar"] {
   background-color: var(--background);
   color: var(--foreground);
 }
+
+/* Mobile bottom navigation padding */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: 4rem; /* 64px for bottom navigation */
+  }
+  
+  /* Ensure main content doesn't overlap with bottom nav */
+  main,
+  .main-content {
+    padding-bottom: 1rem;
+  }
+}
+
+/* Print-friendly styles */
+@media print {
+  /* Hide navigation, buttons, and interactive elements */
+  nav,
+  header,
+  footer,
+  .mobile-bottom-navigation,
+  button,
+  .btn,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  .modal,
+  .dropdown,
+  .tooltip,
+  .floating-comparison-bar,
+  .transaction-monitor,
+  .notification-system,
+  .toaster,
+  .offline-indicator,
+  .performance-monitor {
+    display: none !important;
+  }
+
+  /* Show main content */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.4;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure full property details are visible */
+  main,
+  .main-content,
+  .property-detail,
+  .property-details {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    overflow: visible !important;
+  }
+
+  /* Property-specific print styles */
+  .property-detail .grid {
+    display: block !important;
+  }
+
+  .property-detail .lg\\:col-span-2,
+  .property-detail .lg\\:col-span-3 {
+    width: 100% !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Cards and sections */
+  .card,
+  .border {
+    border: 1pt solid #ccc !important;
+    page-break-inside: avoid;
+    margin-bottom: 1rem !important;
+  }
+
+  .card-header,
+  .card-title {
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Images */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+
+  .property-detail img {
+    border: 1pt solid #ccc !important;
+  }
+
+  /* Text styling */
+  h1 {
+    font-size: 18pt !important;
+    font-weight: bold !important;
+    margin-bottom: 1rem !important;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    margin-bottom: 0.75rem !important;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    margin-bottom: 0.5rem !important;
+    page-break-after: avoid;
+  }
+
+  p {
+    margin-bottom: 0.5rem !important;
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Lists */
+  ul, ol {
+    margin-bottom: 0.5rem !important;
+    page-break-inside: avoid;
+  }
+
+  /* Tables */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 1rem !important;
+    page-break-inside: avoid;
+  }
+
+  th, td {
+    border: 1pt solid #ccc !important;
+    padding: 4pt !important;
+    text-align: left !important;
+  }
+
+  th {
+    background-color: #f5f5f5 !important;
+    font-weight: bold !important;
+  }
+
+  /* Links */
+  a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 10pt;
+    color: #666;
+  }
+
+  /* Property details specific */
+  .property-features {
+    display: block !important;
+  }
+
+  .property-features .grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+  }
+
+  .investment-summary,
+  .external-links {
+    page-break-inside: avoid;
+  }
+
+  /* Price and financial information */
+  .price,
+  .amount,
+  .currency {
+    font-weight: bold !important;
+    font-family: 'Courier New', monospace !important;
+  }
+
+  /* QR code for digital version */
+  .qr-code {
+    display: block !important;
+    text-align: center !important;
+    margin: 1rem 0 !important;
+    page-break-inside: avoid;
+  }
+
+  .qr-code:before {
+    content: "Scan for digital version: " attr(data-url);
+    display: block;
+    font-size: 10pt;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+
+  /* Hide empty elements */
+  :empty {
+    display: none !important;
+  }
+
+  /* Ensure proper spacing */
+  .space-y-3 > * + *,
+  .space-y-4 > * + *,
+  .space-y-6 > * + *,
+  .space-y-8 > * + * {
+    margin-top: 0.75rem !important;
+  }
+
+  /* Print header and footer */
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+
+  @page :first {
+    margin-top: 2cm;
+  }
+
+  @page :last {
+    margin-bottom: 2cm;
+  }
+
+  /* Watermark/footer for print */
+  body:after {
+    content: "PropChain Property Details - " attr(data-date);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10pt;
+    color: #666;
+    border-top: 1pt solid #ccc;
+    padding-top: 0.25rem;
+  }
+}
+
+/* Print-only utility class */
+.print-only {
+  display: none !important;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
+  }
+}

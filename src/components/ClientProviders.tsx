@@ -31,6 +31,10 @@ const FloatingComparisonBar = dynamic(
   () => import("@/components/FloatingComparisonBar").then((m) => m.FloatingComparisonBar),
   { ssr: false }
 );
+const MobileBottomNavigation = dynamic(
+  () => import("@/components/MobileBottomNavigation").then((m) => m.MobileBottomNavigation),
+  { ssr: false }
+);
 
 export function ClientProviders({ children }: ClientProvidersProps) {
   return (
@@ -43,6 +47,7 @@ export function ClientProviders({ children }: ClientProvidersProps) {
         <NotificationSystem />
         <Toaster />
         <FloatingComparisonBar />
+        <MobileBottomNavigation />
       </ChainAwareProvider>
       <QueryProvider>
         <ChainAwareProvider>
@@ -54,6 +59,7 @@ export function ClientProviders({ children }: ClientProvidersProps) {
           <TransactionMonitor />
           <NotificationSystem />
           <Toaster />
+          <MobileBottomNavigation />
         </ChainAwareProvider>
       </QueryProvider>
     </WagmiProvider>

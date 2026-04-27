@@ -17,9 +17,7 @@ import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { SetPriceAlertModal } from './property/SetPriceAlertModal';
-import { ImageGallery } from './property/ImageGallery';
-import { ShareButton } from './property/ShareButton';
-import { CurrencyToggle } from './property/CurrencyToggle';
+import { QRCode } from './QRCode';
 
 interface PropertyDetailProps {
   propertyId: string;
@@ -406,6 +404,18 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
           propertyPrice={property.price.perToken} 
           defaultYield={property.metrics.roi} 
         />
+      </div>
+
+      {/* QR Code for Print - Only visible when printing */}
+      <div className="print-only mt-8 text-center">
+        <QRCode 
+          url={typeof window !== 'undefined' ? window.location.href : ''} 
+          size={200}
+          className="mx-auto"
+        />
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+          Scan to view this property online
+        </p>
       </div>
     </div>
   );
