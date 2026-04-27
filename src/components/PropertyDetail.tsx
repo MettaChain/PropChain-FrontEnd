@@ -405,7 +405,6 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
           </Card>
         </div>
       </div>
-<<<<<<< HEAD
       {/* Investment Calculator */}
       <div id="calculator" className="mt-12">
         <MortgageCalculator 
@@ -413,7 +412,6 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
           defaultYield={property.metrics.roi} 
         />
       </div>
-=======
 
       {/* Set Price Alert Modal */}
       {property && (
@@ -429,7 +427,6 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
           } : undefined}
         />
       )}
->>>>>>> de02cf9 (feat: implement price alerts and notification system)
     </div>
   );
 };
