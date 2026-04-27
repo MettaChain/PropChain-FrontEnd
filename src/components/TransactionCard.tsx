@@ -97,9 +97,20 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Transaction Hash:</span>
-            <span className="font-mono text-xs">
-              {transaction.hash.slice(0, 10)}...{transaction.hash.slice(-8)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs">
+                {transaction.hash.slice(0, 10)}...{transaction.hash.slice(-8)}
+              </span>
+              <button
+                onClick={() => navigator.clipboard.writeText(transaction.hash)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                title="Copy transaction hash"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {transaction.description && (
@@ -118,7 +129,14 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
 
           {transaction.gasUsed && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Gas Used:</span>
+              <span className="text-muted-foreground inline-flex items-center gap-1">
+                Gas Used:
+                <span className="text-xs text-blue-500 cursor-help" title="Fee paid to validators for processing the transaction">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </span>
+              </span>
               <span>{transaction.gasUsed}</span>
             </div>
           )}
@@ -127,7 +145,14 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
         {(transaction.status === 'pending' || transaction.status === 'processing') && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Confirmations</span>
+              <span className="inline-flex items-center gap-1">
+                Confirmations
+                <span className="text-xs text-blue-500 cursor-help" title="Number of blocks that have been added since the transaction was included">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </span>
+              </span>
               <span>
                 {transaction.confirmations}/{transaction.requiredConfirmations || 1}
               </span>
