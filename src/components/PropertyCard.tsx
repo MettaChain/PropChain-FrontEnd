@@ -3,13 +3,12 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Plus } from 'lucide-react';
+import { ShoppingCart, Plus, Heart } from 'lucide-react';
 import type { Property } from '@/types/property';
 import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
-import { useDeveloperStore } from '@/store/developerStore';
-import { DeveloperBadge } from '@/components/DeveloperBadge';
+import { useFavoritesStore } from '@/store/favoritesStore';
 
 interface PropertyCardProps {
   property: Property;
@@ -22,13 +21,22 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 }) => {
   const isListView = viewMode === 'list';
   const { addItem } = useCartStore();
-  const { getDeveloperByProperty } = useDeveloperStore();
-  const developer = getDeveloperByProperty(property.id);
+  const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addItem(property, 1);
+  };
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isFavorite(property.id)) {
+      removeFavorite(property.id);
+    } else {
+      addFavorite(property);
+    }
   };
 
   return (
@@ -67,6 +75,20 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             {formatROI(property.metrics.roi)} ROI
           </div>
         </div>
+
+        {/* Favorite Button */}
+        <button
+          onClick={handleToggleFavorite}
+          className="absolute top-3 right-16 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+        >
+          <Heart
+            className={`w-4 h-4 ${
+              isFavorite(property.id)
+                ? 'fill-red-500 text-red-500'
+                : 'text-gray-600 hover:text-red-500'
+            }`}
+          />
+        </button>
 
         {/* Blockchain Badge */}
         <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3">
