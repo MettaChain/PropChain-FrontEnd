@@ -26,6 +26,7 @@ import { WalletInfo } from "@/components/homepage/WalletInfo";
 import { ChainFeatures } from "@/components/homepage/ChainFeatures";
 import { TransactionDemo } from "@/components/homepage/TransactionDemo";
 import { MultiChainFeatures } from "@/components/homepage/MultiChainFeatures";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
 
 function HomeContent() {
   const { t } = useTranslation("common");
@@ -182,6 +183,9 @@ function HomeContent() {
             </a>
           ))}
         </nav>
+
+        {/* Recently Viewed Properties */}
+        <RecentlyViewed />
       </main>
     </div>
   );

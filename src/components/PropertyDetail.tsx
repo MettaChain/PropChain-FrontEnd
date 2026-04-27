@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { usePropertyQuery } from '@/hooks/usePropertySearchQuery';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from 
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS, type PriceAlertType } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
 import { useNotificationStore } from '@/store/notificationStore';
+import { useRecentlyViewedStore } from '@/store/recentlyViewedStore';
 import { toast } from 'sonner';
 import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -25,6 +26,7 @@ interface PropertyDetailProps {
 export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) => {
   const { addItem } = useCartStore();
   const { priceAlerts, addPriceAlert } = useNotificationStore();
+  const { addProperty: addRecentlyViewed } = useRecentlyViewedStore();
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   
   const { 
@@ -32,6 +34,19 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
     isLoading, 
     error 
   } = usePropertyQuery(propertyId);
+
+  // Track property view
+  useEffect(() => {
+    if (property) {
+      addRecentlyViewed({
+        id: property.id,
+        name: property.name,
+        location: `${property.location.city}, ${property.location.state}`,
+        price: property.price.total,
+        image: property.images[0],
+      });
+    }
+  }, [property, addRecentlyViewed]);
 
   // Check if there's an existing alert for this property
   const existingAlert = priceAlerts.find(alert => alert.propertyId === propertyId);
@@ -63,26 +78,7 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
     }
   };
 
-  const handleShare = async () => {
-    if (property && navigator.share) {
-      try {
-        await navigator.share({
-          title: property.name,
-          text: `Check out this property: ${property.name} in ${property.location.city}, ${property.location.state}`,
-          url: window.location.href,
-        });
-      } catch (error) {
-        // Fallback: copy to clipboard
-        navigator.clipboard.writeText(window.location.href);
-        toast.success('Link copied to clipboard!');
-      }
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard!');
-    }
-  };
-
+  
   const handleSaveToFavorites = () => {
     if (property) {
       // Implement save to favorites logic
@@ -128,17 +124,9 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Image and Gallery */}
         <div className="lg:col-span-2">
-          <div className="relative rounded-xl overflow-hidden">
-            <Image
-              src={property.images[0]}
-              alt={property.name}
-              width={800}
-              height={600}
-              className="w-full h-[400px] object-cover"
-            />
-            
+          <div className="relative">
             {/* Badges */}
-            <div className="absolute top-4 left-4 flex flex-col gap-2">
+            <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
               {property.featured && (
                 <Badge className="bg-yellow-500 text-white">
                   ⭐ Featured
@@ -152,26 +140,16 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
             </div>
 
             {/* ROI Badge */}
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 z-10">
               <div className="bg-blue-600 text-white text-lg font-bold px-4 py-2 rounded-lg shadow-lg">
                 {formatROI(property.metrics.roi)} ROI
               </div>
             </div>
-          </div>
 
-          {/* Image Gallery */}
-          <div className="grid grid-cols-4 gap-2 mt-4">
-            {property.images.slice(1, 5).map((image, index) => (
-              <div key={index} className="relative rounded-lg overflow-hidden">
-                <Image
-                  src={image}
-                  alt={`${property.name} - Image ${index + 2}`}
-                  width={200}
-                  height={150}
-                  className="w-full h-24 object-cover hover:scale-110 transition-transform cursor-pointer"
-                />
-              </div>
-            ))}
+            <ImageGallery 
+              images={property.images} 
+              propertyName={property.name} 
+            />
           </div>
         </div>
 
@@ -207,15 +185,11 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 dark:text-gray-400">Total Value</span>
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {formatPrice(property.price.total)}
-                </span>
+                <CurrencyToggle ethAmount={property.price.total} showBoth={true} />
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 dark:text-gray-400">Per Token</span>
-                <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {formatPrice(property.price.perToken)}
-                </span>
+                <CurrencyToggle ethAmount={property.price.perToken} />
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 dark:text-gray-400">Available Tokens</span>
@@ -266,10 +240,13 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
             </Button>
             
             <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" onClick={handleShare}>
-                <Share2 className="w-4 h-4 mr-2" />
-                Share
-              </Button>
+              {property && (
+                <ShareButton 
+                  property={property}
+                  variant="outline"
+                  size="default"
+                />
+              )}
               <Button variant="outline" onClick={handleSaveToFavorites}>
                 <Heart className="w-4 h-4 mr-2" />
                 Save

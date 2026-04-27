@@ -7,6 +7,7 @@ import { useChain } from '@/providers/ChainAwareProvider';
 import { logger } from '@/utils/logger';
 import { useKycStore } from '@/store/kycStore';
 import { KycStatusBadge } from '@/components/kyc/KycStatusBadge';
+import { MultiCurrencyBalance } from '@/components/MultiCurrencyBalance';
 
 const WalletModal = dynamic(
   () => import("./WalletModal").then((m) => m.WalletModal),
@@ -72,18 +73,7 @@ export const WalletConnector: React.FC = () => {
       <div className="flex items-center gap-3">
         <NetworkSwitcher />
         
-        <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: chainConfig.color }}
-          />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {chainConfig.symbol}
-          </span>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {parseFloat(useWalletStore.getState().balance || '0').toFixed(3)}
-          </span>
-        </div>
+        <MultiCurrencyBalance />
 
         <div className="flex items-center gap-2 bg-blue-100 dark:bg-blue-900 rounded-lg px-3 py-2">
           <span className="text-sm font-medium text-blue-700 dark:text-blue-300">

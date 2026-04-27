@@ -11,6 +11,8 @@ import { useCartStore } from '@/store/cartStore';
 import { useComparisonStore } from '@/store/comparisonStore';
 import { useCompareStore } from '@/store/compareStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
+import { ShareButton } from './property/ShareButton';
+import { CurrencyToggle } from './property/CurrencyToggle';
 
 interface PropertyCardProps {
   property: Property;
@@ -243,11 +245,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         <div className="flex items-center justify-between mt-auto pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700 gap-2">
           <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-gray-400">Total Value</p>
-            <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
-              {formatPrice(property.price.total)}
-            </p>
+            <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
+              <CurrencyToggle ethAmount={property.price.total} />
+            </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <ShareButton 
+              property={property}
+              variant="outline"
+              size="sm"
+              className="px-2 sm:px-3 py-1.5 sm:py-2"
+            />
             <button
               onClick={handleAddToCart}
               className="px-2 sm:px-3 py-1.5 sm:py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 flex-shrink-0"
