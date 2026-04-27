@@ -13,6 +13,13 @@ import type { SearchFilters, SortOption } from '@/types/property';
 /**
  * Convert search filters to URL parameters
  */
+/**
+ * Converts search filters and sort options to a URL query string.
+ * 
+ * @param filters - The search filters to convert.
+ * @param sortBy - The current sort option.
+ * @returns A URL-encoded query string.
+ */
 export function filtersToUrlParams(filters: SearchFilters, sortBy: SortOption): string {
   const params = new URLSearchParams();
 
@@ -34,7 +41,10 @@ export function filtersToUrlParams(filters: SearchFilters, sortBy: SortOption): 
 }
 
 /**
- * Parse URL parameters to search filters
+ * Parses URL query parameters into search filters and sort options.
+ * 
+ * @param searchParams - The URL search parameters.
+ * @returns An object containing partial filters and the sort option.
  */
 export function urlParamsToFilters(searchParams: URLSearchParams): {
   filters: Partial<SearchFilters>;
@@ -101,7 +111,11 @@ export function urlParamsToFilters(searchParams: URLSearchParams): {
 }
 
 /**
- * Format price for display
+ * Formats a numeric price for display with currency.
+ * 
+ * @param price - The numeric price.
+ * @param currency - The currency code (default: 'USD').
+ * @returns The formatted price string.
  */
 export function formatPrice(price: number, currency: string = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
@@ -113,21 +127,30 @@ export function formatPrice(price: number, currency: string = 'USD'): string {
 }
 
 /**
- * Format number with commas
+ * Formats a number with comma separators.
+ * 
+ * @param num - The number to format.
+ * @returns The formatted number string.
  */
 export function formatNumber(num: number): string {
   return new Intl.NumberFormat('en-US').format(num);
 }
 
 /**
- * Format ROI percentage
+ * Formats a return on investment (ROI) value as a percentage.
+ * 
+ * @param roi - The ROI value.
+ * @returns The formatted ROI string.
  */
 export function formatROI(roi: number): string {
   return `${roi.toFixed(1)}%`;
 }
 
 /**
- * Format date for display
+ * Formats a date string for user-friendly display.
+ * 
+ * @param dateString - The ISO date string.
+ * @returns The formatted date string.
  */
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -139,7 +162,10 @@ export function formatDate(dateString: string): string {
 }
 
 /**
- * Calculate time ago from date
+ * Calculates and returns a relative "time ago" string from a date.
+ * 
+ * @param dateString - The ISO date string.
+ * @returns A human-readable time ago string.
  */
 export function timeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -166,7 +192,11 @@ export function timeAgo(dateString: string): string {
 }
 
 /**
- * Truncate text with ellipsis
+ * Truncates text to a maximum length and adds an ellipsis.
+ * 
+ * @param text - The text to truncate.
+ * @param maxLength - The maximum allowed length.
+ * @returns The truncated text.
  */
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
@@ -175,7 +205,10 @@ export function truncateText(text: string, maxLength: number): string {
 }
 
 /**
- * Get blockchain color
+ * Returns the hex color code associated with a blockchain.
+ * 
+ * @param blockchain - The name of the blockchain.
+ * @returns The hex color code.
  */
 export function getBlockchainColor(blockchain: string): string {
   const colors: Record<string, string> = {
@@ -187,7 +220,10 @@ export function getBlockchainColor(blockchain: string): string {
 }
 
 /**
- * Get property type icon
+ * Returns an emoji icon associated with a property type.
+ * 
+ * @param type - The property type.
+ * @returns An emoji icon.
  */
 export function getPropertyTypeIcon(type: string): string {
   const icons: Record<string, string> = {
@@ -200,14 +236,21 @@ export function getPropertyTypeIcon(type: string): string {
 }
 
 /**
- * Validate search query
+ * Validates whether a search query meets minimum length requirements.
+ * 
+ * @param query - The search query to validate.
+ * @returns True if the query is valid, false otherwise.
  */
 export function isValidSearchQuery(query: string): boolean {
   return query.trim().length >= 2;
 }
 
 /**
- * Debounce function
+ * Creates a debounced version of a function.
+ * 
+ * @param func - The function to debounce.
+ * @param wait - The debounce timeout in milliseconds.
+ * @returns A debounced version of the function.
  */
 export function debounce<TArgs extends unknown[], TResult>(
   func: (...args: TArgs) => TResult,

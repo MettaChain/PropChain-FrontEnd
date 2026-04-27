@@ -12,6 +12,7 @@ import { ComplianceAuditLog } from "@/components/kyc/ComplianceAuditLog";
 import { KycStatusBadge } from "@/components/kyc/KycStatusBadge";
 import { useKycStore } from "@/store/kycStore";
 import Link from "next/link";
+import { StakingPanel } from "@/components/dashboard/StakingPanel";
 
 const PortfolioOverview = dynamic(
   () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
@@ -153,9 +154,10 @@ const Index = () => {
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Transaction Management</h3>
               <Tabs defaultValue="queue" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
                   <TabsTrigger value="history">Transaction History</TabsTrigger>
+                  <TabsTrigger value="staking">Staking & Yield</TabsTrigger>
                   <TabsTrigger value="certificates">My Certificates</TabsTrigger>
                 </TabsList>
                 <TabsContent value="queue">
@@ -166,6 +168,9 @@ const Index = () => {
                 </TabsContent>
                 <TabsContent value="certificates">
                   <CertificatesPanel />
+                </TabsContent>
+                <TabsContent value="staking">
+                  <StakingPanel />
                 </TabsContent>
               </Tabs>
             </div>

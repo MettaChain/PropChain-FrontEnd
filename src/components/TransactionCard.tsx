@@ -18,9 +18,17 @@ import {
 import type { Transaction } from '@/store/transactionStore';
 import { useChain } from '@/providers/ChainAwareProvider';
 
+/**
+ * Properties for the TransactionCard component.
+ */
 interface TransactionCardProps {
+  /** The transaction object to display. */
   transaction: Transaction;
+  
+  /** Optional callback function to retry a failed transaction. */
   onRetry?: (transaction: Transaction) => void;
+  
+  /** Optional callback function to cancel a pending transaction. */
   onCancel?: (transaction: Transaction) => void;
 }
 
