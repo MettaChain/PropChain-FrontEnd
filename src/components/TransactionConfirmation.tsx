@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useSecurity } from '@/hooks/useSecurity';
 import { AlertTriangle, Shield, CheckCircle, X, Eye, EyeOff, Info } from 'lucide-react';
+import { useWalletStore } from '@/store/walletStore';
+import { useKycStore } from '@/store/kycStore';
+import { formatEthAmount, shouldRequireKyc, weiToEth } from '@/lib/kyc';
 
 interface TransactionConfirmationProps {
   isOpen: boolean;
@@ -26,16 +30,25 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
   loading = false
 }) => {
   const { validateTransaction } = useSecurity();
+  const walletAddress = useWalletStore((state) => state.address);
+  const { profile, logTransactionScreening } = useKycStore();
   const [validation, setValidation] = useState<any>(null);
   const [validating, setValidating] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showRawData, setShowRawData] = useState(false);
+  const [transactionEth, setTransactionEth] = useState(0);
+  const [kycRequired, setKycRequired] = useState(false);
 
   React.useEffect(() => {
     if (isOpen && transaction) {
       validateTransactionData();
+      const valueEth = weiToEth(transaction.value);
+      const requiresKyc = shouldRequireKyc(transaction.value, profile.thresholdEth);
+      setTransactionEth(valueEth);
+      setKycRequired(requiresKyc);
+      logTransactionScreening(valueEth, requiresKyc, profile.status === 'verified' || !requiresKyc);
     }
-  }, [isOpen, transaction]);
+  }, [isOpen, transaction, profile.status, profile.thresholdEth, logTransactionScreening]);
 
   const validateTransactionData = async () => {
     setValidating(true);
@@ -268,7 +281,7 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                   Cancel
                 </button>
 
-                {validation.isValid ? (
+                {validation.isValid && (!kycRequired || profile.status === 'verified') ? (
                   <button
                     onClick={onConfirm}
                     disabled={loading}
@@ -292,7 +305,7 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                     className="flex-1 px-4 py-3 bg-gray-400 text-white font-medium rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <X className="w-4 h-4" />
-                    Transaction Blocked
+                    {kycRequired && profile.status !== 'verified' ? 'Complete KYC' : 'Transaction Blocked'}
                   </button>
                 )}
               </div>
@@ -306,6 +319,34 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                       This transaction requires additional confirmation due to security considerations. 
                       Please review all details carefully before proceeding.
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {kycRequired && profile.status !== 'verified' && (
+                <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-amber-800 dark:text-amber-200">
+                        KYC required before approval
+                      </h4>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                        Transactions at or above {formatEthAmount(profile.thresholdEth)} ETH require a verified identity.
+                      </p>
+                      <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-2">
+                        This transfer is approximately {formatEthAmount(transactionEth)} ETH for wallet{' '}
+                        {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'unknown'}.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Link
+                          href="/compliance"
+                          className="inline-flex items-center rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                        >
+                          Open compliance center
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

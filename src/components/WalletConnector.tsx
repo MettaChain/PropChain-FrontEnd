@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
 import { logger } from '@/utils/logger';
+import { useKycStore } from '@/store/kycStore';
+import { KycStatusBadge } from '@/components/kyc/KycStatusBadge';
 
 const WalletModal = dynamic(
   () => import("./WalletModal").then((m) => m.WalletModal),
@@ -25,6 +27,7 @@ export const WalletConnector: React.FC = () => {
     clearError,
     setBalance,
   } = useWalletStore();
+  const { profile } = useKycStore();
 
   const { currentChain, chainConfig } = useChain();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -87,6 +90,8 @@ export const WalletConnector: React.FC = () => {
             {formatAddress(address)}
           </span>
         </div>
+
+        <KycStatusBadge status={profile.status} thresholdEth={profile.thresholdEth} compact />
 
         <button
           onClick={handleDisconnect}
