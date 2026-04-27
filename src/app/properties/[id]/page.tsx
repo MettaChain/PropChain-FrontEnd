@@ -4,6 +4,7 @@ import React from 'react';
 import { useParams } from 'next/navigation';
 import { PropertyDetail } from '@/components/PropertyDetail';
 import { WalletConnector } from '@/components/WalletConnector';
+import { PriceAlertBell } from '@/components/PriceAlertBell';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -34,6 +35,8 @@ export default function PropertyDetailPage() {
                 </h1>
               </div>
             </div>
+            <div className="flex items-center gap-2">
+              <PriceAlertBell />
             <div className="flex items-center gap-3">
               <Link href="/secondary-market">
                 <Button variant="ghost" size="sm" className="text-blue-600 font-semibold">
@@ -45,8 +48,6 @@ export default function PropertyDetailPage() {
           </div>
         </div>
       </header>
-
-      {/* Property Detail */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {propertyId ? (
           <PropertyDetail propertyId={propertyId} />
