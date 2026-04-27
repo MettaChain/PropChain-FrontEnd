@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { SavedSearchCard } from "@/components/SavedSearchCard";
 import { WalletConnector } from "@/components/WalletConnector";
 import { useSavedSearchStore } from "@/store/savedSearchStore";
 import { useWalletStore } from "@/store/walletStore";
