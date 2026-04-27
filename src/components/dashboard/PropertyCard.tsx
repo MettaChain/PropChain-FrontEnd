@@ -50,6 +50,7 @@ export const PropertyCard = ({ property, index }: PropertyCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 * index }}
       className="glass-card rounded-xl overflow-hidden hover:border-primary/30 transition-all duration-300 group"
+      data-testid="property-card"
     >
       <div className="relative h-40 overflow-hidden">
         <Image
