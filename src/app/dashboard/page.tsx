@@ -1,104 +1,66 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { WalletConnector } from "@/components/WalletConnector";
 import { TransactionQueue } from "@/components/TransactionQueue";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertificatesPanel } from "@/components/dashboard/CertificatesPanel";
-import { StakingPanel } from "@/components/dashboard/StakingPanel";
+import { KycVerificationCenter } from "@/components/kyc/KycVerificationCenter";
+import { ComplianceAuditLog } from "@/components/kyc/ComplianceAuditLog";
+import { KycStatusBadge } from "@/components/kyc/KycStatusBadge";
+import { useKycStore } from "@/store/kycStore";
+import Link from "next/link";
 import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
+import { StakingPanel } from "@/components/dashboard/StakingPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function WidgetSkeleton({ className = "h-40" }: { className?: string }) {
-  return (
-    <div
-      className={`w-full rounded-xl bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 ${className}`}
-    >
-      <div className="h-full w-full p-6 flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-5 w-16" />
-        </div>
-
-        <div className="flex-1 space-y-3">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-5/6" />
-          <Skeleton className="h-4 w-2/3" />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-24 rounded-lg" />
-          <Skeleton className="h-9 w-24 rounded-lg" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const PortfolioOverview = dynamic(
-  () =>
-    import("@/components/dashboard/PortfolioOverview").then(
-      (m) => m.PortfolioOverview,
-    ),
-  { loading: () => <WidgetSkeleton /> },
+  () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
+  { loading: () => <WidgetSkeleton className="h-40" /> }
 );
 const PerformanceChart = dynamic(
-  () =>
-    import("@/components/dashboard/PerformanceChart").then(
-      (m) => m.PerformanceChart,
-    ),
-  { loading: () => <WidgetSkeleton className="h-[360px]" /> },
+  () => import("@/components/dashboard/PerformanceChart").then((m) => m.PerformanceChart),
+  { loading: () => <WidgetSkeleton className="h-[360px]" /> }
 );
 const DiversificationChart = dynamic(
-  () =>
-    import("@/components/dashboard/DiversificationChart").then(
-      (m) => m.DiversificationChart,
-    ),
-  { loading: () => <WidgetSkeleton className="h-[360px]" /> },
+  () => import("@/components/dashboard/DiversificationChart").then((m) => m.DiversificationChart),
+  { loading: () => <WidgetSkeleton className="h-[360px]" /> }
 );
 const PropertiesList = dynamic(
-  () =>
-    import("@/components/dashboard/PropertiesList").then(
-      (m) => m.PropertiesList,
-    ),
-  { loading: () => <WidgetSkeleton className="h-[420px]" /> },
+  () => import("@/components/dashboard/PropertiesList").then((m) => m.PropertiesList),
+  { loading: () => <WidgetSkeleton className="h-[420px]" /> }
 );
 const RecentTransactions = dynamic(
-  () =>
-    import("@/components/dashboard/RecentTransactions").then(
-      (m) => m.RecentTransactions,
-    ),
-  { loading: () => <WidgetSkeleton className="h-[240px]" /> },
+  () => import("@/components/dashboard/RecentTransactions").then((m) => m.RecentTransactions),
+  { loading: () => <WidgetSkeleton className="h-[240px]" /> }
 );
 const YieldChart = dynamic(
   () => import("@/components/dashboard/YieldChart").then((m) => m.YieldChart),
-  { loading: () => <WidgetSkeleton className="h-[340px]" /> },
+  { loading: () => <WidgetSkeleton className="h-[340px]" /> }
 );
 const IncomeTracker = dynamic(
-  () =>
-    import("@/components/dashboard/IncomeTracker").then((m) => m.IncomeTracker),
-  { loading: () => <WidgetSkeleton className="h-[340px]" /> },
+  () => import("@/components/dashboard/IncomeTracker").then((m) => m.IncomeTracker),
+  { loading: () => <WidgetSkeleton className="h-[340px]" /> }
 );
 const RiskAnalysis = dynamic(
-  () =>
-    import("@/components/dashboard/RiskAnalysis").then((m) => m.RiskAnalysis),
-  { loading: () => <WidgetSkeleton className="h-[300px]" /> },
+  () => import("@/components/dashboard/RiskAnalysis").then((m) => m.RiskAnalysis),
+  { loading: () => <WidgetSkeleton className="h-[300px]" /> }
 );
 const PortfolioReport = dynamic(
-  () =>
-    import("@/components/dashboard/PortfolioReport").then(
-      (m) => m.PortfolioReport,
-    ),
-  { loading: () => <WidgetSkeleton className="h-[160px]" /> },
+  () => import("@/components/dashboard/PortfolioReport").then((m) => m.PortfolioReport),
+  { loading: () => <WidgetSkeleton className="h-[160px]" /> }
 );
-const DataRefreshWrapper = dynamic(() =>
-  import("@/components/dashboard/DataRefreshWrapper").then(
-    (m) => m.DataRefreshWrapper,
-  ),
+const DataRefreshWrapper = dynamic(
+  () => import("@/components/dashboard/DataRefreshWrapper").then((m) => m.DataRefreshWrapper)
 );
 
 const Index = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeItem, setActiveItem] = useState("dashboard");
+  const { profile } = useKycStore();
+
   return (
     <div className="min-h-screen bg-background flex w-full">
       <div className="flex-1 flex flex-col min-w-0">
@@ -128,7 +90,17 @@ const Index = () => {
                 <p className="text-muted-foreground">
                   Here's an overview of your real estate token portfolio
                 </p>
+                <KycStatusBadge status={profile.status} thresholdEth={profile.thresholdEth} />
               </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/compliance"
+                className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                Open compliance center
+              </Link>
             </div>
 
             <DataRefreshWrapper lastUpdated={new Date(Date.now() - 120000)}>
@@ -151,6 +123,11 @@ const Index = () => {
 
             <RiskAnalysis />
 
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <KycVerificationCenter />
+              <ComplianceAuditLog />
+            </div>
+
             <PortfolioReport />
 
             <PropertiesList />
@@ -163,9 +140,7 @@ const Index = () => {
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
                   <TabsTrigger value="history">Transaction History</TabsTrigger>
                   <TabsTrigger value="staking">Staking & Yield</TabsTrigger>
-                  <TabsTrigger value="certificates">
-                    My Certificates
-                  </TabsTrigger>
+                  <TabsTrigger value="certificates">My Certificates</TabsTrigger>
                 </TabsList>
                 <TabsContent value="queue">
                   <TransactionQueue />
@@ -191,3 +166,25 @@ const Index = () => {
 };
 
 export default Index;
+
+function WidgetSkeleton({ className = "h-40" }: { className?: string }) {
+  return (
+    <div className={`w-full rounded-xl bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 ${className}`}>
+      <div className="h-full w-full p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-5 w-16" />
+        </div>
+        <div className="flex-1 space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 w-24 rounded-lg" />
+          <Skeleton className="h-9 w-24 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
