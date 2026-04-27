@@ -3,6 +3,7 @@
 import { WagmiProvider } from "wagmi";
 import { config } from "@/config/wagmi";
 import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 import "@/lib/i18n";
 import dynamic from "next/dynamic";
@@ -27,13 +28,15 @@ const Toaster = dynamic(
 export function ClientProviders({ children }: ClientProvidersProps) {
   return (
     <WagmiProvider config={config}>
-      <ChainAwareProvider>
-        <PerformanceMonitor />
-        {children}
-        <TransactionMonitor />
-        <NotificationSystem />
-        <Toaster />
-      </ChainAwareProvider>
+      <QueryProvider>
+        <ChainAwareProvider>
+          <PerformanceMonitor />
+          {children}
+          <TransactionMonitor />
+          <NotificationSystem />
+          <Toaster />
+        </ChainAwareProvider>
+      </QueryProvider>
     </WagmiProvider>
   );
 }

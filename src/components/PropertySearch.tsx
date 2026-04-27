@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
-import { propertyService } from '@/lib/propertyService';
+import { usePropertyAutocompleteQuery } from '@/hooks/usePropertySearchQuery';
 import type { AutocompleteResult } from '@/types/property';
 import { logger } from '@/utils/logger';
 
@@ -18,22 +18,14 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
   placeholder = 'Search properties, locations...',
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const [suggestions, setSuggestions] = useState<AutocompleteResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const debouncedValue = useDebounce(value, 300);
 
-  // Fetch suggestions when debounced value changes
-  useEffect(() => {
-    if (debouncedValue && debouncedValue.length >= 2) {
-      fetchSuggestions(debouncedValue);
-    } else {
-      setSuggestions([]);
-    }
-  }, [debouncedValue]);
+  // Use React Query for autocomplete suggestions
+  const { data: suggestions = [], isLoading } = usePropertyAutocompleteQuery(debouncedValue);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -52,19 +44,6 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchSuggestions = async (query: string) => {
-    setIsLoading(true);
-    try {
-      const results = await propertyService.getAutocompleteSuggestions(query);
-      setSuggestions(results);
-    } catch (error) {
-      logger.error('Failed to fetch suggestions:', error);
-      setSuggestions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
     setSelectedIndex(-1);
@@ -72,7 +51,6 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
 
   const handleSuggestionClick = (suggestion: AutocompleteResult) => {
     onChange(suggestion.value);
-    setSuggestions([]);
     setIsFocused(false);
   };
 
@@ -101,14 +79,12 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
       
       case 'Escape':
         setIsFocused(false);
-        setSuggestions([]);
         break;
     }
   };
 
   const handleClear = () => {
     onChange('');
-    setSuggestions([]);
     inputRef.current?.focus();
   };
 
