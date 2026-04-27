@@ -3,6 +3,8 @@
 import React, { useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
+import { ComparisonBar } from './ComparisonBar';
+import type { Property, ViewMode, SortOption } from '@/types/property';
 import { SaveSearchButton } from './SaveSearchButton';
 import type { Property, ViewMode, SortOption, SearchFilters } from '@/types/property';
 import { SORT_LABELS } from '@/types/property';
@@ -81,6 +83,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   }
 
   return (
+    <div className="flex-1 relative">
+      <ComparisonBar />
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 shrink-0">
