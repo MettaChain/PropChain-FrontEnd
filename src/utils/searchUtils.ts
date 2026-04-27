@@ -5,6 +5,14 @@ import {
 } from '@/types/property';
 import type { SearchFilters, SortOption } from '@/types/property';
 
+const getResolvedLocale = (locale?: string): string => {
+  if (locale) return locale;
+  if (typeof navigator !== 'undefined' && navigator.language) {
+    return navigator.language;
+  }
+  return 'en-US';
+};
+
 /**
  * Search Utility Functions
  * Helper functions for search and filter operations
@@ -117,8 +125,8 @@ export function urlParamsToFilters(searchParams: URLSearchParams): {
  * @param currency - The currency code (default: 'USD').
  * @returns The formatted price string.
  */
-export function formatPrice(price: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatPrice(price: number, currency: string = 'USD', locale?: string): string {
+  return new Intl.NumberFormat(getResolvedLocale(locale), {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
@@ -132,8 +140,8 @@ export function formatPrice(price: number, currency: string = 'USD'): string {
  * @param num - The number to format.
  * @returns The formatted number string.
  */
-export function formatNumber(num: number): string {
-  return new Intl.NumberFormat('en-US').format(num);
+export function formatNumber(num: number, locale?: string): string {
+  return new Intl.NumberFormat(getResolvedLocale(locale)).format(num);
 }
 
 /**
@@ -152,9 +160,9 @@ export function formatROI(roi: number): string {
  * @param dateString - The ISO date string.
  * @returns The formatted date string.
  */
-export function formatDate(dateString: string): string {
+export function formatDate(dateString: string, locale?: string): string {
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(getResolvedLocale(locale), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

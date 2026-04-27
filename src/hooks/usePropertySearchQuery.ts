@@ -123,9 +123,14 @@ export function usePropertySearch() {
     setSortBy(newSortBy);
   };
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = (
+    newPage: number,
+    options: { scrollToTop?: boolean } = { scrollToTop: true }
+  ) => {
     setPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (options.scrollToTop ?? true) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const totalPages = query.data ? Math.ceil(query.data.total / resultsPerPage) : 0;
@@ -147,7 +152,8 @@ export function usePropertySearch() {
     setFilter: handleFilterChange,
     clearFilters: handleClearFilters,
     setSortBy: handleSortChange,
-    setPage: handlePageChange,
+    setPage: (newPage: number) => handlePageChange(newPage),
+    loadMore: () => handlePageChange(page + 1, { scrollToTop: false }),
     refetch: query.refetch,
   };
 }

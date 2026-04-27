@@ -4,7 +4,6 @@ import React, { useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
 import { ComparisonBar } from './ComparisonBar';
-import type { Property, ViewMode, SortOption } from '@/types/property';
 import { SaveSearchButton } from './SaveSearchButton';
 import type { Property, ViewMode, SortOption, SearchFilters } from '@/types/property';
 import { SORT_LABELS } from '@/types/property';
@@ -22,6 +21,7 @@ interface SearchResultsProps {
   onViewModeChange: (mode: 'grid' | 'list') => void;
   onSortChange: (sort: SortOption) => void;
   onPageChange: (page: number) => void;
+  onLoadMore?: () => void;
 }
 
 export const SearchResults: React.FC<SearchResultsProps> = ({
@@ -37,8 +37,12 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   onViewModeChange,
   onSortChange,
   onPageChange,
+  onLoadMore,
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [displayProperties, setDisplayProperties] = React.useState<Property[]>(properties);
+  const previousQueryKey = React.useRef<string>('');
 
   // Determine columns based on viewMode and responsive breakpoints
   const [columns, setColumns] = React.useState(1);
@@ -59,7 +63,39 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     return () => window.removeEventListener('resize', updateColumns);
   }, [viewMode]);
 
-  const rowCount = Math.ceil(properties.length / columns);
+  useEffect(() => {
+    const queryKey = JSON.stringify({ filters, sortBy });
+
+    if (page === 1 || previousQueryKey.current !== queryKey) {
+      setDisplayProperties(properties);
+    } else if (page > 1 && !isLoading) {
+      setDisplayProperties((prev) => [...prev, ...properties]);
+    }
+
+    previousQueryKey.current = queryKey;
+  }, [properties, page, sortBy, filters, isLoading]);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !onLoadMore || isLoading || page >= totalPages) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      {
+        root: parentRef.current,
+        rootMargin: '400px',
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [onLoadMore, isLoading, page, totalPages]);
+
+  const rowCount = Math.ceil(displayProperties.length / columns);
 
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
@@ -100,26 +136,28 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* Save Search Button */}
-          <SaveSearchButton 
-            filters={filters} 
-            sortBy={sortBy}
-            className="flex-shrink-0"
-          />
+            {/* Save Search Button */}
+            <SaveSearchButton 
+              filters={filters} 
+              sortBy={sortBy}
+              className="flex-shrink-0"
+            />
 
-          {/* Sort Dropdown */}
-          <select
-            value={sortBy}
-            onChange={(e) => onSortChange(e.target.value as SortOption)}
-            className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-          >
-            {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
-              <option key={option} value={option}>
-                {SORT_LABELS[option]}
-              </option>
-            ))}
-          </select>
-
+            {/* Sort Dropdown */}
+            <label htmlFor="sort-by" className="sr-only">Sort properties</label>
+            <select
+              id="sort-by"
+              value={sortBy}
+              onChange={(e) => onSortChange(e.target.value as SortOption)}
+              className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
+              {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
+                <option key={option} value={option}>
+                  {SORT_LABELS[option]}
+                </option>
+              ))}
+            </select>
+          </div>
           {/* View Mode Toggle */}
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
@@ -193,7 +231,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const start = virtualRow.index * columns;
-              const rowProperties = properties.slice(start, start + columns);
+              const rowProperties = displayProperties.slice(start, start + columns);
 
               return (
                 <div
@@ -227,46 +265,60 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
       {/* Pagination (Sticky Footer) */}
       {!isLoading && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 py-6 border-t mt-auto bg-white dark:bg-gray-900 z-10">
-          <button
-            onClick={() => onPageChange(page - 1)}
-            disabled={page === 1}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            Previous
-          </button>
+        <div className="flex flex-col items-center justify-center gap-4 py-6 border-t mt-auto bg-white dark:bg-gray-900 z-10">
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => onPageChange(page - 1)}
+              disabled={page === 1}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Previous
+            </button>
 
-          <div className="flex items-center gap-1">
-            {[...Array(Math.min(totalPages, 5))].map((_, i) => {
-              let pageNum;
-              if (totalPages <= 5) pageNum = i + 1;
-              else if (page <= 3) pageNum = i + 1;
-              else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
-              else pageNum = page - 2 + i;
+            <div className="flex items-center gap-1">
+              {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+                let pageNum;
+                if (totalPages <= 5) pageNum = i + 1;
+                else if (page <= 3) pageNum = i + 1;
+                else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
+                else pageNum = page - 2 + i;
 
-              return (
-                <button
-                  key={i}
-                  onClick={() => onPageChange(pageNum)}
-                  className={`w-10 h-10 rounded-lg transition-colors ${
-                    page === pageNum
-                      ? 'bg-blue-600 text-white'
-                      : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={i}
+                    onClick={() => onPageChange(pageNum)}
+                    className={`w-10 h-10 rounded-lg transition-colors ${
+                      page === pageNum
+                        ? 'bg-blue-600 text-white'
+                        : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => onPageChange(page + 1)}
+              disabled={page === totalPages}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Next
+            </button>
           </div>
 
-          <button
-            onClick={() => onPageChange(page + 1)}
-            disabled={page === totalPages}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            Next
-          </button>
+          {onLoadMore && page < totalPages && (
+            <div ref={loadMoreRef} className="text-center">
+              <button
+                type="button"
+                onClick={onLoadMore}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              >
+                {isLoading ? 'Loading more properties...' : 'Load more'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

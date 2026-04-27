@@ -3,10 +3,9 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Plus, CheckSquare, Square } from 'lucide-react';
-import { ShoppingCart, Plus, Heart } from 'lucide-react';
+import { ShoppingCart, Plus, CheckSquare, Square, Heart } from 'lucide-react';
 import type { Property } from '@/types/property';
-import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
+import { formatPrice, formatNumber, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
 import { useComparisonStore } from '@/store/comparisonStore';
@@ -28,7 +27,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
   const isSelectedForComparison = isPropertySelected(property.id);
   const selectedIds = useCompareStore((state) => state.selectedIds);
-  const toggleProperty = useCompareStore((state) => state.toggleProperty);
+  const togglePropertyId = useCompareStore((state) => state.toggleProperty);
 
   const isCompared = selectedIds.includes(property.id);
   const compareLimitReached = selectedIds.length >= 3 && !isCompared;
@@ -44,11 +43,16 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
     toggleProperty(property);
+  };
+
   const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (!compareLimitReached) {
-      toggleProperty(property.id);
+      togglePropertyId(property.id);
+    }
+  };
+
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -166,16 +170,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             {PROPERTY_TYPE_LABELS[property.propertyType]}
           </span>
-          {developer && (
-            <DeveloperBadge
-              status={developer.verificationStatus}
-              developerName={developer.name}
-              compact
-            />
-          )}
-          {!developer && (
-            <DeveloperBadge status="unverified" compact />
-          )}
         </div>
 
         {/* Title */}
@@ -224,7 +218,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               </svg>
-              <span>{property.details.squareFeet.toLocaleString()} sqft</span>
+                <span>{formatNumber(property.details.squareFeet)} sqft</span>
             </div>
           </div>
         )}
@@ -234,7 +228,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Available Tokens</p>
             <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">
-              {property.tokenInfo.available.toLocaleString()} / {property.tokenInfo.totalSupply.toLocaleString()}
+              {formatNumber(property.tokenInfo.available)} / {formatNumber(property.tokenInfo.totalSupply)}
             </p>
           </div>
           <div className="text-right min-w-0">
