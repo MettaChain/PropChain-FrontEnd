@@ -1,12 +1,53 @@
 import { useTranslation } from 'react-i18next';
 
+/**
+ * Locale mapping for proper Intl API locale strings
+ * Maps i18next language codes to IETF language tags
+ */
+const localeMap: Record<string, string> = {
+  'en': 'en-US',
+  'es': 'es-ES',
+  'fr': 'fr-FR',
+  'de': 'de-DE',
+  'zh': 'zh-CN',
+  'ar': 'ar-SA',
+  'he': 'he-IL',
+};
+
+/**
+ * Get proper locale string for Intl API
+ */
+export const getIntlLocale = (locale: string): string => {
+  return localeMap[locale] || 'en-US';
+};
+
+/**
+ * Locale-specific default currency configuration
+ */
+const localeCurrencies: Record<string, string> = {
+  'en': 'USD',
+  'es': 'EUR',
+  'fr': 'EUR',
+  'de': 'EUR',
+  'zh': 'CNY',
+  'ar': 'SAR',
+  'he': 'ILS',
+};
+
+/**
+ * Get default currency for a locale
+ */
+export const getDefaultCurrency = (locale: string): string => {
+  return localeCurrencies[locale] || 'USD';
+};
+
 // Currency formatting utility
 export const formatCurrency = (
   amount: number,
   currency: string = 'USD',
   locale?: string
 ): string => {
-  const targetLocale = locale || 'en-US';
+  const targetLocale = getIntlLocale(locale || 'en');
   
   try {
     return new Intl.NumberFormat(targetLocale, {
@@ -31,7 +72,7 @@ export const formatNumber = (
   locale?: string,
   options?: Intl.NumberFormatOptions
 ): string => {
-  const targetLocale = locale || 'en-US';
+  const targetLocale = getIntlLocale(locale || 'en');
   
   return new Intl.NumberFormat(targetLocale, options).format(number);
 };
@@ -42,7 +83,7 @@ export const formatPercentage = (
   locale?: string,
   decimals: number = 1
 ): string => {
-  const targetLocale = locale || 'en-US';
+  const targetLocale = getIntlLocale(locale || 'en');
   
   return new Intl.NumberFormat(targetLocale, {
     style: 'percent',
@@ -57,7 +98,7 @@ export const formatDate = (
   locale?: string,
   options?: Intl.DateTimeFormatOptions
 ): string => {
-  const targetLocale = locale || 'en-US';
+  const targetLocale = getIntlLocale(locale || 'en');
   const dateObj = typeof date === 'string' || typeof date === 'number' 
     ? new Date(date) 
     : date;
@@ -99,7 +140,7 @@ export const formatRelativeTime = (
   date: Date | string | number,
   locale?: string
 ): string => {
-  const targetLocale = locale || 'en-US';
+  const targetLocale = getIntlLocale(locale || 'en');
   const dateObj = typeof date === 'string' || typeof date === 'number' 
     ? new Date(date) 
     : date;
@@ -125,10 +166,11 @@ export const formatRelativeTime = (
 export const useI18nFormatting = () => {
   const { i18n } = useTranslation();
   const currentLocale = i18n.language;
+  const defaultCurrency = getDefaultCurrency(currentLocale);
   
   return {
     formatCurrency: (amount: number, currency?: string) => 
-      formatCurrency(amount, currency, currentLocale),
+      formatCurrency(amount, currency || defaultCurrency, currentLocale),
     formatNumber: (number: number, options?: Intl.NumberFormatOptions) => 
       formatNumber(number, currentLocale, options),
     formatPercentage: (value: number, decimals?: number) => 
@@ -142,6 +184,7 @@ export const useI18nFormatting = () => {
     formatRelativeTime: (date: Date | string | number) => 
       formatRelativeTime(date, currentLocale),
     locale: currentLocale,
+    currency: defaultCurrency,
   };
 };
 
@@ -150,44 +193,52 @@ interface LocaleFormatOptions {
   currency: string;
   date: Intl.DateTimeFormatOptions;
   shortDate: Intl.DateTimeFormatOptions;
+  timeFormat: string;
 }
 
-export const getLocaleFormatOptions = (locale: string) => {
+export const getLocaleFormatOptions = (locale: string): LocaleFormatOptions => {
   const localeFormats: Record<string, LocaleFormatOptions> = {
     'en': {
       currency: 'USD',
       date: { year: 'numeric', month: 'long', day: 'numeric' },
       shortDate: { year: 'numeric', month: 'short', day: 'numeric' },
+      timeFormat: '12h',
     },
     'es': {
       currency: 'EUR',
       date: { day: 'numeric', month: 'long', year: 'numeric' },
       shortDate: { day: 'numeric', month: 'short', year: 'numeric' },
+      timeFormat: '24h',
     },
     'fr': {
       currency: 'EUR',
       date: { day: 'numeric', month: 'long', year: 'numeric' },
       shortDate: { day: 'numeric', month: 'short', year: 'numeric' },
+      timeFormat: '24h',
     },
     'de': {
       currency: 'EUR',
       date: { day: 'numeric', month: 'long', year: 'numeric' },
       shortDate: { day: 'numeric', month: 'short', year: 'numeric' },
+      timeFormat: '24h',
     },
     'zh': {
       currency: 'CNY',
       date: { year: 'numeric', month: 'long', day: 'numeric' },
       shortDate: { year: 'numeric', month: 'short', day: 'numeric' },
+      timeFormat: '24h',
     },
     'ar': {
       currency: 'SAR',
       date: { year: 'numeric', month: 'long', day: 'numeric' },
       shortDate: { year: 'numeric', month: 'short', day: 'numeric' },
+      timeFormat: '24h',
     },
     'he': {
       currency: 'ILS',
       date: { day: 'numeric', month: 'long', year: 'numeric' },
       shortDate: { day: 'numeric', month: 'short', year: 'numeric' },
+      timeFormat: '24h',
     },
   };
   
