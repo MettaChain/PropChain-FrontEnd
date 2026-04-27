@@ -1,33 +1,45 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { SavedSearchCard } from '@/components/SavedSearchCard';
-import { WalletConnector } from '@/components/WalletConnector';
-import { useSavedSearchStore } from '@/store/savedSearchStore';
-import { useWalletStore } from '@/store/walletStore';
-import { SavedSearch, NotificationFrequency } from '@/types/property';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Search, Filter, Settings, Bell, Mail, Bookmark } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { SavedSearchCard } from "@/components/SavedSearchCard";
+import { WalletConnector } from "@/components/WalletConnector";
+import { useSavedSearchStore } from "@/store/savedSearchStore";
+import { useWalletStore } from "@/store/walletStore";
+import { SavedSearch, NotificationFrequency } from "@/types/property";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Search, Filter, Settings, Bell, Mail, Bookmark } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function SavedSearchesContent() {
   const { address } = useWalletStore();
-  const { 
-    searches, 
-    isLoading, 
-    error, 
-    loadSearches, 
-    removeSearch 
-  } = useSavedSearchStore();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [frequencyFilter, setFrequencyFilter] = useState<NotificationFrequency | 'all'>('all');
-  const [sortBy, setSortBy] = useState<'name' | 'created' | 'frequency'>('created');
+  const { searches, isLoading, error, loadSearches, removeSearch } =
+    useSavedSearchStore();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [frequencyFilter, setFrequencyFilter] = useState<
+    NotificationFrequency | "all"
+  >("all");
+  const [sortBy, setSortBy] = useState<"name" | "created" | "frequency">(
+    "created",
+  );
 
   useEffect(() => {
     if (address) {
@@ -36,18 +48,24 @@ function SavedSearchesContent() {
   }, [address, loadSearches]);
 
   const filteredAndSortedSearches = searches
-    .filter(search => {
-      const matchesSearch = search.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFrequency = frequencyFilter === 'all' || search.notificationFrequency === frequencyFilter;
+    .filter((search) => {
+      const matchesSearch = search.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesFrequency =
+        frequencyFilter === "all" ||
+        search.notificationFrequency === frequencyFilter;
       return matchesSearch && matchesFrequency;
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case 'name':
+        case "name":
           return a.name.localeCompare(b.name);
-        case 'created':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        case 'frequency':
+        case "created":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "frequency":
           return a.notificationFrequency.localeCompare(b.notificationFrequency);
         default:
           return 0;
@@ -56,13 +74,13 @@ function SavedSearchesContent() {
 
   const handleDeleteSearch = async (searchId: string) => {
     if (!address) return;
-    
+
     try {
       await removeSearch(searchId, address);
-      toast.success('Search deleted successfully');
+      toast.success("Search deleted successfully");
     } catch (error) {
-      toast.error('Failed to delete search');
-      console.error('Delete search error:', error);
+      toast.error("Failed to delete search");
+      console.error("Delete search error:", error);
     }
   };
 
@@ -157,7 +175,9 @@ function SavedSearchesContent() {
               {/* Frequency Filter */}
               <Select
                 value={frequencyFilter}
-                onValueChange={(value: NotificationFrequency | 'all') => setFrequencyFilter(value)}
+                onValueChange={(value: NotificationFrequency | "all") =>
+                  setFrequencyFilter(value)
+                }
               >
                 <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filter by frequency" />
@@ -173,7 +193,9 @@ function SavedSearchesContent() {
               {/* Sort */}
               <Select
                 value={sortBy}
-                onValueChange={(value: 'name' | 'created' | 'frequency') => setSortBy(value)}
+                onValueChange={(value: "name" | "created" | "frequency") =>
+                  setSortBy(value)
+                }
               >
                 <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Sort by" />
@@ -195,7 +217,9 @@ function SavedSearchesContent() {
               <div className="flex items-center gap-2">
                 <Bookmark className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Searches</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Total Searches
+                  </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {searches.length}
                   </p>
@@ -203,29 +227,33 @@ function SavedSearchesContent() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-green-600" />
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Active Alerts</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Active Alerts
+                  </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {searches.filter(s => s.isActive).length}
+                    {searches.filter((s) => s.isActive).length}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <Mail className="w-5 h-5 text-purple-600" />
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Email Enabled</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Email Enabled
+                  </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {searches.filter(s => s.emailNotifications).length}
+                    {searches.filter((s) => s.emailNotifications).length}
                   </p>
                 </div>
               </div>
@@ -248,38 +276,40 @@ function SavedSearchesContent() {
         {/* Loading State */}
         {isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader>
-                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4" />
-                  <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-1/2" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded" />
-                    <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-5/6" />
-                    <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-4/6" />
-                  </div>
+
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-5/6" />
+                  <Skeleton className="h-3 w-4/6" />
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
 
-        {/* Empty State */}
         {!isLoading && filteredAndSortedSearches.length === 0 && (
           <Card>
-            <CardContent className="text-center py-20">
+            <CardContent className="text-center py-20 space-y-3">
               <Bookmark className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {searches.length === 0 ? 'No Saved Searches Yet' : 'No Matching Searches'}
+
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {searches.length === 0
+                  ? "No Saved Searches Yet"
+                  : "No Matching Searches"}
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto mb-6">
-                {searches.length === 0 
-                  ? 'Start searching for properties and save your searches to get notified about new listings.'
-                  : 'Try adjusting your filters to find your saved searches.'
-                }
+
+              <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                {searches.length === 0
+                  ? "Start searching for properties and save your searches to get notified about new listings."
+                  : "Try adjusting your filters to find your saved searches."}
               </p>
+
               {searches.length === 0 && (
                 <Link href="/properties">
                   <Button>Browse Properties</Button>
@@ -288,26 +318,11 @@ function SavedSearchesContent() {
             </CardContent>
           </Card>
         )}
-
-        {/* Saved Searches Grid */}
-        {!isLoading && filteredAndSortedSearches.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAndSortedSearches.map((search) => (
-              <SavedSearchCard
-                key={search.id}
-                search={search}
-                onDelete={() => handleDeleteSearch(search.id)}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
 export default function SavedSearchesPage() {
-  return (
-    <SavedSearchesContent />
-  );
+  return <SavedSearchesContent />;
 }
