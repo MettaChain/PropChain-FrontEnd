@@ -139,7 +139,7 @@ export function usePropertySearch() {
     properties: query.data?.properties || [],
     totalResults: query.data?.total || 0,
     totalPages,
-    isLoading: query.isLoading,
+    isLoading: query.isPending || query.isFetching,
     error: query.error?.message || null,
     lastUpdated: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : undefined,
 

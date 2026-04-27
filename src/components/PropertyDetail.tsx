@@ -12,6 +12,7 @@ import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS, type PriceAlertType } from '@/
 import { useCartStore } from '@/store/cartStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { toast } from 'sonner';
+import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { SetPriceAlertModal } from './property/SetPriceAlertModal';
@@ -419,6 +420,13 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
           } : undefined}
         />
       )}
+      {/* Investment Calculator */}
+      <div id="calculator" className="mt-12">
+        <MortgageCalculator 
+          propertyPrice={property.price.perToken} 
+          defaultYield={property.metrics.roi} 
+        />
+      </div>
     </div>
   );
 };
