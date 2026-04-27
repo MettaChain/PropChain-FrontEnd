@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Circle, Loader2, AlertCircle, XCircle, Wallet, Broadcast, Clock, Shield } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -24,7 +24,7 @@ interface TransactionProgressProps {
   onError?: (error: string) => void;
 }
 
-export const TransactionProgress: React.FC<TransactionProgressProps> = ({
+export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
   isOpen,
   onClose,
   transactionHash,

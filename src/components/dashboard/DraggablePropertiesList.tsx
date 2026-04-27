@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { GripVertical, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "./PropertyCard";
@@ -87,7 +87,7 @@ const defaultProperties: Property[] = [
   },
 ];
 
-export const DraggablePropertiesList = () => {
+export const DraggablePropertiesList = memo(() => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [draggedItem, setDraggedItem] = useState<Property | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -118,23 +118,23 @@ export const DraggablePropertiesList = () => {
     }
   }, [properties]);
 
-  const handleDragStart = (e: React.DragEvent, property: Property) => {
+  const handleDragStart = useCallback((e: React.DragEvent, property: Property) => {
     setDraggedItem(property);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', e.currentTarget.outerHTML);
-  };
+  }, [draggedItem]);
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverIndex(index);
-  };
+  }, []);
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setDragOverIndex(null);
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     setDragOverIndex(null);
 
@@ -149,12 +149,12 @@ export const DraggablePropertiesList = () => {
     
     setProperties(newProperties);
     setDraggedItem(null);
-  };
+  }, [properties, draggedItem]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggedItem(null);
     setDragOverIndex(null);
-  };
+  }, []);
 
   const resetToDefault = () => {
     setProperties(defaultProperties);
