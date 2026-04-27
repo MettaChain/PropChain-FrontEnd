@@ -3,13 +3,15 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Plus } from 'lucide-react';
+import { ShoppingCart, Plus, CheckSquare, Square } from 'lucide-react';
+import { ShoppingCart, Plus, Heart } from 'lucide-react';
 import type { Property } from '@/types/property';
 import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
-import { useDeveloperStore } from '@/store/developerStore';
-import { DeveloperBadge } from '@/components/DeveloperBadge';
+import { useComparisonStore } from '@/store/comparisonStore';
+import { useCompareStore } from '@/store/compareStore';
+import { useFavoritesStore } from '@/store/favoritesStore';
 
 interface PropertyCardProps {
   property: Property;
@@ -22,13 +24,39 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 }) => {
   const isListView = viewMode === 'list';
   const { addItem } = useCartStore();
-  const { getDeveloperByProperty } = useDeveloperStore();
-  const developer = getDeveloperByProperty(property.id);
+  const { isPropertySelected, toggleProperty } = useComparisonStore();
+
+  const isSelectedForComparison = isPropertySelected(property.id);
+  const selectedIds = useCompareStore((state) => state.selectedIds);
+  const toggleProperty = useCompareStore((state) => state.toggleProperty);
+
+  const isCompared = selectedIds.includes(property.id);
+  const compareLimitReached = selectedIds.length >= 3 && !isCompared;
+  const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addItem(property, 1);
+  };
+
+  const handleComparisonToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleProperty(property);
+  const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!compareLimitReached) {
+      toggleProperty(property.id);
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isFavorite(property.id)) {
+      removeFavorite(property.id);
+    } else {
+      addFavorite(property);
+    }
   };
 
   return (
@@ -62,11 +90,38 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* ROI Badge */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
+          <div className="bg-blue-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-lg">
         <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
           <div className="bg-blue-600 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
             {formatROI(property.metrics.roi)} ROI
           </div>
+          <button
+            onClick={handleComparisonToggle}
+            className="bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 p-2 rounded-lg shadow-lg transition-colors"
+            title={isSelectedForComparison ? "Remove from comparison" : "Add to comparison"}
+          >
+            {isSelectedForComparison ? (
+              <CheckSquare className="w-4 h-4" />
+            ) : (
+              <Square className="w-4 h-4" />
+            )}
+          </button>
         </div>
+
+        {/* Favorite Button */}
+        <button
+          onClick={handleToggleFavorite}
+          className="absolute top-3 right-16 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+        >
+          <Heart
+            className={`w-4 h-4 ${
+              isFavorite(property.id)
+                ? 'fill-red-500 text-red-500'
+                : 'text-gray-600 hover:text-red-500'
+            }`}
+          />
+        </button>
 
         {/* Blockchain Badge */}
         <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3">
@@ -77,6 +132,29 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />
             <span className="truncate max-w-[80px] sm:max-w-none">{BLOCKCHAIN_LABELS[property.blockchain]}</span>
           </div>
+        </div>
+
+        {/* Compare Toggle */}
+        <div className="absolute top-3 right-3">
+          <label
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${
+              isCompared
+                ? 'border-blue-600 bg-blue-600/10 text-blue-700'
+                : 'border-white bg-white/90 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-200'
+            } ${compareLimitReached ? 'cursor-not-allowed opacity-70' : ''}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={isCompared}
+              onChange={handleCompareToggle}
+              onClick={(e) => e.stopPropagation()}
+              disabled={compareLimitReached}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              aria-label={isCompared ? 'Remove from comparison' : 'Add to comparison'}
+            />
+            <span>{isCompared ? 'Selected' : 'Compare'}</span>
+          </label>
         </div>
       </div>
 

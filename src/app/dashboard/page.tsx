@@ -12,6 +12,7 @@ import { ComplianceAuditLog } from "@/components/kyc/ComplianceAuditLog";
 import { KycStatusBadge } from "@/components/kyc/KycStatusBadge";
 import { useKycStore } from "@/store/kycStore";
 import Link from "next/link";
+import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
 import { StakingPanel } from "@/components/dashboard/StakingPanel";
 
 const PortfolioOverview = dynamic(
@@ -153,6 +154,7 @@ const Index = () => {
             {/* Transaction Management */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Transaction Management</h3>
+              <TransactionSecuritySettings />
               <Tabs defaultValue="queue" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
