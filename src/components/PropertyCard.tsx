@@ -3,11 +3,13 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { ShoppingCart, Plus, CheckSquare, Square } from 'lucide-react';
 import { ShoppingCart, Plus, Heart } from 'lucide-react';
 import type { Property } from '@/types/property';
 import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
+import { useComparisonStore } from '@/store/comparisonStore';
 import { useCompareStore } from '@/store/compareStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 
@@ -22,6 +24,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 }) => {
   const isListView = viewMode === 'list';
   const { addItem } = useCartStore();
+  const { isPropertySelected, toggleProperty } = useComparisonStore();
+
+  const isSelectedForComparison = isPropertySelected(property.id);
   const selectedIds = useCompareStore((state) => state.selectedIds);
   const toggleProperty = useCompareStore((state) => state.toggleProperty);
 
@@ -35,6 +40,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     addItem(property, 1);
   };
 
+  const handleComparisonToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleProperty(property);
   const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -81,10 +90,23 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* ROI Badge */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
+          <div className="bg-blue-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-lg">
         <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
           <div className="bg-blue-600 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
             {formatROI(property.metrics.roi)} ROI
           </div>
+          <button
+            onClick={handleComparisonToggle}
+            className="bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 p-2 rounded-lg shadow-lg transition-colors"
+            title={isSelectedForComparison ? "Remove from comparison" : "Add to comparison"}
+          >
+            {isSelectedForComparison ? (
+              <CheckSquare className="w-4 h-4" />
+            ) : (
+              <Square className="w-4 h-4" />
+            )}
+          </button>
         </div>
 
         {/* Favorite Button */}
