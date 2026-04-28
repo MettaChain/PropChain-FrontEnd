@@ -166,6 +166,8 @@ export const performBackgroundSync = async (): Promise<void> => {
 
 /**
  * Process the sync queue
+ * Reads pending operations from localStorage, attempts each one, and
+ * retries failed items up to 3 times before dropping them.
  */
 const processSyncQueue = async (): Promise<void> => {
   if (typeof window === 'undefined') return;
@@ -184,23 +186,24 @@ const processSyncQueue = async (): Promise<void> => {
 
     for (const item of queue) {
       try {
-        // Process each sync item
+        // Attempt to sync this item with the server
         await processSyncItem(item);
         processedIds.push(item.id);
       } catch (error) {
         logger.error(`Failed to process sync item ${item.id}:`, error);
         
-        // Retry logic
+        // Exponential back-off would be ideal here; for now we cap at 3 retries
         if (item.retries < 3) {
           failedItems.push({
             ...item,
-            retries: item.retries + 1,
+            retries: item.retries + 1, // Increment retry counter for next attempt
           });
         }
+        // Items exceeding 3 retries are silently dropped to prevent queue bloat
       }
     }
 
-    // Update queue with remaining items
+    // Persist only the items that still need processing (failed + not yet attempted)
     const remainingQueue = queue.filter(
       (item) => !processedIds.includes(item.id) || failedItems.some((f) => f.id === item.id)
     );
@@ -239,6 +242,8 @@ const processSyncItem = async (item: SyncQueueItem): Promise<void> => {
 
 /**
  * Add item to sync queue
+ * Generates a unique ID using timestamp + random suffix to avoid collisions
+ * even when multiple items are queued within the same millisecond.
  */
 export const addToSyncQueue = (
   type: SyncQueueItem['type'],
@@ -251,11 +256,12 @@ export const addToSyncQueue = (
     const queue: SyncQueueItem[] = queueJson ? JSON.parse(queueJson) : [];
 
     const newItem: SyncQueueItem = {
+      // Combine timestamp with random base-36 string for a unique, sortable ID
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type,
       payload,
       timestamp: Date.now(),
-      retries: 0,
+      retries: 0, // Fresh item — no retries yet
     };
 
     queue.push(newItem);
@@ -472,6 +478,12 @@ export const importCacheData = async (jsonData: string): Promise<void> => {
 
 /**
  * Create a cached fetch wrapper
+ * Supports five caching strategies:
+ *   - cache-first: serve cache, fall back to network on miss/stale
+ *   - network-first: always try network, fall back to stale cache on failure
+ *   - stale-while-revalidate: serve stale cache immediately, refresh in background
+ *   - cache-only: never hit the network (useful for offline-only data)
+ *   - network-only: never use cache (always fresh)
  */
 export const createCachedFetch = <T>(
   fetcher: () => Promise<T>,
@@ -486,6 +498,7 @@ export const createCachedFetch = <T>(
 
     switch (strategy) {
       case 'cache-first': {
+        // Return cached data immediately if it's fresh; only hit network on miss
         const cached = await getCachedProperty(key);
         if (cached.data && !cached.stale) {
           return cached as CacheResult<T>;
@@ -495,6 +508,7 @@ export const createCachedFetch = <T>(
           await setCachedProperty(data as unknown as import('@/types/property').Property);
           return { data, source: 'network', stale: false };
         } catch (error) {
+          // Network failed — return stale cache rather than throwing
           if (cached.data) {
             return { ...cached, stale: true } as CacheResult<T>;
           }
@@ -503,6 +517,7 @@ export const createCachedFetch = <T>(
       }
 
       case 'network-first': {
+        // Always prefer fresh data; only use cache when network is unavailable
         try {
           const data = await fetcher();
           await setCachedProperty(data as unknown as import('@/types/property').Property);
@@ -519,11 +534,13 @@ export const createCachedFetch = <T>(
       case 'stale-while-revalidate': {
         const cached = await getCachedProperty(key);
         
+        // Serve fresh cache immediately without waiting for network
         if (cached.data && !cached.stale) {
           return cached as CacheResult<T>;
         }
 
-        // Trigger background refresh
+        // Kick off a background refresh so the next request gets fresh data,
+        // but don't block the current response on it
         if (isOnline) {
           fetcher()
             .then((data) =>
@@ -532,22 +549,25 @@ export const createCachedFetch = <T>(
             .catch((error) => logger.error('Background refresh failed:', error));
         }
 
+        // Return stale data while the background refresh runs
         if (cached.data) {
           return { ...cached, stale: true } as CacheResult<T>;
         }
 
-        // No cache, must fetch
+        // No cache at all — must wait for network
         const data = await fetcher();
         await setCachedProperty(data as unknown as import('@/types/property').Property);
         return { data, source: 'network', stale: false };
       }
 
       case 'cache-only': {
+        // Never hit the network — useful for data that should only come from cache
         const cached = await getCachedProperty(key);
         return cached as CacheResult<T>;
       }
 
       case 'network-only': {
+        // Bypass cache entirely — always fetch fresh data
         const data = await fetcher();
         return { data, source: 'network', stale: false };
       }
