@@ -1,10 +1,28 @@
 import { isAddress, getAddress, formatEther, parseEther, Hex, isHex } from 'viem';
+import { publicClient } from '@/lib/viem-client';
+import { normalize } from 'viem/ens';
 
 export interface WalletValidationResult {
   isValid: boolean;
   errors: string[];
   warnings: string[];
   riskScore: number; // 0-100, higher is more risky
+  address?: string;
+  ensName?: string;
+  isChecksumValid?: boolean;
+  isBlacklisted?: boolean;
+}
+
+export interface AddressValidationResult {
+  isValid: boolean;
+  address: string;
+  ensName?: string;
+  errors: string[];
+  warnings: string[];
+  riskScore: number;
+  isChecksumValid: boolean;
+  isBlacklisted: boolean;
+  isVerified: boolean;
 }
 
 export interface DomainVerificationResult {
@@ -29,8 +47,182 @@ export class WalletValidator {
   ];
 
   private static readonly RISKY_WALLETS: string[] = [
-    // Add wallet addresses known to be compromised
+    // Known scam and compromised addresses
+    '0x0000000000000000000000000000000000000000', // Null address
+    '0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead', // Dead address
+    // Add more known scam addresses as needed
   ];
+
+  private static readonly KNOWN_SCAM_ADDRESSES: string[] = [
+    // Known scam addresses (to be updated regularly)
+    '0x1234567890123456789012345678901234567890', // Example scam address
+    // Add more known scam addresses
+  ];
+
+  // Ethereum address regex pattern
+  private static readonly ETHEREUM_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
+  
+  // ENS name regex pattern
+  private static readonly ENS_NAME_REGEX = /^[a-zA-Z0-9-]+\.eth$/;
+
+  /**
+   * Validates and sanitizes wallet address input with comprehensive security checks
+   */
+  static async validateWalletAddressInput(
+    input: string,
+    options: {
+      allowENS?: boolean;
+      requireChecksum?: boolean;
+      checkBlacklist?: boolean;
+    } = {}
+  ): Promise<AddressValidationResult> {
+    const {
+      allowENS = true,
+      requireChecksum = true,
+      checkBlacklist = true
+    } = options;
+
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    let riskScore = 0;
+    let address = input;
+    let ensName: string | undefined;
+    let isChecksumValid = false;
+    let isBlacklisted = false;
+    let isVerified = false;
+
+    // Trim and sanitize input
+    const sanitizedInput = input.trim().toLowerCase();
+    
+    if (!sanitizedInput) {
+      errors.push('Address input cannot be empty');
+      return {
+        isValid: false,
+        address: input,
+        errors,
+        warnings,
+        riskScore: 100,
+        isChecksumValid: false,
+        isBlacklisted: false,
+        isVerified: false
+      };
+    }
+
+    // Check if input is an ENS name
+    if (allowENS && this.ENS_NAME_REGEX.test(sanitizedInput)) {
+      try {
+        const resolvedAddress = await this.resolveENSName(sanitizedInput);
+        if (resolvedAddress) {
+          address = resolvedAddress;
+          ensName = sanitizedInput;
+          warnings.push(`ENS name resolved: ${sanitizedInput}`);
+        } else {
+          errors.push(`ENS name could not be resolved: ${sanitizedInput}`);
+          return {
+            isValid: false,
+            address: input,
+            errors,
+            warnings,
+            riskScore: 80,
+            isChecksumValid: false,
+            isBlacklisted: false,
+            isVerified: false
+          };
+        }
+      } catch (error) {
+        errors.push(`Failed to resolve ENS name: ${sanitizedInput}`);
+        return {
+          isValid: false,
+          address: input,
+          errors,
+          warnings,
+          riskScore: 80,
+          isChecksumValid: false,
+          isBlacklisted: false,
+          isVerified: false
+        };
+      }
+    }
+
+    // Regex validation for Ethereum address format
+    if (!this.ETHEREUM_ADDRESS_REGEX.test(address)) {
+      errors.push('Invalid Ethereum address format');
+      return {
+        isValid: false,
+        address: input,
+        errors,
+        warnings,
+        riskScore: 100,
+        isChecksumValid: false,
+        isBlacklisted: false,
+        isVerified: false
+      };
+    }
+
+    // Basic address validation using viem
+    if (!isAddress(address)) {
+      errors.push('Invalid wallet address');
+      return {
+        isValid: false,
+        address: input,
+        errors,
+        warnings,
+        riskScore: 100,
+        isChecksumValid: false,
+        isBlacklisted: false,
+        isVerified: false
+      };
+    }
+
+    // Checksum validation (EIP-55)
+    const checksumAddress = getAddress(address);
+    isChecksumValid = address === checksumAddress;
+    
+    if (!isChecksumValid) {
+      if (requireChecksum) {
+        errors.push('Invalid address checksum (EIP-55)');
+        riskScore += 20;
+      } else {
+        warnings.push('Address checksum validation failed (EIP-55)');
+        riskScore += 10;
+      }
+    }
+
+    // Blacklist check
+    if (checkBlacklist) {
+      const normalizedAddress = address.toLowerCase();
+      if (this.RISKY_WALLETS.includes(normalizedAddress) || 
+          this.KNOWN_SCAM_ADDRESSES.includes(normalizedAddress)) {
+        isBlacklisted = true;
+        errors.push('Address is flagged as known scam or compromised');
+        riskScore += 50;
+      }
+    }
+
+    // Address verification check
+    isVerified = await this.verifyAddress(address);
+    if (!isVerified) {
+      warnings.push('Address is not verified - exercise caution');
+      riskScore += 15;
+    }
+
+    // Additional security checks
+    const securityChecks = this.performAdditionalSecurityChecks(address);
+    warnings.push(...securityChecks.warnings);
+    riskScore += securityChecks.riskScoreIncrease;
+
+    return {
+      isValid: errors.length === 0,
+      address: checksumAddress,
+      ensName,
+      errors,
+      warnings,
+      riskScore: Math.min(riskScore, 100),
+      isChecksumValid,
+      isBlacklisted,
+      isVerified
+    };
+  }
 
   /**
    * Validates wallet connection with comprehensive security checks
@@ -280,6 +472,130 @@ export class WalletValidator {
       // Add known scam contract addresses
     ];
     return knownScamContracts.includes(address.toLowerCase());
+  }
+
+  /**
+   * Resolves ENS name to address
+   */
+  private static async resolveENSName(ensName: string): Promise<string | null> {
+    try {
+      const normalizedEnsName = normalize(ensName);
+      const address = await publicClient.getEnsAddress({
+        name: normalizedEnsName
+      });
+      return address;
+    } catch (error) {
+      console.error('ENS resolution failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Verifies if an address is known/trusted
+   */
+  private static async verifyAddress(address: string): Promise<boolean> {
+    try {
+      // Check if address has transaction history (basic verification)
+      const balance = await publicClient.getBalance({ address });
+      
+      // Addresses with zero balance might be newly created or suspicious
+      // However, this is not definitive, so we use it as a warning signal
+      if (balance === BigInt('0')) {
+        return false;
+      }
+
+      // Additional verification logic could include:
+      // - Checking if address is a known contract
+      // - Verifying against known exchange/deposit addresses
+      // - Checking age of the address (first transaction)
+      
+      return true;
+    } catch (error) {
+      console.error('Address verification failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Performs additional security checks on the address
+   */
+  private static performAdditionalSecurityChecks(address: string): {
+    warnings: string[];
+    riskScoreIncrease: number;
+  } {
+    const warnings: string[] = [];
+    let riskScoreIncrease = 0;
+
+    // Check for address patterns that might indicate spoofing
+    const normalizedAddress = address.toLowerCase();
+    
+    // Check for addresses with many repeated characters (potential typosquatting)
+    const repeats = normalizedAddress.match(/(.)\1{4,}/g);
+    if (repeats && repeats.length > 0) {
+      warnings.push('Address contains repeated character patterns - verify carefully');
+      riskScoreIncrease += 5;
+    }
+
+    // Check for addresses that look similar to common addresses
+    const commonAddresses = [
+      '0x742d35cc6634c0532925a3b8d4c9db96c4b4db45', // Example common address
+      // Add more known addresses to check against
+    ];
+
+    for (const commonAddr of commonAddresses) {
+      if (this.calculateSimilarity(normalizedAddress, commonAddr) > 0.8) {
+        warnings.push('Address is very similar to a known address - verify carefully');
+        riskScoreIncrease += 10;
+        break;
+      }
+    }
+
+    // Check for newly created addresses (heuristic based on address pattern)
+    // This is a simple heuristic - in production, you'd want to check actual blockchain data
+    const firstByte = normalizedAddress.slice(2, 4);
+    if (firstByte === '00' || firstByte === 'ff') {
+      warnings.push('Address pattern suggests it might be newly created');
+      riskScoreIncrease += 3;
+    }
+
+    return { warnings, riskScoreIncrease };
+  }
+
+  /**
+   * Calculates similarity between two addresses (Levenshtein distance)
+   */
+  private static calculateSimilarity(addr1: string, addr2: string): number {
+    const longer = addr1.length > addr2.length ? addr1 : addr2;
+    const shorter = addr1.length > addr2.length ? addr2 : addr1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    const distance = this.levenshteinDistance(longer, shorter);
+    return (longer.length - distance) / longer.length;
+  }
+
+  /**
+   * Calculates Levenshtein distance between two strings
+   */
+  private static levenshteinDistance(str1: string, str2: string): number {
+    const matrix = Array(str2.length + 1).fill(null).map(() => 
+      Array(str1.length + 1).fill(null));
+    
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+    
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i] + 1,
+          matrix[j - 1][i - 1] + indicator
+        );
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
   }
 
   /**
