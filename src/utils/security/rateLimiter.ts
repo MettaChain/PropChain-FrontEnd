@@ -132,40 +132,40 @@ export class RateLimiter {
 
 // Pre-configured rate limiters for common operations
 export const RateLimiters = {
-  WALLET_CONNECTION: new RateLimitConfig({
+  WALLET_CONNECTION: {
     maxAttempts: 5,
     windowMs: 5 * 60 * 1000, // 5 minutes
     skipSuccessfulRequests: false,
     skipFailedRequests: false
-  }),
+  } as RateLimitConfig,
   
-  TRANSACTION_SIGNING: new RateLimitConfig({
+  TRANSACTION_SIGNING: {
     maxAttempts: 10,
     windowMs: 1 * 60 * 1000, // 1 minute
     skipSuccessfulRequests: false,
     skipFailedRequests: false
-  }),
+  } as RateLimitConfig,
   
-  SIGNATURE_REQUESTS: new RateLimitConfig({
+  SIGNATURE_REQUESTS: {
     maxAttempts: 3,
     windowMs: 1 * 60 * 1000, // 1 minute
     skipSuccessfulRequests: false,
     skipFailedRequests: false
-  }),
+  } as RateLimitConfig,
   
-  ACCOUNT_SWITCHING: new RateLimitConfig({
+  ACCOUNT_SWITCHING: {
     maxAttempts: 3,
     windowMs: 2 * 60 * 1000, // 2 minutes
     skipSuccessfulRequests: false,
     skipFailedRequests: false
-  }),
+  } as RateLimitConfig,
   
-  NETWORK_SWITCHING: new RateLimitConfig({
+  NETWORK_SWITCHING: {
     maxAttempts: 5,
     windowMs: 3 * 60 * 1000, // 3 minutes
     skipSuccessfulRequests: false,
     skipFailedRequests: false
-  })
+  } as RateLimitConfig
 };
 
 /**

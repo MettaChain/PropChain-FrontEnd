@@ -23,6 +23,7 @@ export const NetworkSwitcher: React.FC = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isSwitchingNetwork}
+        data-testid="network-switcher"
         className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
       >
         <div

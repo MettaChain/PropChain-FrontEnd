@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { logger } from "@/utils/logger";
 import {
@@ -13,23 +13,48 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  Settings,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
-import { isMobileProperty } from "@/types/mobileProperty";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import type { MobileProperty } from "@/types/mobileProperty";
+import type { CacheStats, CacheEvent } from "@/types/cache";
+import {
+  getCachedMobileProperty,
+  setCachedMobileProperty,
+  deleteCachedMobileProperty,
+  getAllCachedMobileProperties,
+  clearAllCachedProperties,
+  addCacheEventListener,
+  updateCacheStats,
+  getCacheStats,
+  isCacheAvailable,
+} from "@/lib/propertyCache";
+import {
+  initCacheManager,
+  isNetworkOnline,
+  addNetworkStateListener,
+  performBackgroundSync,
+  getSyncQueueLength,
+  getCacheHealth,
+  optimizeCache,
+} from "@/lib/cacheManager";
 
-interface CachedProperty {
+interface CachedPropertyDisplay {
   id: string;
   name: string;
   location: string;
   images: string[];
   data: MobileProperty;
   cachedAt: Date;
-  size: number; // in bytes
+  size: number;
   lastAccessed: Date;
+  accessCount: number;
 }
 
 interface OfflinePropertyCacheProps {
@@ -42,104 +67,119 @@ export const OfflinePropertyCache = ({
   onPropertySelect,
 }: OfflinePropertyCacheProps) => {
   const [isOnline, setIsOnline] = useState(true);
-  const [cachedProperties, setCachedProperties] = useState<CachedProperty[]>(
-    [],
-  );
+  const [isCacheReady, setIsCacheReady] = useState(false);
+  const [cachedProperties, setCachedProperties] = useState<CachedPropertyDisplay[]>([]);
   const [downloadProgress, setDownloadProgress] = useState<{
     [key: string]: number;
   }>({});
-  const [storageUsed, setStorageUsed] = useState(0);
-  const [storageQuota, setStorageQuota] = useState(0);
+  const [cacheStats, setCacheStats] = useState<CacheStats>({
+    totalEntries: 0,
+    totalSize: 0,
+    storageQuota: 0,
+    storageUsed: 0,
+    hitRate: 0,
+    missRate: 0,
+    oldestEntry: null,
+    newestEntry: null,
+  });
   const [isDownloading, setIsDownloading] = useState<{
     [key: string]: boolean;
   }>({});
+  const [syncQueueLength, setSyncQueueLength] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [autoSync, setAutoSync] = useState(true);
+  const [healthIssues, setHealthIssues] = useState<string[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
 
+  // Initialize cache system
   useEffect(() => {
-    // Set initial online status after component mounts
-    setIsOnline(navigator.onLine);
-
-    // Listen for online/offline events
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    // Load cached properties from IndexedDB
-    loadCachedProperties();
-
-    // Check storage quota
-    checkStorageQuota();
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+    const init = async () => {
+      try {
+        await initCacheManager();
+        setIsCacheReady(true);
+        await loadCachedProperties();
+        await updateStats();
+      } catch (error) {
+        logger.error("Error initializing cache:", error);
+      }
     };
+
+    init();
   }, []);
 
-  const loadCachedProperties = async () => {
-    try {
-      // In a real app, this would load from IndexedDB
-      const cached = localStorage.getItem("cachedProperties");
-      if (cached) {
-        const parsed: unknown = JSON.parse(cached);
-        const parsedCached = Array.isArray(parsed)
-          ? parsed
-              .map((item): CachedProperty | null => {
-                if (
-                  typeof item !== "object" ||
-                  item === null ||
-                  !("data" in item) ||
-                  !isMobileProperty(item.data)
-                ) {
-                  return null;
-                }
-
-                const cachedItem = item as {
-                  id: string;
-                  name: string;
-                  location: string;
-                  images: string[];
-                  data: MobileProperty;
-                  cachedAt: string | Date;
-                  lastAccessed: string | Date;
-                  size: number;
-                };
-
-                return {
-                  ...cachedItem,
-                  cachedAt: new Date(cachedItem.cachedAt),
-                  lastAccessed: new Date(cachedItem.lastAccessed),
-                };
-              })
-              .filter((item): item is CachedProperty => item !== null)
-          : [];
-
-        setCachedProperties(parsedCached);
-
-        // Calculate total storage used
-        const totalSize = parsedCached.reduce(
-          (sum: number, prop: CachedProperty) => sum + prop.size,
-          0,
-        );
-        setStorageUsed(totalSize);
+  // Set up network state listener
+  useEffect(() => {
+    setIsOnline(isNetworkOnline());
+    
+    const unsubscribe = addNetworkStateListener((online) => {
+      setIsOnline(online);
+      if (online && autoSync) {
+        performBackgroundSync();
       }
+    });
+
+    return unsubscribe;
+  }, [autoSync]);
+
+  // Set up cache event listener
+  useEffect(() => {
+    if (!isCacheReady) return;
+
+    const unsubscribe = addCacheEventListener((event: CacheEvent) => {
+      if (event.type === 'set' || event.type === 'delete' || event.type === 'clear') {
+        loadCachedProperties();
+        updateStats();
+      }
+    });
+
+    return unsubscribe;
+  }, [isCacheReady]);
+
+  // Periodic stats update
+  useEffect(() => {
+    if (!isCacheReady) return;
+
+    const interval = setInterval(() => {
+      updateStats();
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [isCacheReady]);
+
+  const loadCachedProperties = useCallback(async () => {
+    try {
+      const entries = await getAllCachedMobileProperties();
+      const displayData: CachedPropertyDisplay[] = entries.map((entry) => ({
+        id: entry.data.id,
+        name: entry.data.name,
+        location: entry.data.location,
+        images: entry.data.images,
+        data: entry.data,
+        cachedAt: new Date(entry.metadata.cachedAt),
+        size: entry.metadata.size,
+        lastAccessed: new Date(entry.metadata.lastAccessed),
+        accessCount: entry.metadata.accessCount,
+      }));
+
+      setCachedProperties(displayData);
     } catch (error) {
       logger.error("Error loading cached properties:", error);
     }
-  };
+  }, []);
 
-  const checkStorageQuota = async () => {
-    if ("storage" in navigator && "estimate" in navigator.storage) {
-      try {
-        const estimate = await navigator.storage.estimate();
-        setStorageQuota(estimate.quota || 0);
-        setStorageUsed(estimate.usage || 0);
-      } catch (error) {
-        logger.error("Error checking storage quota:", error);
-      }
+  const updateStats = useCallback(async () => {
+    try {
+      const stats = await updateCacheStats();
+      setCacheStats(stats);
+      setSyncQueueLength(getSyncQueueLength());
+      
+      // Check health
+      const health = await getCacheHealth();
+      setHealthIssues(health.issues);
+    } catch (error) {
+      logger.error("Error updating stats:", error);
     }
-  };
+  }, []);
 
   const downloadProperty = async (property: MobileProperty) => {
     if (isDownloading[property.id]) return;
@@ -149,11 +189,11 @@ export const OfflinePropertyCache = ({
 
     try {
       // Simulate downloading property data and images
-      const totalSteps = property.images.length + 1; // +1 for property data
+      const totalSteps = property.images.length + 1;
       let completedSteps = 0;
 
       // Download property data
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 300));
       completedSteps++;
       setDownloadProgress((prev) => ({
         ...prev,
@@ -162,7 +202,7 @@ export const OfflinePropertyCache = ({
 
       // Download images
       for (const _image of property.images) {
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 200));
         completedSteps++;
         setDownloadProgress((prev) => ({
           ...prev,
@@ -170,35 +210,16 @@ export const OfflinePropertyCache = ({
         }));
       }
 
-      // Calculate estimated size (in a real app, this would be actual file sizes)
-      const estimatedSize = property.images.length * 500000 + 50000; // ~500KB per image + 50KB for data
-
-      const cachedProperty: CachedProperty = {
-        id: property.id,
-        name: property.name,
-        location: property.location,
-        images: property.images,
-        data: property,
-        cachedAt: new Date(),
-        lastAccessed: new Date(),
-        size: estimatedSize,
-      };
-
-      // Save to cache
-      const updatedCache = [...cachedProperties, cachedProperty];
-      setCachedProperties(updatedCache);
-
-      // Save to localStorage (in a real app, use IndexedDB)
-      localStorage.setItem("cachedProperties", JSON.stringify(updatedCache));
-
-      setStorageUsed((prev) => prev + estimatedSize);
+      // Cache the property
+      await setCachedMobileProperty(property);
+      
+      logger.info(`Property ${property.id} cached successfully`);
     } catch (error) {
       logger.error("Error downloading property:", error);
     } finally {
       setIsDownloading((prev) => ({ ...prev, [property.id]: false }));
       setDownloadProgress((prev) => ({ ...prev, [property.id]: 100 }));
 
-      // Clear progress after a delay
       setTimeout(() => {
         setDownloadProgress((prev) => {
           const newProgress = { ...prev };
@@ -210,20 +231,47 @@ export const OfflinePropertyCache = ({
   };
 
   const removeCachedProperty = async (propertyId: string) => {
-    const propertyToRemove = cachedProperties.find((p) => p.id === propertyId);
-    if (!propertyToRemove) return;
-
-    const updatedCache = cachedProperties.filter((p) => p.id !== propertyId);
-    setCachedProperties(updatedCache);
-
-    localStorage.setItem("cachedProperties", JSON.stringify(updatedCache));
-    setStorageUsed((prev) => prev - propertyToRemove.size);
+    try {
+      await deleteCachedMobileProperty(propertyId);
+      logger.info(`Property ${propertyId} removed from cache`);
+    } catch (error) {
+      logger.error("Error removing cached property:", error);
+    }
   };
 
   const clearAllCache = async () => {
-    setCachedProperties([]);
-    localStorage.removeItem("cachedProperties");
-    setStorageUsed(0);
+    try {
+      await clearAllCachedProperties();
+      logger.info("All cache cleared");
+    } catch (error) {
+      logger.error("Error clearing cache:", error);
+    }
+  };
+
+  const handleOptimize = async () => {
+    try {
+      const result = await optimizeCache();
+      logger.info(`Cache optimized: ${result.cleaned} entries cleaned`);
+      await updateStats();
+    } catch (error) {
+      logger.error("Error optimizing cache:", error);
+    }
+  };
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await performBackgroundSync();
+      await updateStats();
+    } catch (error) {
+      logger.error("Error during sync:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const isPropertyCached = (propertyId: string): boolean => {
+    return cachedProperties.some((p) => p.id === propertyId);
   };
 
   const formatBytes = (bytes: number): string => {
@@ -245,12 +293,8 @@ export const OfflinePropertyCache = ({
     );
   };
 
-  const isPropertyCached = (propertyId: string): boolean => {
-    return cachedProperties.some((p) => p.id === propertyId);
-  };
-
   const storagePercentage =
-    storageQuota > 0 ? (storageUsed / storageQuota) * 100 : 0;
+    cacheStats.storageQuota > 0 ? (cacheStats.storageUsed / cacheStats.storageQuota) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -275,11 +319,49 @@ export const OfflinePropertyCache = ({
             </div>
           </div>
 
-          <Badge variant={isOnline ? "default" : "secondary"}>
-            {cachedProperties.length} cached
-          </Badge>
+          <div className="flex items-center gap-2">
+            {!isCacheReady && (
+              <Badge variant="outline">Initializing...</Badge>
+            )}
+            <Badge variant={isOnline ? "default" : "secondary"}>
+              {cachedProperties.length} cached
+            </Badge>
+          </div>
         </div>
       </Card>
+
+      {/* Cache Health Warnings */}
+      {healthIssues.length > 0 && (
+        <Card className="p-4 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/10">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-medium text-orange-800 dark:text-orange-200">
+                Cache Health Issues
+              </h4>
+              <ul className="mt-1 space-y-1">
+                {healthIssues.map((issue, index) => (
+                  <li
+                    key={index}
+                    className="text-sm text-orange-700 dark:text-orange-300"
+                  >
+                    {issue}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={handleOptimize}
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Optimize Cache
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Storage Usage */}
       <Card className="p-4">
@@ -289,26 +371,97 @@ export const OfflinePropertyCache = ({
               <HardDrive className="w-4 h-4" />
               <span className="font-medium">Storage Usage</span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearAllCache}
-              disabled={cachedProperties.length === 0}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Clear All
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSettings(!showSettings)}
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllCache}
+                disabled={cachedProperties.length === 0}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Clear All
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Progress value={storagePercentage} className="h-2" />
             <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-              <span>{formatBytes(storageUsed)} used</span>
-              <span>{formatBytes(storageQuota)} total</span>
+              <span>{formatBytes(cacheStats.storageUsed)} used</span>
+              <span>{formatBytes(cacheStats.storageQuota)} total</span>
+            </div>
+          </div>
+
+          {/* Cache Stats */}
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="text-center">
+              <div className="text-lg font-semibold">{cacheStats.totalEntries}</div>
+              <div className="text-xs text-gray-500">Entries</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-semibold">
+                {Math.round(cacheStats.hitRate * 100)}%
+              </div>
+              <div className="text-xs text-gray-500">Hit Rate</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-semibold">{syncQueueLength}</div>
+              <div className="text-xs text-gray-500">Sync Queue</div>
             </div>
           </div>
         </div>
       </Card>
+
+      {/* Settings Panel */}
+      {showSettings && (
+        <Card className="p-4">
+          <h4 className="font-medium mb-4">Cache Settings</h4>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="auto-sync">Auto Sync</Label>
+                <p className="text-sm text-gray-500">
+                  Automatically sync when connection is restored
+                </p>
+              </div>
+              <Switch
+                id="auto-sync"
+                checked={autoSync}
+                onCheckedChange={setAutoSync}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSync}
+                disabled={!isOnline || isSyncing}
+                className="flex-1"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                Sync Now
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOptimize}
+                className="flex-1"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Optimize
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Available Properties */}
       {isOnline && (

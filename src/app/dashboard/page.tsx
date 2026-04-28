@@ -6,6 +6,14 @@ import { WalletConnector } from "@/components/WalletConnector";
 import { TransactionQueue } from "@/components/TransactionQueue";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CertificatesPanel } from "@/components/dashboard/CertificatesPanel";
+import { KycVerificationCenter } from "@/components/kyc/KycVerificationCenter";
+import { ComplianceAuditLog } from "@/components/kyc/ComplianceAuditLog";
+import { KycStatusBadge } from "@/components/kyc/KycStatusBadge";
+import { useKycStore } from "@/store/kycStore";
+import Link from "next/link";
+import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
+import { StakingPanel } from "@/components/dashboard/StakingPanel";
 
 const PortfolioOverview = dynamic(
   () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
@@ -27,6 +35,10 @@ const RecentTransactions = dynamic(
   () => import("@/components/dashboard/RecentTransactions").then((m) => m.RecentTransactions),
   { loading: () => <WidgetSkeleton className="h-[240px]" /> }
 );
+const YieldChart = dynamic(
+  () => import("@/components/dashboard/YieldChart").then((m) => m.YieldChart),
+  { loading: () => <WidgetSkeleton className="h-[340px]" /> }
+);
 const IncomeTracker = dynamic(
   () => import("@/components/dashboard/IncomeTracker").then((m) => m.IncomeTracker),
   { loading: () => <WidgetSkeleton className="h-[340px]" /> }
@@ -46,6 +58,7 @@ const DataRefreshWrapper = dynamic(
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeItem, setActiveItem] = useState("dashboard");
+  const { profile } = useKycStore();
 
   return (
     <div className="min-h-screen bg-background flex w-full">
@@ -84,9 +97,21 @@ const Index = () => {
               <h2 className="text-2xl md:text-3xl font-bold">
                 Welcome back, <span className="text-[#155DFC]">John</span>
               </h2>
-              <p className="text-muted-foreground">
-                Here's an overview of your real estate token portfolio
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-muted-foreground">
+                  Here's an overview of your real estate token portfolio
+                </p>
+                <KycStatusBadge status={profile.status} thresholdEth={profile.thresholdEth} />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/compliance"
+                className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                Open compliance center
+              </Link>
             </div>
 
             {/* KPI Overview */}
@@ -107,14 +132,21 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Income Tracker */}
-            <IncomeTracker />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <YieldChart />
+              <IncomeTracker />
+            </div>
 
-             {/* Risk Analysis */}
-          <RiskAnalysis />
+            {/* Risk Analysis */}
+            <RiskAnalysis />
 
-          {/* Export Reports */}
-          <PortfolioReport />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <KycVerificationCenter />
+              <ComplianceAuditLog />
+            </div>
+
+            {/* Export Reports */}
+            <PortfolioReport />
 
             {/* Properties */}
             <PropertiesList />
@@ -122,16 +154,25 @@ const Index = () => {
             {/* Transaction Management */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Transaction Management</h3>
+              <TransactionSecuritySettings />
               <Tabs defaultValue="queue" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
                   <TabsTrigger value="history">Transaction History</TabsTrigger>
+                  <TabsTrigger value="staking">Staking & Yield</TabsTrigger>
+                  <TabsTrigger value="certificates">My Certificates</TabsTrigger>
                 </TabsList>
                 <TabsContent value="queue">
                   <TransactionQueue />
                 </TabsContent>
                 <TabsContent value="history">
                   <TransactionHistory />
+                </TabsContent>
+                <TabsContent value="certificates">
+                  <CertificatesPanel />
+                </TabsContent>
+                <TabsContent value="staking">
+                  <StakingPanel />
                 </TabsContent>
               </Tabs>
             </div>
