@@ -34,6 +34,13 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
 }) => {
   const [steps, setSteps] = useState<TransactionStep[]>([
     {
+      id: 'prepare',
+      label: 'Preparing Transaction',
+      description: 'Setting up transaction parameters and gas estimates',
+      status: 'pending',
+      icon: <Shield className="w-4 h-4" />,
+    },
+    {
       id: 'sign',
       label: 'Signing Transaction',
       description: 'Please sign the transaction in your wallet',
@@ -66,37 +73,70 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
   const [confirmations, setConfirmations] = useState(0);
   const [requiredConfirmations] = useState(12);
   const [currentStep, setCurrentStep] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
+  const [maxRetries] = useState(3);
+  const [isRetrying, setIsRetrying] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // Simulate transaction progress
-    const simulateProgress = async () => {
-      // Step 1: Signing
-      await updateStepStatus('sign', 'in-progress');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      await updateStepStatus('sign', 'completed');
+  const simulateProgress = useCallback(async () => {
+    try {
+      // Reset states for new attempt
+      setRetryCount(0);
+      setIsRetrying(false);
+      
+      // Step 1: Preparing
+      await updateStepStatus('prepare', 'in-progress');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Simulate potential preparation error
+      if (Math.random() < 0.1 && retryCount === 0) {
+        throw new Error('Failed to prepare transaction parameters');
+      }
+      
+      await updateStepStatus('prepare', 'completed');
       setCurrentStep(1);
 
-      // Step 2: Broadcasting
-      await updateStepStatus('broadcast', 'in-progress');
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      await updateStepStatus('broadcast', 'completed');
+      // Step 2: Signing
+      await updateStepStatus('sign', 'in-progress');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate potential signing error
+      if (Math.random() < 0.15 && retryCount === 0) {
+        throw new Error('User rejected the transaction');
+      }
+      
+      await updateStepStatus('sign', 'completed');
       setCurrentStep(2);
 
-      // Step 3: Confirmations
+      // Step 3: Broadcasting
+      await updateStepStatus('broadcast', 'in-progress');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Simulate potential broadcast error
+      if (Math.random() < 0.1 && retryCount === 0) {
+        throw new Error('Network error: Failed to broadcast transaction');
+      }
+      
+      await updateStepStatus('broadcast', 'completed');
+      setCurrentStep(3);
+
+      // Step 4: Confirmations
       await updateStepStatus('confirm', 'in-progress');
       
       // Simulate block confirmations
       for (let i = 1; i <= requiredConfirmations; i++) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         setConfirmations(i);
+        
+        // Simulate potential confirmation error
+        if (Math.random() < 0.05 && i > 5 && retryCount === 0) {
+          throw new Error('Transaction dropped from mempool');
+        }
       }
       
       await updateStepStatus('confirm', 'completed');
-      setCurrentStep(3);
+      setCurrentStep(4);
 
-      // Step 4: Complete
+      // Step 5: Complete
       await updateStepStatus('complete', 'in-progress');
       await new Promise(resolve => setTimeout(resolve, 1000));
       await updateStepStatus('complete', 'completed');
@@ -104,7 +144,24 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
       if (onComplete) {
         onComplete();
       }
-    };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Transaction error:', errorMessage);
+      
+      // Find current step and mark as error
+      const currentStepId = steps.find(step => step.status === 'in-progress')?.id;
+      if (currentStepId) {
+        await updateStepStatus(currentStepId, 'error', errorMessage);
+      }
+      
+      if (onError) {
+        onError(errorMessage);
+      }
+    }
+  }, [retryCount, requiredConfirmations, onComplete, onError, steps]);
+
+  useEffect(() => {
+    if (!isOpen) return;
 
     simulateProgress().catch(error => {
       console.error('Transaction simulation error:', error);
@@ -112,14 +169,42 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
         onError('Transaction failed. Please try again.');
       }
     });
-  }, [isOpen, requiredConfirmations, onComplete, onError]);
+  }, [isOpen, simulateProgress]);
 
-  const updateStepStatus = async (stepId: string, status: TransactionStep['status']) => {
+  const updateStepStatus = async (stepId: string, status: TransactionStep['status'], error?: string) => {
     setSteps(prev => prev.map(step => 
       step.id === stepId 
-        ? { ...step, status }
+        ? { ...step, status, error }
         : step
     ));
+  };
+
+  const handleRetry = async () => {
+    if (retryCount >= maxRetries) {
+      if (onError) {
+        onError('Maximum retry attempts reached. Please try again later.');
+      }
+      return;
+    }
+
+    setIsRetrying(true);
+    setRetryCount(prev => prev + 1);
+    
+    // Reset all steps to pending
+    setSteps(prev => prev.map(step => ({ 
+      ...step, 
+      status: 'pending' as const, 
+      error: undefined 
+    })));
+    
+    setConfirmations(0);
+    setCurrentStep(0);
+    
+    // Restart the transaction process
+    setTimeout(() => {
+      setIsRetrying(false);
+      simulateProgress();
+    }, 1000);
   };
 
   const getStepIcon = (step: TransactionStep) => {
