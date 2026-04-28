@@ -30,6 +30,30 @@ body {
 @import "tw-animate-css";
 @import "../styles/mobile.css";
 
+/* Tailwind v4: explicit source scanning for all app code */
+@source "../../src/**/*.{ts,tsx}";
+@source "../../src/**/*.css";
+
+/*
+ * Safelist: classes constructed dynamically at runtime that Tailwind's
+ * static scanner cannot detect.  Add full class names here – never
+ * partial strings like "bg-{color}".
+ *
+ * Pattern: status / severity badges built from lookup objects
+ */
+@layer utilities {
+  /* Risk / severity colours used in audit-log and security components */
+  .text-risk-low    { color: oklch(0.627 0.194 142.495); }   /* green  */
+  .text-risk-medium { color: oklch(0.769 0.188 70.08);    }   /* amber  */
+  .text-risk-high   { color: oklch(0.577 0.245 27.325);   }   /* red    */
+  .text-risk-critical { color: oklch(0.5 0.28 20);        }   /* deep-red */
+
+  .bg-risk-low    { background-color: oklch(0.95 0.05 142); }
+  .bg-risk-medium { background-color: oklch(0.97 0.05 80);  }
+  .bg-risk-high   { background-color: oklch(0.97 0.05 27);  }
+  .bg-risk-critical { background-color: oklch(0.93 0.08 20); }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
