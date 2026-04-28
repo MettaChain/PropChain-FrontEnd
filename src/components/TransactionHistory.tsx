@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState, useMemo } from 'react';
 import { useTransactionStore } from '@/store/transactionStore';
@@ -113,7 +114,7 @@ export const TransactionHistory: React.FC = () => {
       saveAs(blob, fileName);
       toast.success('Transaction history exported to CSV successfully');
     } catch (error) {
-      console.error('Error exporting to CSV:', error);
+      logger.error('Error exporting to CSV:', error);
       toast.error('Failed to export to CSV');
     }
   };
@@ -136,7 +137,7 @@ export const TransactionHistory: React.FC = () => {
       saveAs(blob, fileName);
       toast.success('Transaction history exported to Excel successfully');
     } catch (error) {
-      console.error('Error exporting to Excel:', error);
+      logger.error('Error exporting to Excel:', error);
       toast.error('Failed to export to Excel');
     }
   };

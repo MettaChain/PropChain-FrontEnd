@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback, memo } from "react";
@@ -103,7 +104,7 @@ export const DraggablePropertiesList = memo(() => {
         ).filter(Boolean);
         setProperties(orderedProperties.length > 0 ? orderedProperties : defaultProperties);
       } catch (error) {
-        console.error('Error loading portfolio order:', error);
+        logger.error('Error loading portfolio order:', error);
         setProperties(defaultProperties);
       }
     } else {

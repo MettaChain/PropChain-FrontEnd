@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import Image from 'next/image';
@@ -44,7 +45,7 @@ export const CartSidebar: React.FC = () => {
         alert(`Purchase failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('Checkout error:', error);
+      logger.error('Checkout error:', error);
       alert('Checkout failed. Please try again.');
     }
   };

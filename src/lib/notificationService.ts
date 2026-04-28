@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import type { SavedSearch, Property, PropertyAlert, NotificationFrequency } from '@/types/property';
 import { propertyService } from './propertyService';
 
@@ -53,7 +54,7 @@ class NotificationService {
           await this.updateLastNotifiedTime(savedSearch.id, savedSearch.userId);
         }
       } catch (error) {
-        console.error(`Error checking search ${savedSearch.id}:`, error);
+        logger.error(`Error checking search ${savedSearch.id}:`, error);
       }
     }
     
@@ -70,7 +71,7 @@ class NotificationService {
   ): Promise<boolean> {
     try {
       // In a real implementation, this would call an email service API
-      console.log('Sending email notification:', {
+      logger.info('Sending email notification:', {
         to: email,
         subject: `New Property Alert: ${alert.newPropertiesCount} new properties match "${savedSearch.name}"`,
         properties: alert.matchingProperties.map(p => ({
@@ -87,7 +88,7 @@ class NotificationService {
       // Mock success
       return true;
     } catch (error) {
-      console.error('Failed to send email notification:', error);
+      logger.error('Failed to send email notification:', error);
       return false;
     }
   }
@@ -170,7 +171,7 @@ class NotificationService {
         localStorage.setItem(`propchain-saved-searches-${userId}`, JSON.stringify(updatedSearches));
       }
     } catch (error) {
-      console.error('Failed to update last notified time:', error);
+      logger.error('Failed to update last notified time:', error);
     }
   }
 

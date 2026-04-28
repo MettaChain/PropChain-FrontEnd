@@ -46,7 +46,7 @@ export default function Error({
         },
       }),
     }).catch(err => {
-      console.error('Failed to report error:', err);
+      logger.error('Failed to report error:', err);
     });
   }, [error]);
 

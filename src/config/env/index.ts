@@ -11,6 +11,7 @@
  * const appName = env.NEXT_PUBLIC_APP_NAME;
  */
 
+import { logger } from '@/utils/logger';
 import {
   validateEnv,
   validateEnvRequirements,
@@ -41,7 +42,7 @@ export function initEnv(): EnvConfig {
 
     // Log initialization in development
     if (validatedEnvConfig.NEXT_PUBLIC_DEBUG_MODE) {
-      console.log("[EnvConfig] Environment initialized:", {
+      logger.info("[EnvConfig] Environment initialized:", {
         NODE_ENV: validatedEnvConfig.NODE_ENV,
         NEXT_PUBLIC_APP_NAME: validatedEnvConfig.NEXT_PUBLIC_APP_NAME,
         NEXT_PUBLIC_APP_URL: validatedEnvConfig.NEXT_PUBLIC_APP_URL,
@@ -50,7 +51,7 @@ export function initEnv(): EnvConfig {
 
     return validatedEnvConfig;
   } catch (error) {
-    console.error("[EnvConfig] Environment validation failed:", error);
+    logger.error("[EnvConfig] Environment validation failed:", error);
     throw error;
   }
 }
@@ -164,6 +165,6 @@ if (typeof window === "undefined") {
     initEnv();
   } catch (error) {
     // Log but don't throw during module load to allow Next.js to handle gracefully
-    console.warn("[EnvConfig] Early validation warning:", error);
+    logger.warn("[EnvConfig] Early validation warning:", error);
   }
 }

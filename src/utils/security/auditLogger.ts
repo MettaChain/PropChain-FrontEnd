@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 export interface AuditLogEntry {
   id: string;
   timestamp: number;
@@ -487,7 +488,7 @@ export class SecurityAuditLogger {
    */
   private notifySecurityAlert(alert: SecurityAlert): void {
     // In a real implementation, this would send notifications to security team
-    console.warn('Security Alert:', alert);
+    logger.warn('Security Alert:', alert);
     
     // Could also integrate with external monitoring services
     if (alert.severity === 'critical') {
@@ -505,7 +506,7 @@ export class SecurityAuditLogger {
     // - Security team email/Slack
     // - SIEM systems
     // - Incident response platforms
-    console.error('CRITICAL SECURITY ALERT:', alert);
+    logger.error('CRITICAL SECURITY ALERT:', alert);
   }
 
   /**

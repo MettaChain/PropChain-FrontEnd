@@ -1,12 +1,36 @@
 'use client';
 
-import { logger, LogLevel, type LoggerConfig } from './logger';
+/**
+ * structuredLogger — thin domain-specific layer on top of logger.
+ *
+ * All core logging (levels, JSON output, redaction, correlation IDs) lives in
+ * logger.ts.  This module adds domain helpers (performance, network, web3,
+ * component) and re-exports everything so callers can import from either file.
+ */
+
+// Re-export everything from the canonical logger so existing imports of
+// structuredLogger still work without changes.
+export {
+  logger,
+  createLogger,
+  configureLogger,
+  getLoggerConfig,
+  createRequestLogger,
+  replaceConsole,
+  createPerformanceLogger,
+  LogLevel,
+  type LogEntry,
+  type LoggerConfig,
+  type LoggerConfiguration,
+} from './logger';
+
+import { logger, createLogger, LogLevel } from './logger';
 import { errorReporting } from './errorReporting';
 import { ErrorCategory, ErrorSeverity } from '@/types/errors';
 import type { AppError } from '@/types/errors';
 
 // ============================================================================
-// Structured Logging Service
+// Extended entry shape (superset of LogEntry)
 // ============================================================================
 
 export interface StructuredLogEntry {
@@ -21,143 +45,78 @@ export interface StructuredLogEntry {
   component?: string;
   action?: string;
   metadata?: Record<string, unknown>;
-  error?: {
-    name: string;
-    message: string;
-    stack?: string;
-    code?: string;
-  };
-  performance?: {
-    duration?: number;
-    operation?: string;
-    memoryUsage?: number;
-  };
-  network?: {
-    url?: string;
-    method?: string;
-    status?: number;
-    responseTime?: number;
-  };
-  web3?: {
-    chainId?: number;
-    account?: string;
-    gasUsed?: string;
-    transactionHash?: string;
-  };
+  error?: { name: string; message: string; stack?: string; code?: string };
+  performance?: { duration?: number; operation?: string; memoryUsage?: number };
+  network?: { url?: string; method?: string; status?: number; responseTime?: number };
+  web3?: { chainId?: number; account?: string; gasUsed?: string; transactionHash?: string };
 }
 
-export interface StructuredLoggerConfig extends LoggerConfig {
+export interface StructuredLoggerConfig {
   enablePerformanceMonitoring: boolean;
   enableNetworkLogging: boolean;
   enableWeb3Logging: boolean;
   enableErrorTracking: boolean;
   maxLogEntries: number;
   flushInterval: number;
+  remoteUrl?: string;
+  enableRemote?: boolean;
 }
 
+// ============================================================================
+// StructuredLogger
+// ============================================================================
+
 class StructuredLogger {
-  private config: StructuredLoggerConfig;
-  private logBuffer: StructuredLogEntry[] = [];
+  private cfg: StructuredLoggerConfig;
+  private buffer: StructuredLogEntry[] = [];
   private flushTimer?: NodeJS.Timeout;
   private sessionId: string;
   private userId?: string;
 
   constructor(config?: Partial<StructuredLoggerConfig>) {
-    this.config = {
-      // Base logger config
-      level: LogLevel.INFO,
-      enableConsole: true,
-      enableRemote: false,
-      minify: false,
-      includeTimestamp: true,
-      includeCorrelationId: true,
-      includeStackTrace: false,
-      environment: (process.env.NODE_ENV as 'development' | 'production' | 'test') || 'development',
-      
-      // Structured logger specific config
+    this.cfg = {
       enablePerformanceMonitoring: true,
       enableNetworkLogging: true,
       enableWeb3Logging: true,
       enableErrorTracking: true,
       maxLogEntries: 1000,
       flushInterval: 5000,
-      
       ...config,
     };
-
-    this.sessionId = this.generateSessionId();
+    this.sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     this.startFlushTimer();
   }
 
-  private generateSessionId(): string {
-    return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  }
-
   private startFlushTimer(): void {
-    if (this.flushTimer) {
-      clearInterval(this.flushTimer);
-    }
-
-    this.flushTimer = setInterval(() => {
-      this.flushLogs();
-    }, this.config.flushInterval);
+    if (this.flushTimer) clearInterval(this.flushTimer);
+    this.flushTimer = setInterval(() => this.flushLogs(), this.cfg.flushInterval);
   }
 
-  private createLogEntry(
-    level: LogLevel,
-    message: string,
-    metadata?: Partial<StructuredLogEntry>
-  ): StructuredLogEntry {
-    const entry: StructuredLogEntry = {
-      timestamp: new Date().toISOString(),
-      level,
-      message,
-      correlationId: logger.getCorrelationId(),
-      sessionId: this.sessionId,
-      userId: this.userId,
-      ...metadata,
-    };
-
-    // Add to buffer
-    this.logBuffer.push(entry);
-
-    // Maintain buffer size
-    if (this.logBuffer.length > this.config.maxLogEntries) {
-      this.logBuffer = this.logBuffer.slice(-this.config.maxLogEntries);
+  private push(entry: StructuredLogEntry): void {
+    this.buffer.push(entry);
+    if (this.buffer.length > this.cfg.maxLogEntries) {
+      this.buffer = this.buffer.slice(-this.cfg.maxLogEntries);
     }
-
-    return entry;
   }
 
   private flushLogs(): void {
-    if (this.logBuffer.length === 0) {
-      return;
+    if (!this.buffer.length) return;
+    const batch = this.buffer.splice(0);
+
+    if (this.cfg.enableRemote && this.cfg.remoteUrl) {
+      this.sendBatch(batch);
     }
 
-    const logsToFlush = [...this.logBuffer];
-    this.logBuffer = [];
-
-    // Send to remote logging service if enabled
-    if (this.config.enableRemote && this.config.remoteUrl) {
-      this.sendLogsToRemote(logsToFlush);
+    if (this.cfg.enableErrorTracking) {
+      batch.forEach(e => { if (e.level >= LogLevel.ERROR) this.reportError(e); });
     }
-
-    // Send to error reporting for error-level logs
-    logsToFlush.forEach(log => {
-      if (log.level >= LogLevel.ERROR && this.config.enableErrorTracking) {
-        this.reportError(log);
-      }
-    });
   }
 
-  private async sendLogsToRemote(logs: StructuredLogEntry[]): Promise<void> {
+  private async sendBatch(logs: StructuredLogEntry[]): Promise<void> {
     try {
-      await fetch(this.config.remoteUrl!, {
+      await fetch(this.cfg.remoteUrl!, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': this.sessionId,
-        },
+        headers: { 'Content-Type': 'application/json', 'X-Session-ID': this.sessionId },
         body: JSON.stringify({
           logs,
           metadata: {
@@ -168,131 +127,105 @@ class StructuredLogger {
         }),
         keepalive: true,
       });
-    } catch (error) {
-      logger.warn('Failed to send logs to remote service:', error);
+    } catch (err) {
+      logger.warn('Failed to send logs to remote service', err);
     }
   }
 
-  private reportError(log: StructuredLogEntry): void {
-    if (!log.error) return;
-
-    // Create AppError from structured log
+  private reportError(entry: StructuredLogEntry): void {
+    if (!entry.error) return;
     const appError: AppError = {
       id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      message: log.error.message,
-      category: log.category || ErrorCategory.UI,
-      severity: log.severity || ErrorSeverity.MEDIUM,
-      timestamp: new Date(log.timestamp),
+      message: entry.error.message,
+      category: entry.category ?? ErrorCategory.UI,
+      severity: entry.severity ?? ErrorSeverity.MEDIUM,
+      timestamp: new Date(entry.timestamp),
       isRecoverable: false,
       shouldReport: true,
       context: {
-        component: log.component,
-        action: log.action,
-        correlationId: log.correlationId,
-        sessionId: log.sessionId,
-        userId: log.userId,
-        ...log.metadata,
+        component: entry.component,
+        action: entry.action,
+        correlationId: entry.correlationId,
+        sessionId: entry.sessionId,
+        userId: entry.userId,
+        ...entry.metadata,
       },
-      userMessage: log.error.message,
-      stack: log.error.stack,
+      userMessage: entry.error.message,
+      stack: entry.error.stack,
     };
-
     errorReporting.reportError(appError);
   }
 
-  // Public API methods
+  // ── Public API ──────────────────────────────────────────────────────────
+
   debug(message: string, metadata?: Partial<StructuredLogEntry>): void {
-    const entry = this.createLogEntry(LogLevel.DEBUG, message, metadata);
-    
-    if (this.config.enableConsole) {
-      logger.debug(message, entry);
-    }
+    this.push({ timestamp: new Date().toISOString(), level: LogLevel.DEBUG, message, sessionId: this.sessionId, userId: this.userId, correlationId: logger.getCorrelationId(), ...metadata });
+    logger.debug(message, metadata);
   }
 
   info(message: string, metadata?: Partial<StructuredLogEntry>): void {
-    const entry = this.createLogEntry(LogLevel.INFO, message, metadata);
-    
-    if (this.config.enableConsole) {
-      logger.info(message, entry);
-    }
+    this.push({ timestamp: new Date().toISOString(), level: LogLevel.INFO, message, sessionId: this.sessionId, userId: this.userId, correlationId: logger.getCorrelationId(), ...metadata });
+    logger.info(message, metadata);
   }
 
   warn(message: string, metadata?: Partial<StructuredLogEntry>): void {
-    const entry = this.createLogEntry(LogLevel.WARN, message, metadata);
-    
-    if (this.config.enableConsole) {
-      logger.warn(message, entry);
-    }
+    this.push({ timestamp: new Date().toISOString(), level: LogLevel.WARN, message, sessionId: this.sessionId, userId: this.userId, correlationId: logger.getCorrelationId(), ...metadata });
+    logger.warn(message, metadata);
   }
 
   error(message: string, error?: Error | AppError, metadata?: Partial<StructuredLogEntry>): void {
     const errorData = error ? {
       name: error instanceof Error ? error.name : 'AppError',
       message: error.message,
-      stack: error instanceof Error ? error.stack : error.stack,
-      code: (error as any).code,
+      stack: error.stack,
+      code: (error as AppError).code as string | undefined,
     } : undefined;
-
-    const entry = this.createLogEntry(LogLevel.ERROR, message, {
-      ...metadata,
+    const entry: StructuredLogEntry = {
+      timestamp: new Date().toISOString(),
+      level: LogLevel.ERROR,
+      message,
+      sessionId: this.sessionId,
+      userId: this.userId,
+      correlationId: logger.getCorrelationId(),
       error: errorData,
       category: (error as AppError)?.category,
       severity: (error as AppError)?.severity,
-    });
-    
-    if (this.config.enableConsole) {
-      logger.error(message, entry);
-    }
+      ...metadata,
+    };
+    this.push(entry);
+    logger.error(message, entry);
   }
 
-  // Specialized logging methods
   performance(operation: string, duration: number, metadata?: Partial<StructuredLogEntry>): void {
-    if (!this.config.enablePerformanceMonitoring) return;
-
+    if (!this.cfg.enablePerformanceMonitoring) return;
     this.info(`Performance: ${operation}`, {
+      ...metadata,
       metadata: {
         performance: {
           duration,
           operation,
-          memoryUsage:
-            typeof performance !== 'undefined' && 'memory' in performance
-              ? (performance as any).memory.usedJSHeapSize
-              : undefined,
+          memoryUsage: typeof performance !== 'undefined' && 'memory' in performance
+            ? (performance as { memory: { usedJSHeapSize: number } }).memory.usedJSHeapSize
+            : undefined,
         },
         ...metadata?.metadata,
       },
-      ...metadata,
     });
   }
 
   network(url: string, method: string, status: number, responseTime: number, metadata?: Partial<StructuredLogEntry>): void {
-    if (!this.config.enableNetworkLogging) return;
-
-    const level = status >= 400 ? LogLevel.ERROR : LogLevel.INFO;
+    if (!this.cfg.enableNetworkLogging) return;
     const message = `Network: ${method} ${url} - ${status}`;
-
-    this.createLogEntry(level, message, {
-      network: {
-        url,
-        method,
-        status,
-        responseTime,
-      },
-      ...metadata,
-    });
-
-    if (this.config.enableConsole) {
-      if (status >= 400) {
-        logger.error(message, { url, method, status, responseTime });
-      } else {
-        logger.info(message, { url, method, status, responseTime });
-      }
+    const networkData = { url, method, status, responseTime };
+    if (status >= 400) {
+      this.error(message, undefined, { network: networkData, ...metadata });
+    } else {
+      this.info(message, { network: networkData, ...metadata });
     }
   }
 
   web3(action: string, chainId?: number, account?: string, metadata?: Partial<StructuredLogEntry>): void {
-    if (!this.config.enableWeb3Logging) return;
-
+    if (!this.cfg.enableWeb3Logging) return;
     this.info(`Web3: ${action}`, {
       web3: {
         chainId,
@@ -304,148 +237,69 @@ class StructuredLogger {
   }
 
   transaction(hash: string, chainId: number, gasUsed?: string, metadata?: Partial<StructuredLogEntry>): void {
-    if (!this.config.enableWeb3Logging) return;
-
-    this.info(`Transaction: ${hash}`, {
-      web3: {
-        chainId,
-        transactionHash: hash,
-        gasUsed,
-      },
-      ...metadata,
-    });
+    if (!this.cfg.enableWeb3Logging) return;
+    this.info(`Transaction: ${hash}`, { web3: { chainId, transactionHash: hash, gasUsed }, ...metadata });
   }
 
-  // User tracking
-  setUserId(userId: string): void {
-    this.userId = userId;
+  component(name: string, action: string, metadata?: Partial<StructuredLogEntry>): void {
+    this.info(`Component: ${name} - ${action}`, { component: name, action, ...metadata });
   }
 
-  // Component-specific logging
-  component(componentName: string, action: string, metadata?: Partial<StructuredLogEntry>): void {
-    this.info(`Component: ${componentName} - ${action}`, {
-      component: componentName,
-      action,
-      ...metadata,
-    });
-  }
+  setUserId(userId: string): void { this.userId = userId; }
 
-  // Error tracking
   trackError(error: Error | AppError, context?: Partial<StructuredLogEntry>): void {
     this.error(error.message, error, context);
   }
 
-  // Configuration
   updateConfig(config: Partial<StructuredLoggerConfig>): void {
-    this.config = { ...this.config, ...config };
-    
-    // Update base logger config
-    logger.setConfig({
-      level: this.config.level,
-      enableConsole: this.config.enableConsole,
-      enableRemote: this.config.enableRemote,
-      remoteUrl: this.config.remoteUrl,
-      minify: this.config.minify,
-      includeTimestamp: this.config.includeTimestamp,
-      includeCorrelationId: this.config.includeCorrelationId,
-      includeStackTrace: this.config.includeStackTrace,
-    });
-
-    // Restart flush timer if interval changed
-    if (config.flushInterval) {
-      this.startFlushTimer();
-    }
+    this.cfg = { ...this.cfg, ...config };
+    if (config.flushInterval) this.startFlushTimer();
   }
 
-  // Manual flush
   flush(): Promise<void> {
-    return new Promise((resolve) => {
-      this.flushLogs();
-      resolve();
-    });
+    return new Promise(resolve => { this.flushLogs(); resolve(); });
   }
 
-  // Get buffer contents
-  getBuffer(): StructuredLogEntry[] {
-    return [...this.logBuffer];
-  }
+  getBuffer(): StructuredLogEntry[] { return [...this.buffer]; }
+  clearBuffer(): void { this.buffer = []; }
 
-  // Clear buffer
-  clearBuffer(): void {
-    this.logBuffer = [];
-  }
-
-  // Cleanup
   destroy(): void {
-    if (this.flushTimer) {
-      clearInterval(this.flushTimer);
-    }
+    if (this.flushTimer) clearInterval(this.flushTimer);
     this.flushLogs();
   }
 }
 
 // ============================================================================
-// Singleton Instance
+// Singleton & helpers
 // ============================================================================
 
 export const structuredLogger = new StructuredLogger();
 
-// ============================================================================
-// Performance Monitoring Helper
-// ============================================================================
+export const createStructuredLogger = (config?: Partial<StructuredLoggerConfig>) =>
+  new StructuredLogger(config);
 
 export const createPerformanceTracker = (operation: string, metadata?: Partial<StructuredLogEntry>) => {
-  const startTime = performance.now();
-  
+  const start = performance.now();
   return {
-    end(additionalMetadata?: Partial<StructuredLogEntry>) {
-      const duration = performance.now() - startTime;
-      structuredLogger.performance(operation, duration, { ...metadata, ...additionalMetadata });
+    end(extra?: Partial<StructuredLogEntry>) {
+      const duration = performance.now() - start;
+      structuredLogger.performance(operation, duration, { ...metadata, ...extra });
       return duration;
     },
   };
 };
 
-// ============================================================================
-// Network Request Logger
-// ============================================================================
-
 export const logNetworkRequest = (
-  url: string,
-  method: string,
-  status: number,
-  responseTime: number,
+  url: string, method: string, status: number, responseTime: number,
   metadata?: Partial<StructuredLogEntry>
-) => {
-  structuredLogger.network(url, method, status, responseTime, metadata);
-};
-
-// ============================================================================
-// Web3 Activity Logger
-// ============================================================================
+) => structuredLogger.network(url, method, status, responseTime, metadata);
 
 export const logWeb3Activity = (
-  action: string,
-  chainId?: number,
-  account?: string,
+  action: string, chainId?: number, account?: string,
   metadata?: Partial<StructuredLogEntry>
-) => {
-  structuredLogger.web3(action, chainId, account, metadata);
-};
+) => structuredLogger.web3(action, chainId, account, metadata);
 
 export const logTransaction = (
-  hash: string,
-  chainId: number,
-  gasUsed?: string,
+  hash: string, chainId: number, gasUsed?: string,
   metadata?: Partial<StructuredLogEntry>
-) => {
-  structuredLogger.transaction(hash, chainId, gasUsed, metadata);
-};
-
-// ============================================================================
-// Export types and factory
-// ============================================================================
-
-export const createStructuredLogger = (config?: Partial<StructuredLoggerConfig>) => {
-  return new StructuredLogger(config);
-};
+) => structuredLogger.transaction(hash, chainId, gasUsed, metadata);

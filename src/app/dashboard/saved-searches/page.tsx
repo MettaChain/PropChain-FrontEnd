@@ -1,4 +1,5 @@
 "use client";
+import { logger } from '@/utils/logger';
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -79,7 +80,7 @@ function SavedSearchesContent() {
       toast.success("Search deleted successfully");
     } catch (error) {
       toast.error("Failed to delete search");
-      console.error("Delete search error:", error);
+      logger.error("Delete search error:", error);
     }
   };
 

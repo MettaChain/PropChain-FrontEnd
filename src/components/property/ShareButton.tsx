@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Share2, Twitter, Linkedin, Link2, Check } from 'lucide-react';
@@ -69,7 +70,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
       } catch (error) {
         // User cancelled or error occurred
         if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error);
+          logger.error('Error sharing:', error);
           toast.error('Failed to share property');
         }
       }
@@ -88,7 +89,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
       // Reset copied state after 2 seconds
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Error copying link:', error);
+      logger.error('Error copying link:', error);
       toast.error('Failed to copy link');
     }
   };

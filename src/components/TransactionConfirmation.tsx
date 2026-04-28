@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -144,7 +145,7 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
       );
       setValidation(result);
     } catch (error) {
-      console.error('Transaction validation failed:', error);
+      logger.error('Transaction validation failed:', error);
       setValidation({
         isValid: false,
         riskScore: 100,

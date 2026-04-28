@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -45,7 +46,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
       // Reset copied state after 2 seconds
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      logger.error('Failed to copy:', error);
       toast.error('Failed to copy to clipboard', {
         duration: 3000,
         position: 'top-right',
@@ -227,7 +228,7 @@ export const useCopyToClipboard = () => {
       }
       return true;
     } catch (error) {
-      console.error('Failed to copy:', error);
+      logger.error('Failed to copy:', error);
       toast.error('Failed to copy to clipboard');
       return false;
     }
