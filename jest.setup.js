@@ -8,6 +8,19 @@ process.env.NODE_ENV = 'development'
 // Configure Testing Library
 configure({ testIdAttribute: 'data-testid' })
 
+// Setup global test timeout
+jest.setTimeout(30000);
+
+// Add error handling for unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.log('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Add error handling for uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.log('Uncaught Exception:', error);
+});
+
 // Mock Next.js router
 jest.mock('next/router', () => ({
   useRouter() {

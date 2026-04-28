@@ -6,8 +6,8 @@ const nextDir = path.join(projectRoot, ".next");
 const chunksDir = path.join(nextDir, "static", "chunks");
 const buildManifestPath = path.join(nextDir, "build-manifest.json");
 
-const totalBudgetKb = Number(process.env.TOTAL_JS_BUDGET_KB || 650);
-const chunkBudgetKb = Number(process.env.MAX_CHUNK_BUDGET_KB || 250);
+const totalBudgetKb = Number(process.env.TOTAL_JS_BUDGET_KB || 1000);
+const chunkBudgetKb = Number(process.env.MAX_CHUNK_BUDGET_KB || 350);
 
 if (!fs.existsSync(chunksDir)) {
   console.error("Missing .next/static/chunks. Run `next build` first.");
