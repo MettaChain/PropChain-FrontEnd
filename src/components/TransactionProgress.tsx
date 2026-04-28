@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -107,7 +108,7 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
     };
 
     simulateProgress().catch(error => {
-      console.error('Transaction simulation error:', error);
+      logger.error('Transaction simulation error:', error);
       if (onError) {
         onError('Transaction failed. Please try again.');
       }

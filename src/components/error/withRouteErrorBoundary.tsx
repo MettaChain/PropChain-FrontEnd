@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React from 'react';
 import { EnhancedErrorBoundary } from './EnhancedErrorBoundary';
@@ -20,7 +21,7 @@ export const WithRouteErrorBoundary: React.FC<WithRouteErrorBoundaryProps> = ({
   onError,
 }) => {
   const handleError = (error: any) => {
-    console.error(`Error in route ${routeName}:`, error);
+    logger.error(`Error in route ${routeName}:`, error);
     
     // Report to monitoring service
     if (typeof window !== 'undefined') {
@@ -43,7 +44,7 @@ export const WithRouteErrorBoundary: React.FC<WithRouteErrorBoundaryProps> = ({
           },
         }),
       }).catch(err => {
-        console.error('Failed to report route error:', err);
+        logger.error('Failed to report route error:', err);
       });
     }
 

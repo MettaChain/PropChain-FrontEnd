@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 /**
  * CopyButton - Button for copying referral links to clipboard
@@ -22,7 +23,7 @@ export default function CopyButton({
       await navigator.clipboard.writeText(text);
       onCopy?.();
     } catch (error) {
-      console.error('Failed to copy:', error);
+      logger.error('Failed to copy:', error);
     }
   };
 

@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useWalletStore } from '@/store/walletStore';
@@ -120,7 +121,7 @@ export const useSecurity = () => {
       };
 
     } catch (error) {
-      console.error('Wallet validation error:', error);
+      logger.error('Wallet validation error:', error);
       blocks.push('Security validation failed');
       return { isValid: false, warnings, blocks };
     }
@@ -215,7 +216,7 @@ export const useSecurity = () => {
       };
 
     } catch (error) {
-      console.error('Transaction validation error:', error);
+      logger.error('Transaction validation error:', error);
       blocks.push('Transaction validation failed');
       return {
         isValid: false,
@@ -281,7 +282,7 @@ export const useSecurity = () => {
       };
 
     } catch (error) {
-      console.error('Signature validation error:', error);
+      logger.error('Signature validation error:', error);
       blocks.push('Signature validation failed');
       return { isValid: false, warnings, blocks };
     }

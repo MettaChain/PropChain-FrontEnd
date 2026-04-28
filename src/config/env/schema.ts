@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import {z} from "zod";
 
 /**
@@ -148,7 +149,7 @@ export function validateEnvRequirements(config: EnvConfig): void {
       .join("\n");
 
     if (env === 'production') {
-      console.warn(
+      logger.warn(
         `Environment-specific requirements for 'production' are not fully met:\n${errors}`
       );
       return;

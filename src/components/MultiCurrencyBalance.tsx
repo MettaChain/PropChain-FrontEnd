@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Wallet, DollarSign, ChevronDown } from 'lucide-react';
@@ -42,7 +43,7 @@ export const MultiCurrencyBalance: React.FC = () => {
       const price = mockPrices[chainId] || 2000;
       setUsdPrice(price);
     } catch (error) {
-      console.error('Failed to fetch USD price:', error);
+      logger.error('Failed to fetch USD price:', error);
     }
   };
 

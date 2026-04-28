@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 export interface SecurityServiceConfig {
   apiKey?: string;
   baseUrl: string;
@@ -85,7 +86,7 @@ export class BlockchainSecurityService {
       return result;
 
     } catch (error) {
-      console.error('Failed to check address risk:', error);
+      logger.error('Failed to check address risk:', error);
       return this.getDefaultRiskScore(address);
     }
   }
@@ -117,7 +118,7 @@ export class BlockchainSecurityService {
       return result;
 
     } catch (error) {
-      console.error('Failed to check transaction risk:', error);
+      logger.error('Failed to check transaction risk:', error);
       return this.getDefaultTransactionRisk(hash);
     }
   }
@@ -130,7 +131,7 @@ export class BlockchainSecurityService {
       const riskScore = await this.checkAddressRisk(address);
       return riskScore.categories.includes('sanctions');
     } catch (error) {
-      console.error('Failed to check sanctions:', error);
+      logger.error('Failed to check sanctions:', error);
       return false;
     }
   }
@@ -143,7 +144,7 @@ export class BlockchainSecurityService {
       const riskScore = await this.checkAddressRisk(address);
       return riskScore.categories.includes('mixer');
     } catch (error) {
-      console.error('Failed to check mixer association:', error);
+      logger.error('Failed to check mixer association:', error);
       return false;
     }
   }
@@ -168,7 +169,7 @@ export class BlockchainSecurityService {
 
       return alerts;
     } catch (error) {
-      console.error('Failed to get security alerts:', error);
+      logger.error('Failed to get security alerts:', error);
       return [];
     }
   }
@@ -243,7 +244,7 @@ export class BlockchainSecurityService {
       }
 
     } catch (error) {
-      console.error('Failed to validate transaction:', error);
+      logger.error('Failed to validate transaction:', error);
       // Degrade gracefully — warn rather than block on service failure
       warnings.push('Unable to complete security validation');
     }

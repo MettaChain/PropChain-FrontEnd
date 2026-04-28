@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import type { SignedTransaction } from '@/utils/eip712/eip712Types';
 
 export interface AuditTrailEntry {
@@ -218,7 +219,7 @@ class TransactionAuditTrail {
       try {
         window.localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.entries));
       } catch (error) {
-        console.warn('Failed to save audit trail to storage:', error);
+        logger.warn('Failed to save audit trail to storage:', error);
       }
     }
   }
@@ -234,7 +235,7 @@ class TransactionAuditTrail {
           this.entries = JSON.parse(stored);
         }
       } catch (error) {
-        console.warn('Failed to load audit trail from storage:', error);
+        logger.warn('Failed to load audit trail from storage:', error);
         this.entries = [];
       }
     }
