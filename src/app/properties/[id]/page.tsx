@@ -1,65 +1,105 @@
-import { Suspense } from 'react';
-import type { Metadata } from 'next';
-import { PropertyDetailPageClient } from './PropertyDetailPageClient';
-import { propertyService } from '@/lib/propertyService';
+'use client';
 
-interface PropertyDetailPageProps {
-  params: Promise<{ id: string }>;
-}
-
-export async function generateMetadata({
-  params,
-}: PropertyDetailPageProps): Promise<Metadata> {
-  const { id } = await params;
-
-  try {
-    const property = await propertyService.getPropertyById(id);
-    if (!property) {
-      return {
-        title: 'Property Not Found - PropChain',
-        description: 'The requested property could not be found.',
-      };
-    }
-    return {
-      title: `${property.name} - PropChain`,
-      description: property.description,
-      openGraph: {
-        title: `${property.name} - PropChain`,
-        description: `${property.name} in ${property.location.city}, ${property.location.state} — ${property.propertyType} investment from $${property.price.perToken.toLocaleString()} per token.`,
-      },
-    };
-  } catch {
-    return {
-      title: 'Property Not Found - PropChain',
-      description: 'The requested property could not be found.',
-    };
-  }
-}
 import React from 'react';
+import { useParams } from 'next/navigation';
 import { PropertyDetail } from '@/components/PropertyDetail';
 import { WalletConnector } from '@/components/WalletConnector';
 import { PriceAlertBell } from '@/components/PriceAlertBell';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default async function PropertyDetailPage({
-  params,
-}: PropertyDetailPageProps) {
-  const { id } = await params;
-
+function PropertyDetailSkeleton() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-          <div className="text-center">
-            <div className="inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">Loading property...</p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Skeleton className="aspect-[16/9] w-full rounded-2xl" />
+
+        <div className="space-y-6 pt-2">
+          <Skeleton className="h-9 w-4/5 mb-4" />
+          <Skeleton className="h-7 w-1/2" />
+
+          <div className="flex gap-3">
+            <Skeleton className="h-12 flex-1 rounded-xl" />
+            <Skeleton className="h-12 flex-1 rounded-xl" />
+          </div>
+
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-11/12" />
+            <Skeleton className="h-5 w-4/5" />
           </div>
         </div>
-      }
-    >
-      <PropertyDetailPageClient propertyId={id} />
-    </Suspense>
+      </div>
+    </div>
+  );
+}
+
+function PropertyDetailContent() {
+  const params = useParams();
+  const propertyId = params.id as string;
+
+  if (!propertyId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Property not found
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            The property you're looking for doesn't exist or may have been removed.
+          </p>
+          <Link href="/properties">
+            <Button>Back to Properties</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-4">
+              <Link href="/properties">
+                <Button variant="ghost" size="sm">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Properties
+                </Button>
+              </Link>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">PC</span>
+                </div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  PropChain
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <PriceAlertBell />
+              <WalletConnector />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Property Detail Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PropertyDetail propertyId={propertyId} />
+      </div>
+    </div>
+  );
+}
+
+
+export default function PropertyDetailPage() {
+  return (
+    <React.Suspense fallback={<PropertyDetailSkeleton />}>
+      <PropertyDetailContent />
+    </React.Suspense>
   );
 }

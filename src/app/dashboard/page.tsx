@@ -14,6 +14,7 @@ import { useKycStore } from "@/store/kycStore";
 import Link from "next/link";
 import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
 import { StakingPanel } from "@/components/dashboard/StakingPanel";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PortfolioOverview = dynamic(
   () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
@@ -62,18 +63,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex w-full">
-      {/* <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        activeItem={activeItem}
-        onItemClick={(item) => {
-          setActiveItem(item);
-          setSidebarOpen(false);
-        }}
-      /> */}
-
       <div className="flex-1 flex flex-col min-w-0">
-        {/* <Header onMenuToggle={() => setSidebarOpen(true)} /> */}
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
           <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -92,7 +82,6 @@ const Index = () => {
           </header>
 
           <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 overflow-auto">
-            {/* Welcome section */}
             <div className="space-y-1">
               <h2 className="text-2xl md:text-3xl font-bold">
                 Welcome back, <span className="text-[#155DFC]">John</span>
@@ -114,15 +103,10 @@ const Index = () => {
               </Link>
             </div>
 
-            {/* KPI Overview */}
-            {/* <PortfolioOverview /> */}
+            <DataRefreshWrapper lastUpdated={new Date(Date.now() - 120000)}>
+              <PortfolioOverview />
+            </DataRefreshWrapper>
 
-             {/* Data Refresh Wrapper for KPIs */}
-          <DataRefreshWrapper lastUpdated={new Date(Date.now() - 120000)}>
-            <PortfolioOverview />
-          </DataRefreshWrapper>
-
-            {/* Charts row */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2">
                 <PerformanceChart />
@@ -137,7 +121,6 @@ const Index = () => {
               <IncomeTracker />
             </div>
 
-            {/* Risk Analysis */}
             <RiskAnalysis />
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -145,13 +128,10 @@ const Index = () => {
               <ComplianceAuditLog />
             </div>
 
-            {/* Export Reports */}
             <PortfolioReport />
 
-            {/* Properties */}
             <PropertiesList />
 
-            {/* Transaction Management */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Transaction Management</h3>
               <TransactionSecuritySettings />
@@ -177,7 +157,6 @@ const Index = () => {
               </Tabs>
             </div>
 
-            {/* Transactions */}
             <RecentTransactions />
           </main>
         </div>
@@ -190,8 +169,22 @@ export default Index;
 
 function WidgetSkeleton({ className = "h-40" }: { className?: string }) {
   return (
-    <div
-      className={`w-full rounded-xl bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 animate-pulse ${className}`}
-    />
+    <div className={`w-full rounded-xl bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 ${className}`}>
+      <div className="h-full w-full p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-5 w-16" />
+        </div>
+        <div className="flex-1 space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 w-24 rounded-lg" />
+          <Skeleton className="h-9 w-24 rounded-lg" />
+        </div>
+      </div>
+    </div>
   );
 }
