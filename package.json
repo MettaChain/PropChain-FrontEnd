@@ -7,6 +7,7 @@
     "typecheck": "tsc --noEmit --incremental false",
     "build": "npm run typecheck && next build",
     "build:analyze": "node scripts/run-analyze-build.mjs",
+    "bundle:measure": "node scripts/measure-bundle-size.mjs",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "perf:budgets": "node scripts/check-performance-budgets.mjs",
@@ -29,6 +30,8 @@
   },
   "dependencies": {
     "@coinbase/wallet-sdk": "^4.3.7",
+    "ioredis": "^5.3.2",
+    "redis": "^4.6.10",
     "@hookform/resolvers": "^5.2.2",
     "@metamask/sdk": "^0.33.1",
     "@radix-ui/react-accordion": "^1.2.12",

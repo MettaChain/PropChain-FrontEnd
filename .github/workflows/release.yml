@@ -13,7 +13,7 @@ jobs:
     name: Release Please
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           release-type: node
@@ -25,7 +25,7 @@ jobs:
 
       - name: Setup Node.js (on release)
         if: ${{ steps.release.outputs.release_created }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           cache: 'npm'

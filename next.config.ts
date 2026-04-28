@@ -51,6 +51,28 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/properties/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=60, stale-while-revalidate=300, s-maxage=300",
+          },
+          {
+            key: "Vary",
+            value: "Accept-Encoding",
+          },
+        ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
     ];
   },
   webpack: (config, { isServer, webpack }) => {

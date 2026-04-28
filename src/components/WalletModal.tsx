@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { useWalletStore } from '@/store/walletStore';
 import { getWalletErrorMessage } from '@/utils/errorHandling';
 import { toChainId } from '@/config/chains';
-import { getErrorCode } from '@/utils/typeGuards';
 import { useSecurity } from '@/hooks/useSecurity';
-import { AlertTriangle, Shield, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { useWalletConnector } from '@/hooks/useWalletConnector';
+import { AlertTriangle, Shield, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModalTransition } from './PageTransition';
 
@@ -18,12 +18,14 @@ interface WalletModalProps {
 export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => {
   const { setConnecting, setConnected, setError, error } = useWalletStore();
   const { validateWalletConnection } = useSecurity();
+  const { connectWallet: lazyConnectWallet, isLoadingConnector } = useWalletConnector();
   const [securityValidation, setSecurityValidation] = useState<{
     isValid: boolean;
     warnings: string[];
     blocks: string[];
   } | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<'connector' | 'security' | null>(null);
 
   type SupportedWalletId = 'metamask' | 'walletconnect' | 'coinbase';
 
@@ -34,24 +36,13 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       setError(null);
       setSecurityValidation(null);
 
-      let address: string;
-      let chainIdNumber: number;
+      // Lazy load the wallet connector module
+      setLoadingStep('connector');
+      const result = await lazyConnectWallet(walletType);
+      const { address, chainId: chainIdNumber } = result;
 
-      if (walletType === 'metamask') {
-        const result = await connectMetaMask();
-        address = result.address;
-        chainIdNumber = result.chainId;
-      } else if (walletType === 'walletconnect') {
-        throw new Error('WalletConnect v2 integration needed. Please implement with @walletconnect/web3-provider v2');
-      } else if (walletType === 'coinbase') {
-        const result = await connectCoinbase();
-        address = result.address;
-        chainIdNumber = result.chainId;
-      } else {
-        throw new Error('Unsupported wallet type');
-      }
-
-      // Security validation before connecting
+      // Validate security
+      setLoadingStep('security');
       const validation = await validateWalletConnection(address, walletType, chainIdNumber);
       setSecurityValidation(validation);
 
@@ -71,41 +62,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       setError(getWalletErrorMessage(error));
     } finally {
       setIsConnecting(false);
+      setLoadingStep(null);
       setConnecting(false);
-    }
-  };
-
-  const connectMetaMask = async () => {
-    if (!window.ethereum) {
-      throw new Error('MetaMask is not installed');
-    }
-
-    try {
-      const accounts = await window.ethereum.request<string[]>({
-        method: 'eth_requestAccounts',
-      });
-
-      const chainId = await window.ethereum.request<string>({
-        method: 'eth_chainId',
-      });
-
-      if (!Array.isArray(accounts) || accounts.length === 0 || typeof accounts[0] !== 'string') {
-        throw new Error('Wallet returned an invalid account response');
-      }
-
-      if (typeof chainId !== 'string') {
-        throw new Error('Wallet returned an invalid chain id response');
-      }
-
-      const address = accounts[0];
-      const chainIdNumber = parseInt(chainId, 16);
-
-      return { address, chainId: chainIdNumber };
-    } catch (error: unknown) {
-      if (getErrorCode(error) === 4001) {
-        throw new Error('User rejected the connection request');
-      }
-      throw error;
     }
   };
 
@@ -175,38 +133,44 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     );
   };
 
-  const connectCoinbase = async () => {
-    if (!window.ethereum || !window.ethereum.isCoinbaseWallet) {
-      throw new Error('Coinbase Wallet is not installed');
+  const renderLoadingStep = () => {
+    if (loadingStep === 'connector') {
+      return (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Loading wallet connector...
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Please wait while we prepare the wallet connection.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
     }
 
-    try {
-      const accounts = await window.ethereum.request<string[]>({
-        method: 'eth_requestAccounts',
-      });
-
-      const chainId = await window.ethereum.request<string>({
-        method: 'eth_chainId',
-      });
-
-      if (!Array.isArray(accounts) || accounts.length === 0 || typeof accounts[0] !== 'string') {
-        throw new Error('Wallet returned an invalid account response');
-      }
-
-      if (typeof chainId !== 'string') {
-        throw new Error('Wallet returned an invalid chain id response');
-      }
-
-      const address = accounts[0];
-      const chainIdNumber = parseInt(chainId, 16);
-
-      return { address, chainId: chainIdNumber };
-    } catch (error: unknown) {
-      if (getErrorCode(error) === 4001) {
-        throw new Error('User rejected the connection request');
-      }
-      throw error;
+    if (loadingStep === 'security') {
+      return (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Validating security...
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Running security checks to protect your wallet.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
     }
+
+    return null;
   };
 
   // Detect installed wallets
@@ -301,6 +265,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
           </div>
 
         <div className="p-6">
+          {renderLoadingStep()}
           {renderSecurityStatus()}
           
           {error && (
@@ -335,7 +300,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                   <button
                     key={wallet.id}
                     onClick={() => connectWallet(wallet.id)}
-                    disabled={isConnecting}
+                    disabled={isConnecting || isLoadingConnector}
                     className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl`}>
@@ -354,8 +319,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                         {wallet.description}
                       </div>
                     </div>
-                    {isConnecting && (
-                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    {(isConnecting || isLoadingConnector) && (
+                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
                     )}
                   </button>
                 );

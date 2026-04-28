@@ -186,33 +186,30 @@ export function getOptimizedImageSrc(
       return src || '';
     }
 
-    // Handle data URLs and external URLs
+    // External and data URLs cannot be rewritten — return as-is and let
+    // Next.js Image component handle remote optimization if applicable
     if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) {
-      // For external URLs, we can't optimize them directly
-      // Return as-is (Next.js Image component will handle optimization)
       return src;
     }
 
     const { devicePixelRatio, viewportWidth, connectionSpeed } = config;
 
-    // Calculate optimal image width based on viewport and DPR
-    // Cap at 2x for performance (diminishing returns beyond 2x)
+    // Cap DPR at 2x: beyond 2x the visual improvement is imperceptible
+    // but bandwidth cost doubles, so it's not worth it on slow connections
     const effectiveDPR = Math.min(devicePixelRatio, 2);
+    // Round up to avoid serving images that are even 1px too small
     const targetWidth = Math.ceil(viewportWidth * effectiveDPR);
 
-    // Calculate optimal quality based on connection speed
+    // Lower quality on slow connections to reduce payload size
     const quality = getOptimalQuality(connectionSpeed);
 
-    // Build optimized URL parameters
-    // This assumes Next.js Image optimization API or similar
+    // Append width and quality as query params compatible with Next.js Image API
     const params = new URLSearchParams({
       w: targetWidth.toString(),
       q: quality.toString(),
     });
 
-    // Determine if we should add format parameter
-    // Note: Format detection is async, so we'll handle this in a separate function
-    // For now, we'll return the URL with width and quality parameters
+    // Preserve existing query params by using the correct separator
     const separator = src.includes('?') ? '&' : '?';
     const optimizedSrc = `${src}${separator}${params.toString()}`;
 
@@ -419,7 +416,9 @@ function calculateTTI(): number {
 
 /**
  * Calculates Total Blocking Time (TBT)
- * TBT is the sum of blocking time for all long tasks between FCP and TTI
+ * TBT is the sum of blocking time for all long tasks between FCP and TTI.
+ * A "long task" is any main-thread task that takes more than 50ms.
+ * The blocking portion is the time beyond the 50ms threshold.
  */
 function calculateTBT(): number {
   try {
@@ -427,10 +426,11 @@ function calculateTBT(): number {
       return 0;
     }
 
-    // Get all long tasks (tasks > 50ms)
+    // Long Task API entries — each represents a task that blocked the main thread > 50ms
     const longTasks = performance.getEntriesByType('longtask') as any[];
     
-    // Sum blocking time (time beyond 50ms threshold)
+    // Sum only the blocking portion (time beyond the 50ms "acceptable" threshold)
+    // e.g. a 120ms task contributes 70ms of blocking time
     const tbt = longTasks.reduce((sum, task) => {
       const blockingTime = Math.max(0, task.duration - 50);
       return sum + blockingTime;
@@ -438,7 +438,7 @@ function calculateTBT(): number {
 
     return tbt;
   } catch (error) {
-    // longtask API may not be available
+    // longtask API may not be available in all browsers
     console.warn('Failed to calculate TBT:', error);
     return 0;
   }
