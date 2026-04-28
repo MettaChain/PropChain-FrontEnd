@@ -48,9 +48,11 @@ export class GlobalErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const appError = ErrorFactory.fromError(error, ErrorCategory.UI, {
-      componentStack: errorInfo.componentStack,
-      errorBoundary: 'GlobalErrorBoundary',
-      errorInfo,
+      componentStack: errorInfo.componentStack ?? undefined,
+      context: {
+        errorBoundary: 'GlobalErrorBoundary',
+        errorInfo,
+      },
     });
 
     this.setState({ error: appError });

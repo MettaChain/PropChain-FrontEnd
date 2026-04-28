@@ -36,12 +36,12 @@ describe('searchUtils', () => {
       expect(result).toContain('q=test+property');
       expect(result).toContain('minPrice=100000');
       expect(result).toContain('maxPrice=500000');
-      expect(result).toContain('types=residential,commercial');
-      expect(result).toContain('chains=ethereum,polygon');
+      expect(result).toContain('types=residential%2Ccommercial');
+      expect(result).toContain('chains=ethereum%2Cpolygon');
       expect(result).toContain('minRoi=5');
       expect(result).toContain('maxRoi=15');
       expect(result).toContain('location=New+York');
-      expect(result).toContain('bedrooms=2,3');
+      expect(result).toContain('bedrooms=2%2C3');
       expect(result).toContain('bathrooms=2');
       expect(result).toContain('minSqft=1000');
       expect(result).toContain('maxSqft=3000');
@@ -102,7 +102,7 @@ describe('searchUtils', () => {
         bathrooms: '2',
         minSqft: '1000',
         maxSqft: '3000',
-        sort: 'price-low',
+        sort: 'price-asc',
       });
 
       const result = urlParamsToFilters(params);
@@ -117,7 +117,7 @@ describe('searchUtils', () => {
       expect(result.filters.bedrooms).toEqual([2, 3]);
       expect(result.filters.bathrooms).toEqual([2]);
       expect(result.filters.squareFeetRange).toEqual([1000, 3000]);
-      expect(result.sortBy).toBe('price-low');
+      expect(result.sortBy).toBe('price-asc');
     });
 
     it('should handle empty URL parameters', () => {
@@ -240,7 +240,7 @@ describe('searchUtils', () => {
 
     it('should handle exact length match', () => {
       const text = 'Exact length';
-      expect(truncateText(text, 11)).toBe('Exact length');
+      expect(truncateText(text, 12)).toBe('Exact length');
     });
   });
 

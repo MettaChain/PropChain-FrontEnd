@@ -24,10 +24,11 @@ export class WalletValidator {
 
   private static readonly BLACKLISTED_DOMAINS = [
     'phishing-site.com',
-    'malicious-wallet.com'
+    'malicious-wallet.com',
+    'metamask.io.fake'
   ];
 
-  private static readonly RISKY_WALLETS = [
+  private static readonly RISKY_WALLETS: string[] = [
     // Add wallet addresses known to be compromised
   ];
 
@@ -275,7 +276,7 @@ export class WalletValidator {
    */
   private static isKnownScamContract(address: string): boolean {
     // This would need to be maintained and updated regularly
-    const knownScamContracts = [
+    const knownScamContracts: string[] = [
       // Add known scam contract addresses
     ];
     return knownScamContracts.includes(address.toLowerCase());

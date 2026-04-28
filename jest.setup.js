@@ -1,5 +1,9 @@
 import '@testing-library/jest-dom'
+import 'jest-axe/extend-expect'
 import { configure } from '@testing-library/react'
+
+// Set test environment
+process.env.NODE_ENV = 'development'
 
 // Configure Testing Library
 configure({ testIdAttribute: 'data-testid' })

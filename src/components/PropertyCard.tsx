@@ -3,10 +3,16 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { ShoppingCart, Plus, CheckSquare, Square, Heart } from 'lucide-react';
 import type { Property } from '@/types/property';
-import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
+import { formatPrice, formatNumber, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
-import { Web3Tooltip } from '@/components/ui/Web3Tooltip';
+import { useCartStore } from '@/store/cartStore';
+import { useComparisonStore } from '@/store/comparisonStore';
+import { useCompareStore } from '@/store/compareStore';
+import { useFavoritesStore } from '@/store/favoritesStore';
+import { ShareButton } from './property/ShareButton';
+import { CurrencyToggle } from './property/CurrencyToggle';
 
 interface PropertyCardProps {
   property: Property;
@@ -18,6 +24,46 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   viewMode = 'grid' 
 }) => {
   const isListView = viewMode === 'list';
+  const { addItem } = useCartStore();
+  const { isPropertySelected, toggleProperty } = useComparisonStore();
+
+  const isSelectedForComparison = isPropertySelected(property.id);
+  const selectedIds = useCompareStore((state) => state.selectedIds);
+  const togglePropertyId = useCompareStore((state) => state.toggleProperty);
+
+  const isCompared = selectedIds.includes(property.id);
+  const compareLimitReached = selectedIds.length >= 3 && !isCompared;
+  const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(property, 1);
+  };
+
+  const handleComparisonToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleProperty(property);
+  };
+
+  const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!compareLimitReached) {
+      togglePropertyId(property.id);
+    }
+  };
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isFavorite(property.id)) {
+      removeFavorite(property.id);
+    } else {
+      addFavorite(property);
+    }
+  };
 
   return (
     <Link
@@ -36,60 +82,110 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         />
         
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 sm:gap-2">
           {property.featured && (
-            <span className="bg-yellow-500 text-white text-xs font-semibold px-2 py-1 rounded">
+            <span className="bg-yellow-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded text-xs">
               ⭐ Featured
             </span>
           )}
           {property.verified && (
-            <span className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded flex items-center gap-1">
+            <span className="bg-green-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1">
               ✓ Verified
             </span>
           )}
         </div>
 
         {/* ROI Badge */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
           <div className="bg-blue-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-lg">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+          <div className="bg-blue-600 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
             {formatROI(property.metrics.roi)} ROI
+          </div>
+          <button
+            onClick={handleComparisonToggle}
+            className="bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 p-2 rounded-lg shadow-lg transition-colors"
+            title={isSelectedForComparison ? "Remove from comparison" : "Add to comparison"}
+          >
+            {isSelectedForComparison ? (
+              <CheckSquare className="w-4 h-4" />
+            ) : (
+              <Square className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+
+        {/* Favorite Button */}
+        <button
+          onClick={handleToggleFavorite}
+          className="absolute top-3 right-16 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+        >
+          <Heart
+            className={`w-4 h-4 ${
+              isFavorite(property.id)
+                ? 'fill-red-500 text-red-500'
+                : 'text-gray-600 hover:text-red-500'
+            }`}
+          />
+        </button>
+
+        {/* Blockchain Badge */}
+        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3">
+          <div
+            className="text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1"
+            style={{ backgroundColor: getBlockchainColor(property.blockchain) }}
+          >
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />
+            <span className="truncate max-w-[80px] sm:max-w-none">{BLOCKCHAIN_LABELS[property.blockchain]}</span>
           </div>
         </div>
 
-        {/* Blockchain Badge */}
-        <div className="absolute bottom-3 left-3">
-          <div
-            className="text-white text-xs font-semibold px-2 py-1 rounded flex items-center gap-1"
-            style={{ backgroundColor: getBlockchainColor(property.blockchain) }}
+        {/* Compare Toggle */}
+        <div className="absolute top-3 right-3">
+          <label
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${
+              isCompared
+                ? 'border-blue-600 bg-blue-600/10 text-blue-700'
+                : 'border-white bg-white/90 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-200'
+            } ${compareLimitReached ? 'cursor-not-allowed opacity-70' : ''}`}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-2 h-2 rounded-full bg-white" />
-            {BLOCKCHAIN_LABELS[property.blockchain]}
-          </div>
+            <input
+              type="checkbox"
+              checked={isCompared}
+              onChange={handleCompareToggle}
+              onClick={(e) => e.stopPropagation()}
+              disabled={compareLimitReached}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              aria-label={isCompared ? 'Remove from comparison' : 'Add to comparison'}
+            />
+            <span>{isCompared ? 'Selected' : 'Compare'}</span>
+          </label>
         </div>
       </div>
 
       {/* Content */}
-      <div className={`p-5 flex flex-col ${isListView ? 'flex-1' : ''}`}>
+      <div className={`p-3 sm:p-5 flex flex-col ${isListView ? 'flex-1' : ''}`}>
         {/* Property Type */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xl">{getPropertyTypeIcon(property.propertyType)}</span>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span className="text-lg sm:text-xl">{getPropertyTypeIcon(property.propertyType)}</span>
+          <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             {PROPERTY_TYPE_LABELS[property.propertyType]}
           </span>
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
           {property.name}
         </h3>
 
         {/* Location */}
-        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-3">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-start gap-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
+          <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <span className="line-clamp-1">
+          <span className="line-clamp-2">
             {property.location.city}, {property.location.state}
           </span>
         </div>
@@ -124,42 +220,56 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               </svg>
-              <span>{property.details.squareFeet.toLocaleString()} sqft</span>
+                <span>{formatNumber(property.details.squareFeet)} sqft</span>
             </div>
           </div>
         )}
 
         {/* Token Info */}
-        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              <Web3Tooltip term="token">Available Tokens</Web3Tooltip>
-            </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
-              {property.tokenInfo.available.toLocaleString()} / {property.tokenInfo.totalSupply.toLocaleString()}
+        <div className="flex items-center justify-between mb-3 sm:mb-4 p-2 sm:p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-2">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Available Tokens</p>
+            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">
+              {formatNumber(property.tokenInfo.available)} / {formatNumber(property.tokenInfo.totalSupply)}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              <Web3Tooltip term="token">Per Token</Web3Tooltip>
-            </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+          <div className="text-right min-w-0">
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Per Token</p>
+            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">
               {formatPrice(property.price.perToken)}
             </p>
           </div>
         </div>
 
         {/* Price and CTA */}
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
-          <div>
+        <div className="flex items-center justify-between mt-auto pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700 gap-2">
+          <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-gray-400">Total Value</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">
-              {formatPrice(property.price.total)}
-            </p>
+            <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
+              <CurrencyToggle ethAmount={property.price.total} />
+            </div>
           </div>
-          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-            View Details
-          </button>
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <ShareButton 
+              property={property}
+              variant="outline"
+              size="sm"
+              className="px-2 sm:px-3 py-1.5 sm:py-2"
+            />
+            <button
+              onClick={handleAddToCart}
+              className="px-2 sm:px-3 py-1.5 sm:py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 flex-shrink-0"
+              disabled={property.tokenInfo.available === 0}
+              title="Add to Cart"
+            >
+              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
+              <Plus className="w-2 h-2 sm:w-3 sm:h-3" />
+              <span className="hidden sm:inline">Add to Cart</span>
+            </button>
+            <button className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex-shrink-0">
+              View
+            </button>
+          </div>
         </div>
       </div>
     </Link>

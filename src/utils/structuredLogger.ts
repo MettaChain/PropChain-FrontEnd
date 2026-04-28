@@ -2,7 +2,8 @@
 
 import { logger, LogLevel, type LoggerConfig } from './logger';
 import { errorReporting } from './errorReporting';
-import type { AppError, ErrorCategory, ErrorSeverity } from '@/types/errors';
+import { ErrorCategory, ErrorSeverity } from '@/types/errors';
+import type { AppError } from '@/types/errors';
 
 // ============================================================================
 // Structured Logging Service
@@ -178,7 +179,6 @@ class StructuredLogger {
     // Create AppError from structured log
     const appError: AppError = {
       id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      name: log.error.name || 'Error',
       message: log.error.message,
       category: log.category || ErrorCategory.UI,
       severity: log.severity || ErrorSeverity.MEDIUM,
@@ -193,8 +193,8 @@ class StructuredLogger {
         userId: log.userId,
         ...log.metadata,
       },
+      userMessage: log.error.message,
       stack: log.error.stack,
-      code: log.error.code,
     };
 
     errorReporting.reportError(appError);
@@ -254,9 +254,10 @@ class StructuredLogger {
         performance: {
           duration,
           operation,
-          memoryUsage: typeof performance !== 'undefined' && performance.memory 
-            ? performance.memory.usedJSHeapSize 
-            : undefined,
+          memoryUsage:
+            typeof performance !== 'undefined' && 'memory' in performance
+              ? (performance as any).memory.usedJSHeapSize
+              : undefined,
         },
         ...metadata?.metadata,
       },
@@ -444,8 +445,6 @@ export const logTransaction = (
 // ============================================================================
 // Export types and factory
 // ============================================================================
-
-export type { StructuredLoggerConfig };
 
 export const createStructuredLogger = (config?: Partial<StructuredLoggerConfig>) => {
   return new StructuredLogger(config);
