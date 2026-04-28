@@ -1,8 +1,10 @@
 "use client";
 
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useI18nFormatting } from '@/utils/i18nFormatting';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Web3Tooltip } from '@/components/ui/Web3Tooltip';
 
 export function I18nDemo() {
   const { t } = useTranslation('common');
@@ -42,7 +44,7 @@ export function I18nDemo() {
             </div>
             <div>
               <h4 className="font-medium text-sm text-gray-600 dark:text-gray-400 mb-1">
-                {t('dashboard.annualYield')}
+                <Web3Tooltip term="yield">{t('dashboard.annualYield')}</Web3Tooltip>
               </h4>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatPercentage(sampleData.roi)}

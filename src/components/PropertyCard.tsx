@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { Property } from '@/types/property';
 import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
+import { Web3Tooltip } from '@/components/ui/Web3Tooltip';
 
 interface PropertyCardProps {
   property: Property;
@@ -131,13 +132,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         {/* Token Info */}
         <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Available Tokens</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              <Web3Tooltip term="token">Available Tokens</Web3Tooltip>
+            </p>
             <p className="text-sm font-semibold text-gray-900 dark:text-white">
               {property.tokenInfo.available.toLocaleString()} / {property.tokenInfo.totalSupply.toLocaleString()}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Per Token</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              <Web3Tooltip term="token">Per Token</Web3Tooltip>
+            </p>
             <p className="text-sm font-semibold text-gray-900 dark:text-white">
               {formatPrice(property.price.perToken)}
             </p>

@@ -6,6 +6,7 @@ import { CheckCircle2, Circle, Loader2, AlertCircle, XCircle, Wallet, Broadcast,
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Web3Tooltip } from '@/components/ui/Web3Tooltip';
 
 interface TransactionStep {
   id: string;
@@ -227,7 +228,9 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
                       {step.id === 'confirm' && step.status === 'in-progress' && (
                         <div className="mt-2">
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-gray-500">Block Confirmations</span>
+                            <span className="text-gray-500">
+                              <Web3Tooltip term="block confirmation">Block Confirmations</Web3Tooltip>
+                            </span>
                             <span className="text-gray-700 dark:text-gray-300 font-medium">
                               {confirmations}/{requiredConfirmations}
                             </span>

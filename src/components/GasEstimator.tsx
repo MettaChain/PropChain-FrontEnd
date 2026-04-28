@@ -6,6 +6,7 @@ import { formatEther } from 'viem';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
+import { Web3Tooltip } from '@/components/ui/Web3Tooltip';
 
 interface GasEstimatorProps {
   to?: string;
@@ -47,7 +48,9 @@ export const GasEstimator: React.FC<GasEstimatorProps> = ({
   return (
     <Card className="w-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium">Gas Estimation</CardTitle>
+        <CardTitle className="text-sm font-medium">
+          <Web3Tooltip term="gas">Gas Estimation</Web3Tooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         {isLoading ? (
@@ -58,18 +61,24 @@ export const GasEstimator: React.FC<GasEstimatorProps> = ({
         ) : (
           <>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Gas Limit:</span>
+              <span className="text-sm text-muted-foreground">
+                <Web3Tooltip term="gas">Gas Limit:</Web3Tooltip>
+              </span>
               <Badge variant="secondary">{estimatedGas || 'N/A'}</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Estimated Cost:</span>
+              <span className="text-sm text-muted-foreground">
+                <Web3Tooltip term="gas fee">Estimated Cost:</Web3Tooltip>
+              </span>
               <Badge variant="secondary">
                 {estimatedCost ? `${parseFloat(estimatedCost).toFixed(6)} ETH` : 'N/A'}
               </Badge>
             </div>
             {gasPrice && (
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Gas Price:</span>
+                <span className="text-sm text-muted-foreground">
+                  <Web3Tooltip term="gas">Gas Price:</Web3Tooltip>
+                </span>
                 <Badge variant="outline">
                   {formatEther(gasPrice)} ETH
                 </Badge>
