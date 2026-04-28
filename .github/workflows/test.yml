@@ -45,7 +45,7 @@ jobs:
         name: codecov-umbrella
         
     - name: Archive test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: test-results-${{ matrix.node-version }}
@@ -91,7 +91,7 @@ jobs:
         fi
 
     - name: Upload E2E test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: e2e-results-${{ matrix.browser }}
@@ -124,7 +124,7 @@ jobs:
       run: npm run perf:ci
       
     - name: Upload performance results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: performance-results
