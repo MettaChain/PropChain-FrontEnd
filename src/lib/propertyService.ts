@@ -26,6 +26,7 @@ import {
   cacheSearchResult,
 } from './propertyCache';
 import { isNetworkOnline } from './cacheManager';
+import { redisCacheService } from './redisCache';
 
 /**
  * Property Service
@@ -47,14 +48,37 @@ class PropertyService {
     const { useCache = true, strategy = 'stale-while-revalidate' } = options;
     const cacheKey = { filters, sortBy, page, resultsPerPage };
 
-    // Try to get from cache first if enabled
+    // Try Redis cache first if enabled
     if (useCache) {
-      const cached = await getCachedSearchResult(filters, sortBy);
+      try {
+        const redisCached = await redisCacheService.getPropertyListings(filters, sortBy, page);
+        if (redisCached) {
+          // For cache-first, return immediately
+          if (strategy === 'cache-first') {
+            return redisCached;
+          }
+          
+          // For stale-while-revalidate, return cache but refresh in background
+          if (strategy === 'stale-while-revalidate' && isNetworkOnline()) {
+            this.fetchAndCacheSearch(filters, sortBy, page, resultsPerPage).catch((error) => {
+              // Silent fail for background refresh
+              console.warn('Background refresh failed:', error);
+            });
+          }
+          
+          return redisCached;
+        }
+      } catch (redisError) {
+        console.warn('Redis cache error, falling back to local cache:', redisError);
+      }
+
+      // Fallback to local cache if Redis fails
+      const localCached = await getCachedSearchResult(filters, sortBy);
       
-      if (cached) {
+      if (localCached) {
         // For cache-first, return immediately
         if (strategy === 'cache-first') {
-          return cached;
+          return localCached;
         }
         
         // For stale-while-revalidate, return cache but refresh in background
@@ -65,7 +89,7 @@ class PropertyService {
           });
         }
         
-        return cached;
+        return localCached;
       }
     }
 
@@ -112,8 +136,12 @@ class PropertyService {
       totalPages,
     };
 
-    // Cache the result
+    // Cache the result in both Redis and local cache
     try {
+      // Cache in Redis first (primary cache)
+      await redisCacheService.setPropertyListings(filters, sortBy, page, result);
+      
+      // Also cache in local cache as fallback
       await cacheSearchResult(filters, sortBy, result);
     } catch (error) {
       // Non-critical: log but don't fail
@@ -133,14 +161,36 @@ class PropertyService {
   ): Promise<Property | null> {
     const { useCache = true, strategy = 'cache-first' } = options;
 
-    // Try cache first if enabled
+    // Try Redis cache first if enabled
     if (useCache) {
-      const cached = await getCachedProperty(id);
+      try {
+        const redisCached = await redisCacheService.getProperty(id);
+        if (redisCached) {
+          // Return fresh cache immediately
+          if (strategy === 'cache-first') {
+            return redisCached;
+          }
+          
+          // For stale-while-revalidate, return cache but refresh in background
+          if (strategy === 'stale-while-revalidate' && isNetworkOnline()) {
+            this.fetchAndCacheProperty(id).catch(() => {
+              // Silent fail for background refresh
+            });
+          }
+          
+          return redisCached;
+        }
+      } catch (redisError) {
+        console.warn('Redis cache error, falling back to local cache:', redisError);
+      }
+
+      // Fallback to local cache if Redis fails
+      const localCached = await getCachedProperty(id);
       
-      if (cached.data) {
+      if (localCached.data) {
         // Return fresh cache immediately
-        if (!cached.stale || strategy === 'cache-first') {
-          return cached.data;
+        if (!localCached.stale || strategy === 'cache-first') {
+          return localCached.data;
         }
         
         // For stale-while-revalidate, return stale but refresh in background
@@ -150,7 +200,7 @@ class PropertyService {
           });
         }
         
-        return cached.data;
+        return localCached.data;
       }
     }
 
@@ -172,6 +222,10 @@ class PropertyService {
     
     if (property) {
       try {
+        // Cache in Redis first (primary cache)
+        await redisCacheService.setProperty(property);
+        
+        // Also cache in local cache as fallback
         await setCachedProperty(property);
       } catch (error) {
         // Non-critical: log but don't fail
