@@ -1,0 +1,85 @@
+name: Bundle Size
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  bundle-size:
+    name: Check bundle size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Check size limits
+        run: npx size-limit --json > size-report.json
+        continue-on-error: true
+
+      - name: Post size report as PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## 📦 Bundle Size Report\n\n';
+            try {
+              const report = JSON.parse(fs.readFileSync('size-report.json', 'utf8'));
+              let hasExceeded = false;
+              body += '| File | Size | Limit | Status |\n|------|------|-------|--------|\n';
+              for (const entry of report) {
+                const exceeded = entry.exceeded;
+                if (exceeded) hasExceeded = true;
+                const status = exceeded ? '❌ Exceeded' : '✅ OK';
+                body += `| ${entry.name} | ${entry.sizeText || entry.size} | ${entry.limitText || entry.limit || 'N/A'} | ${status} |\n`;
+              }
+              if (hasExceeded) {
+                body += '\n> ⚠️ **Bundle size limit exceeded.** Please reduce bundle size before merging.';
+              }
+            } catch (e) {
+              body += '_Could not parse size report._';
+            }
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.startsWith('## 📦 Bundle Size Report'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Fail if size limit exceeded
+        run: |
+          if node -e "
+            const r = require('./size-report.json');
+            process.exit(r.some(e => e.exceeded) ? 1 : 0);
+          "; then
+            echo "All bundle sizes within limits."
+          else
+            echo "Bundle size limit exceeded!"
+            exit 1
+          fi
