@@ -6,10 +6,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Calendar, History } from "lucide-react";
+import dynamic from "next/dynamic";
 import DistributionHistory from "./RentalIncomeDistribution/DistributionHistory";
 import PendingDistributions from "./RentalIncomeDistribution/PendingDistributions";
 import DistributionCalendar from "./RentalIncomeDistribution/DistributionCalendar";
-import CumulativeIncomeChart from "./RentalIncomeDistribution/CumulativeIncomeChart";
+
+const CumulativeIncomeChart = dynamic(
+  () => import("./RentalIncomeDistribution/CumulativeIncomeChart"),
+  { loading: () => <div className="h-80 bg-muted animate-pulse rounded-lg" /> }
+);
 
 export interface Distribution {
   id: string;
