@@ -141,6 +141,7 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          data-tour="property-search"
           className="w-full pl-12 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
         />
 
