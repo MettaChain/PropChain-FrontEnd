@@ -34,6 +34,14 @@ export class PhishingProtection {
     // Add more suspicious method signatures
   ];
 
+  private static readonly OFFICIAL_DOMAINS = [
+    'propchain.io',
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    // Add more official domains here
+  ];
+
   /**
    * Detects phishing attempts based on domain and content analysis
    */
@@ -56,6 +64,12 @@ export class PhishingProtection {
       if (this.isDomainSpoofing(domain)) {
         threats.push('Domain spoofing detected');
         riskScore += 70;
+      }
+
+      // Whitelist check: warn if not on an official domain
+      if (!this.isOfficialDomain(domain)) {
+        warnings.push('Unofficial domain detected');
+        riskScore += 20;
       }
 
       // Pattern-based heuristics: URL shorteners, IP addresses, long random strings
@@ -215,6 +229,36 @@ export class PhishingProtection {
       warnings,
       requiresConfirmation
     };
+  }
+
+  /**
+   * Reports a suspicious domain to the security team
+   */
+  static async reportSuspiciousDomain(domain: string, reason: string): Promise<boolean> {
+    try {
+      // In a real implementation, this would send data to a security API
+      console.warn(`[Security] Reporting suspicious domain: ${domain}. Reason: ${reason}`);
+      
+      // Placeholder for actual API call
+      // await fetch('https://api.propchain.io/security/report', {
+      //   method: 'POST',
+      //   body: JSON.stringify({ domain, reason, timestamp: Date.now() })
+      // });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to report suspicious domain:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Checks if a domain is an official PropChain domain
+   */
+  private static isOfficialDomain(domain: string): boolean {
+    return this.OFFICIAL_DOMAINS.some(officialDomain =>
+      domain === officialDomain || domain.endsWith(`.${officialDomain}`)
+    );
   }
 
   /**
