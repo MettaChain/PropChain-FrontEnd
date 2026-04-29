@@ -8,6 +8,8 @@ import type { Property, ViewMode, SortOption, SearchFilters } from '@/types/prop
 import { SORT_LABELS } from '@/types/property';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ComparisonBar } from './ComparisonBar';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Search } from 'lucide-react';
 
 interface SearchResultsProps {
   properties: Property[];
@@ -170,17 +172,11 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
       {/* Empty State */}
       {!isLoading && properties.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20">
-          <svg className="w-24 h-24 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No properties found
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
-            Try adjusting your filters or search criteria to find more properties.
-          </p>
-        </div>
+        <EmptyState
+          title="No properties found"
+          description="Try adjusting your filters or search criteria to find more properties."
+          icon={Search}
+        />
       )}
 
       {/* Results Grid/List */}
