@@ -73,6 +73,7 @@ export const MobileBottomNavigation: React.FC = () => {
               <Link
                 key={item.id}
                 href={item.href}
+                data-tour={item.id === 'portfolio' ? 'portfolio-link' : undefined}
                 className={cn(
                   'flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200 min-w-0 flex-1',
                   isActive
