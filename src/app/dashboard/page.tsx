@@ -13,8 +13,12 @@ import { KycStatusBadge } from "@/components/kyc/KycStatusBadge";
 import { useKycStore } from "@/store/kycStore";
 import Link from "next/link";
 import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
-import { StakingPanel } from "@/components/dashboard/StakingPanel";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const StakingPanel = dynamic(
+  () => import("@/components/dashboard/StakingPanel").then((m) => m.StakingPanel),
+  { loading: () => <WidgetSkeleton className="h-[400px]" /> }
+);
 
 const PortfolioOverview = dynamic(
   () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
