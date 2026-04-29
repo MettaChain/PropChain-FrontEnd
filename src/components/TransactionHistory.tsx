@@ -17,6 +17,8 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { History } from 'lucide-react';
 
 const TRANSACTION_TYPES: TransactionType[] = ['purchase', 'transfer', 'management', 'other'];
 const TRANSACTION_STATUSES: TransactionStatus[] = ['pending', 'processing', 'confirmed', 'failed', 'cancelled'];
@@ -312,10 +314,17 @@ export const TransactionHistory: React.FC = () => {
                 ))
               ) : rowsToRender.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                    {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
-                      ? 'No transactions match your filters'
-                      : 'No transactions found'}
+                  <TableCell colSpan={6} className="p-0">
+                    <EmptyState
+                      title={searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
+                        ? 'No transactions match your filters'
+                        : 'No transactions found'}
+                      description={searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
+                        ? 'Try adjusting your search or filters to see more results.'
+                        : 'Your transaction history will appear here once you start using the platform.'}
+                      icon={History}
+                      className="py-12"
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
