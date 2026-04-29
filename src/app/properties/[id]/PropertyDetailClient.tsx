@@ -1,100 +1,29 @@
-import type { Metadata } from 'next';
-import { generatePropertyMetadata, generatePropertyStructuredData, generateBreadcrumbStructuredData } from '@/utils/seo';
-import PropertyDetailClient from './PropertyDetailClient';
+'use client';
 
-// Mock property data - in a real app this would come from an API
-const mockProperties = {
-  '1': {
-    id: '1',
-    name: 'Manhattan Tower Suite',
-    location: 'New York, NY',
-    type: 'Commercial',
-    description: 'Luxury commercial space in the heart of Manhattan with premium amenities and excellent connectivity.',
-    images: [
-      'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80'
-    ],
-    value: 524000,
-    tokens: 1048,
-    roi: 14.2,
-    monthlyIncome: 3280,
-    contractAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-    blockchain: 'ethereum',
-    details: {
-      bedrooms: 0,
-      bathrooms: 2,
-      squareFeet: 2500,
-      yearBuilt: 2019,
-      parking: 4
-    },
-    tokenInfo: {
-      available: 524,
-      totalSupply: 1048,
-      perToken: 500
-    },
-    listedDate: '2023-01-15T00:00:00Z',
-    updatedAt: '2023-12-01T00:00:00Z',
-    price: {
-      total: 524000,
-      perToken: 500,
-      currency: 'USD'
-    },
-    propertyType: 'commercial',
-    metrics: {
-      roi: 14.2,
-      annualReturn: 62400,
-      transactionVolume: 1500000,
-      appreciationRate: 8.5
-    },
-    featured: true,
-    verified: true
-  },
-  '2': {
-    id: '2',
-    name: 'Sunset Beach Villa',
-    location: 'Miami, FL',
-    type: 'Residential',
-    description: 'Beautiful beachfront property with stunning ocean views and modern amenities.',
-    images: [
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80'
-    ],
-    value: 389000,
-    tokens: 778,
-    roi: 11.8,
-    monthlyIncome: 2450,
-    contractAddress: '0x1234567890123456789012345678901234567890',
-    blockchain: 'polygon',
-    details: {
-      bedrooms: 4,
-      bathrooms: 3,
-      squareFeet: 3200,
-      yearBuilt: 2021,
-      parking: 2
-    },
-    tokenInfo: {
-      available: 389,
-      totalSupply: 778,
-      perToken: 500
-    },
-    listedDate: '2023-03-20T00:00:00Z',
-    updatedAt: '2023-11-15T00:00:00Z',
-    price: {
-      total: 389000,
-      perToken: 500,
-      currency: 'USD'
-    },
-    propertyType: 'residential',
-    metrics: {
-      roi: 11.8,
-      annualReturn: 45960,
-      transactionVolume: 800000,
-      appreciationRate: 6.2
-    },
-    featured: false,
-    verified: true
-  }
-};
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { 
+  ArrowLeft, 
+  MapPin, 
+  Building2, 
+  TrendingUp, 
+  Copy, 
+  Share2, 
+  ExternalLink,
+  CheckCircle,
+  Wallet,
+  Home,
+  Bath,
+  Square
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { WalletConnector } from '@/components/WalletConnector';
 
 // Mock property data - in a real app this would come from an API
 const mockProperties = {
@@ -170,14 +99,20 @@ const blockchainLabels = {
   bsc: 'BSC'
 };
 
-export default function PropertyDetailPage() {
+interface PropertyDetailClientProps {
+  property: any;
+}
+
+export default function PropertyDetailClient({ property: initialProperty }: PropertyDetailClientProps) {
   const params = useParams();
   const router = useRouter();
-  const [property, setProperty] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [property, setProperty] = useState(initialProperty);
+  const [loading, setLoading] = useState(!initialProperty);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialProperty) return;
+
     // Simulate API call
     const timer = setTimeout(() => {
       const propertyData = mockProperties[params.id as keyof typeof mockProperties];
@@ -188,7 +123,7 @@ export default function PropertyDetailPage() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [params.id]);
+  }, [params.id, initialProperty]);
 
   const handleCopy = async (text: string, type: string) => {
     try {
