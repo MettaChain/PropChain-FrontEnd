@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import QRCode from 'qrcode';
 import type { Property } from '@/types/property';
 import { WalletConnector } from '@/components/WalletConnector';
@@ -99,12 +100,14 @@ export function PropertyDetailClient({ property }: Props) {
           <div className="lg:col-span-2 space-y-6">
             {/* Hero Image */}
             {property.images[0] && (
-              <div className="rounded-xl overflow-hidden aspect-video bg-gray-200 dark:bg-gray-700">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+              <div className="rounded-xl overflow-hidden aspect-video bg-gray-200 dark:bg-gray-700 relative">
+                <Image
                   src={property.images[0]}
                   alt={`${property.name} - main photo`}
-                  className="w-full h-full object-cover"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  className="object-cover"
                 />
               </div>
             )}

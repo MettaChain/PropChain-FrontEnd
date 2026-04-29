@@ -7,6 +7,7 @@ import { WalletConnector } from '@/components/WalletConnector';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import Link from 'next/link';
+import Image from 'next/image';
 import { toast } from 'sonner';
 
 export default function SecondaryMarketPage() {
@@ -84,10 +85,12 @@ export default function SecondaryMarketPage() {
             {listings.map((listing) => (
               <div key={listing.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 transition-transform hover:scale-[1.02]">
                 <div className="relative h-48">
-                  <img 
+                  <Image 
                     src={listing.propertyImage} 
                     alt={listing.propertyName}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover"
                   />
                   <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur px-3 py-1 rounded-full text-sm font-semibold text-blue-600 dark:text-blue-400 shadow-sm">
                     {listing.blockchain.toUpperCase()}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Share2, Twitter, Linkedin, Link2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -129,12 +130,14 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
         <div className="space-y-4">
           {/* Property Preview */}
           <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
+            <div className="relative w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
               {property.images[0] && (
-                <img
+                <Image
                   src={property.images[0]}
                   alt={property.name}
-                  className="w-full h-full object-cover"
+                  width={64}
+                  height={64}
+                  className="object-cover"
                 />
               )}
             </div>

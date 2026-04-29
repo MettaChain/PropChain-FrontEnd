@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import Image from 'next/image';
 import type { NFTCertificate } from '@/types/certificate';
 import {
   downloadCertificatePng,
@@ -51,12 +52,16 @@ export function NFTCertificateCard({ certificate }: NFTCertificateProps) {
         <div className="flex gap-4 p-6">
           {/* Property image */}
           {certificate.propertyImage && (
-            <img
-              src={certificate.propertyImage}
-              alt={certificate.propertyName}
-              className="w-36 h-28 object-cover rounded-lg flex-shrink-0 border border-amber-400/30"
-              crossOrigin="anonymous"
-            />
+            <div className="relative w-36 h-28 flex-shrink-0">
+              <Image
+                src={certificate.propertyImage}
+                alt={certificate.propertyName}
+                width={144}
+                height={112}
+                className="object-cover rounded-lg border border-amber-400/30"
+                crossOrigin="anonymous"
+              />
+            </div>
           )}
 
           {/* Details */}
