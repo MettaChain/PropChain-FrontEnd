@@ -260,7 +260,7 @@ export const useSecurity = () => {
 
       // If signature is provided, validate it
       if (signature) {
-        const signatureValidation = PhishingProtection.validateSignature(message, signature, address);
+        const signatureValidation = await PhishingProtection.validateSignature(message, signature, address);
         if (!signatureValidation.isValid) {
           blocks.push('Invalid signature');
         }

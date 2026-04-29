@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Main bundle",
+    "path": ".next/static/chunks/main-*.js",
+    "limit": "150 kB"
+  },
+  {
+    "name": "Framework bundle",
+    "path": ".next/static/chunks/framework-*.js",
+    "limit": "200 kB"
+  },
+  {
+    "name": "Total JS",
+    "path": ".next/static/chunks/*.js",
+    "limit": "650 kB"
+  }
+]

@@ -1,7 +1,7 @@
 export interface AuditLogEntry {
   id: string;
   timestamp: number;
-  eventType: 'wallet_connection' | 'wallet_disconnection' | 'transaction_signing' | 'signature_request' | 'network_switch' | 'account_switch' | 'security_alert';
+  eventType: 'wallet_connection' | 'wallet_disconnection' | 'transaction_signing' | 'signature_request' | 'network_switch' | 'account_switch' | 'security_alert' | 'auth_failure' | 'settings_change' | 'kyc_status_change' | 'transaction_initiation' | 'transaction_completion';
   userId?: string;
   walletAddress?: string;
   chainId?: number;
@@ -276,6 +276,123 @@ export class SecurityAuditLogger {
       .filter(log => log.eventType === eventType)
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, limit);
+  }
+
+  /**
+   * Logs a failed authentication attempt
+   */
+  logAuthFailure(
+    reason: string,
+    walletAddress?: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'auth_failure',
+      userId,
+      walletAddress,
+      details: { reason },
+      riskScore: 40,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
+  }
+
+  /**
+   * Logs a user settings change
+   */
+  logSettingsChange(
+    setting: string,
+    previousValue: unknown,
+    newValue: unknown,
+    walletAddress?: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'settings_change',
+      userId,
+      walletAddress,
+      details: { setting, previousValue, newValue },
+      riskScore: 5,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
+  }
+
+  /**
+   * Logs a KYC status change
+   */
+  logKycStatusChange(
+    previousStatus: string,
+    newStatus: string,
+    walletAddress?: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'kyc_status_change',
+      userId,
+      walletAddress,
+      details: { previousStatus, newStatus },
+      riskScore: 10,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
+  }
+
+  /**
+   * Logs a transaction initiation event
+   */
+  logTransactionInitiation(
+    from: string,
+    to: string,
+    value: string,
+    txType: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'transaction_initiation',
+      userId,
+      walletAddress: from,
+      details: { to, value, txType },
+      riskScore: 15,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
+  }
+
+  /**
+   * Logs a transaction completion (success or failure)
+   */
+  logTransactionCompletion(
+    txHash: string,
+    from: string,
+    success: boolean,
+    errorMessage?: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'transaction_completion',
+      userId,
+      walletAddress: from,
+      details: { txHash, success, errorMessage },
+      riskScore: success ? 0 : 20,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
   }
 
   /**

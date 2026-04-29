@@ -1,4 +1,4 @@
-import { isAddress, verifyMessage, Hex, isHex } from 'viem';
+import { isAddress, isHex, recoverMessageAddress, type Hex } from 'viem';
 
 export interface PhishingDetectionResult {
   isPhishing: boolean;
@@ -46,25 +46,25 @@ export class PhishingProtection {
       const urlObj = new URL(url);
       const domain = urlObj.hostname;
 
-      // Check against known phishing domains
+      // Hard match against a curated blocklist of known phishing domains
       if (this.isKnownPhishingDomain(domain)) {
         threats.push('Known phishing domain detected');
-        riskScore += 90;
+        riskScore += 90; // Near-certain phishing — very high score
       }
 
-      // Check for domain spoofing
+      // Fuzzy match: detect typosquatting (e.g. "metamask.io.fake")
       if (this.isDomainSpoofing(domain)) {
         threats.push('Domain spoofing detected');
         riskScore += 70;
       }
 
-      // Check for suspicious URL patterns
+      // Pattern-based heuristics: URL shorteners, IP addresses, long random strings
       if (this.hasSuspiciousUrlPatterns(url)) {
         warnings.push('Suspicious URL patterns detected');
         riskScore += 30;
       }
 
-      // Check content if provided
+      // Optional deep content scan (e.g. page HTML passed by caller)
       if (content) {
         const contentAnalysis = this.analyzeContent(content);
         threats.push(...contentAnalysis.threats);
@@ -73,13 +73,15 @@ export class PhishingProtection {
       }
 
     } catch (error) {
+      // URL constructor throws on malformed URLs — treat as suspicious
       warnings.push('Invalid URL format');
       riskScore += 20;
     }
 
     return {
+      // Threshold of 70 chosen to balance false positives vs. missed phishing
       isPhishing: riskScore >= 70,
-      riskScore: Math.min(riskScore, 100),
+      riskScore: Math.min(riskScore, 100), // Cap at 100 regardless of additive scores
       threats,
       warnings
     };
@@ -88,18 +90,18 @@ export class PhishingProtection {
   /**
    * Validates transaction signatures for malicious intent
    */
-  static validateSignature(
+  static async validateSignature(
     message: string,
     signature: string,
     address: string
-  ): SignatureValidationResult {
+  ): Promise<SignatureValidationResult> {
     const warnings: string[] = [];
     let isMalicious = false;
     let decodedData: any;
 
     try {
       // Recover the signing address
-      const recoveredAddress = verifyMessage({ message, signature });
+      const recoveredAddress = await recoverMessageAddress({ message, signature: signature as Hex });
       
       if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
         return {
@@ -226,12 +228,15 @@ export class PhishingProtection {
 
   /**
    * Checks for domain spoofing attempts
+   * Uses string similarity to catch typosquatting (e.g. "metamask.io" vs "metarnask.io")
    */
   private static isDomainSpoofing(domain: string): boolean {
     const legitimateDomains = ['metamask.io', 'myetherwallet.com', 'trustwallet.app'];
     
     return legitimateDomains.some(legit => {
+      // Similarity > 0.8 means the domain looks very close to a legitimate one
       const similarity = this.calculateStringSimilarity(domain, legit);
+      // Exclude exact matches — only flag near-duplicates
       return similarity > 0.8 && domain !== legit;
     });
   }
@@ -430,14 +435,20 @@ export class PhishingProtection {
 
   /**
    * Calculates Levenshtein distance between two strings
+   * Uses dynamic programming (Wagner-Fischer algorithm) — O(m*n) time and space.
+   * The edit distance is the minimum number of single-character edits (insert,
+   * delete, substitute) needed to transform str1 into str2.
    */
   private static levenshteinDistance(str1: string, str2: string): number {
+    // matrix[i][j] = edit distance between str2[0..i-1] and str1[0..j-1]
     const matrix = [];
 
+    // Initialize first column: cost of deleting all chars from str2 prefix
     for (let i = 0; i <= str2.length; i++) {
       matrix[i] = [i];
     }
 
+    // Initialize first row: cost of inserting all chars from str1 prefix
     for (let j = 0; j <= str1.length; j++) {
       matrix[0][j] = j;
     }
@@ -445,12 +456,14 @@ export class PhishingProtection {
     for (let i = 1; i <= str2.length; i++) {
       for (let j = 1; j <= str1.length; j++) {
         if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          // Characters match — no edit needed, inherit diagonal cost
           matrix[i][j] = matrix[i - 1][j - 1];
         } else {
+          // Take the cheapest of: substitution, insertion, or deletion
           matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
           );
         }
       }

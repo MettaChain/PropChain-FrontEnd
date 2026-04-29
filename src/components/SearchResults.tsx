@@ -1,9 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
-import type { Property, ViewMode, SortOption } from '@/types/property';
+import { SaveSearchButton } from './SaveSearchButton';
+import type { Property, ViewMode, SortOption, SearchFilters } from '@/types/property';
 import { SORT_LABELS } from '@/types/property';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ComparisonBar } from './ComparisonBar';
 
 interface SearchResultsProps {
   properties: Property[];
@@ -14,6 +18,7 @@ interface SearchResultsProps {
   sortBy: SortOption;
   page: number;
   totalPages: number;
+  filters: SearchFilters;
   onViewModeChange: (mode: 'grid' | 'list') => void;
   onSortChange: (sort: SortOption) => void;
   onPageChange: (page: number) => void;
@@ -28,10 +33,40 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   sortBy,
   page,
   totalPages,
+  filters,
   onViewModeChange,
   onSortChange,
   onPageChange,
 }) => {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const [columns, setColumns] = React.useState(1);
+
+  useEffect(() => {
+    const updateColumns = () => {
+      if (viewMode === 'list') {
+        setColumns(1);
+        return;
+      }
+      if (window.innerWidth >= 1024) setColumns(3);
+      else if (window.innerWidth >= 768) setColumns(2);
+      else setColumns(1);
+    };
+
+    updateColumns();
+    window.addEventListener('resize', updateColumns);
+    return () => window.removeEventListener('resize', updateColumns);
+  }, [viewMode]);
+
+  const rowCount = Math.ceil(properties.length / columns);
+
+  const rowVirtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => (viewMode === 'grid' ? 450 : 200),
+    overscan: 5,
+  });
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -47,7 +82,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   }
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -62,6 +97,12 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
+          <SaveSearchButton
+            filters={filters}
+            sortBy={sortBy}
+            className="flex-shrink-0"
+          />
+
           {/* Sort Dropdown */}
           <select
             value={sortBy}
@@ -75,7 +116,6 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
             ))}
           </select>
 
-          {/* View Mode Toggle */}
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               onClick={() => onViewModeChange('grid')}
@@ -107,16 +147,21 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         </div>
       </div>
 
+      <ComparisonBar />
+
       {/* Loading State */}
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden animate-pulse">
-              <div className="w-full h-56 bg-gray-300 dark:bg-gray-700" />
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+              <Skeleton className="w-full h-56 rounded-none" />
               <div className="p-5 space-y-3">
-                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4" />
-                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2" />
-                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full" />
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <div className="pt-2">
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                </div>
               </div>
             </div>
           ))}
@@ -167,15 +212,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
               <div className="flex items-center gap-1">
                 {[...Array(Math.min(totalPages, 5))].map((_, i) => {
                   let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (page <= 3) {
-                    pageNum = i + 1;
-                  } else if (page >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = page - 2 + i;
-                  }
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (page <= 3) pageNum = i + 1;
+                  else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = page - 2 + i;
 
                   return (
                     <button
@@ -207,3 +247,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     </div>
   );
 };
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(' ');
+}

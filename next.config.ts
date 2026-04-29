@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
     ],
     formats: ["image/avif", "image/webp"],
   },
+  turbopack: {},
   async headers() {
     return [
       {
@@ -43,6 +44,28 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
+      {
+        source: "/properties/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=60, stale-while-revalidate=300, s-maxage=300",
+          },
+          {
+            key: "Vary",
+            value: "Accept-Encoding",
+          },
+        ],
+      },
+      {
+        source: "/api/:path*",
         headers: [
           {
             key: "Cache-Control",

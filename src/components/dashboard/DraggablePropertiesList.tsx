@@ -122,13 +122,6 @@ export const DraggablePropertiesList = memo(() => {
     setDraggedItem(property);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', e.currentTarget.outerHTML);
-    // Add custom drag image
-    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
-    dragImage.style.opacity = '0.8';
-    dragImage.style.transform = 'rotate(2deg)';
-    document.body.appendChild(dragImage);
-    e.dataTransfer.setDragImage(dragImage, 50, 50);
-    setTimeout(() => document.body.removeChild(dragImage), 0);
   }, [draggedItem]);
 
   const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
@@ -153,11 +146,6 @@ export const DraggablePropertiesList = memo(() => {
     const newProperties = [...properties];
     newProperties.splice(draggedIndex, 1);
     newProperties.splice(dropIndex, 0, draggedItem);
-    
-    // Add haptic feedback if available
-    if ('vibrate' in navigator) {
-      navigator.vibrate(50);
-    }
     
     setProperties(newProperties);
     setDraggedItem(null);
@@ -184,15 +172,6 @@ export const DraggablePropertiesList = memo(() => {
           [newProperties[index], newProperties[index - 1]] = 
           [newProperties[index - 1], newProperties[index]];
           setProperties(newProperties);
-          // Announce change for screen readers
-          const announcement = `Moved ${newProperties[index].name} to position ${index + 1}`;
-          const announcementElement = document.createElement('div');
-          announcementElement.setAttribute('aria-live', 'polite');
-          announcementElement.setAttribute('aria-atomic', 'true');
-          announcementElement.className = 'sr-only';
-          announcementElement.textContent = announcement;
-          document.body.appendChild(announcementElement);
-          setTimeout(() => document.body.removeChild(announcementElement), 1000);
         }
         break;
       case 'ArrowDown':
@@ -201,37 +180,7 @@ export const DraggablePropertiesList = memo(() => {
           [newProperties[index], newProperties[index + 1]] = 
           [newProperties[index + 1], newProperties[index]];
           setProperties(newProperties);
-          // Announce change for screen readers
-          const announcement = `Moved ${newProperties[index].name} to position ${index + 1}`;
-          const announcementElement = document.createElement('div');
-          announcementElement.setAttribute('aria-live', 'polite');
-          announcementElement.setAttribute('aria-atomic', 'true');
-          announcementElement.className = 'sr-only';
-          announcementElement.textContent = announcement;
-          document.body.appendChild(announcementElement);
-          setTimeout(() => document.body.removeChild(announcementElement), 1000);
         }
-        break;
-      case 'Home':
-        e.preventDefault();
-        if (index !== 0) {
-          const [item] = newProperties.splice(index, 1);
-          newProperties.unshift(item);
-          setProperties(newProperties);
-        }
-        break;
-      case 'End':
-        e.preventDefault();
-        if (index !== properties.length - 1) {
-          const [item] = newProperties.splice(index, 1);
-          newProperties.push(item);
-          setProperties(newProperties);
-        }
-        break;
-      case ' ':
-      case 'Enter':
-        e.preventDefault();
-        // Toggle selection or perform action
         break;
     }
   };
@@ -246,7 +195,7 @@ export const DraggablePropertiesList = memo(() => {
         <div>
           <h3 className="text-lg font-semibold">Your Properties</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Drag and drop to reorder your portfolio • Use arrow keys to navigate
+            Drag and drop to reorder your portfolio
           </p>
         </div>
         <div className="flex gap-2">
@@ -255,15 +204,11 @@ export const DraggablePropertiesList = memo(() => {
             size="sm"
             onClick={resetToDefault}
             className="text-xs"
-            title="Reset to default order"
           >
             <RotateCcw className="w-3 h-3 mr-1" />
             Reset Order
           </Button>
-          <button 
-            className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-            title="View all properties"
-          >
+          <button className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
             View All →
           </button>
         </div>

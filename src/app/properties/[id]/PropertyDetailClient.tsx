@@ -1,191 +1,66 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Building2, 
-  TrendingUp, 
-  Copy, 
-  Share2, 
-  ExternalLink,
-  CheckCircle,
-  Wallet,
-  Home,
-  Bath,
-  Square
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import QRCode from 'qrcode';
+import type { Property } from '@/types/property';
 import { WalletConnector } from '@/components/WalletConnector';
+import { PriceAlertBell } from '@/components/PriceAlertBell';
+import { SetPriceAlertModal } from '@/components/property/SetPriceAlertModal';
+import { useNotificationStore } from '@/store/notificationStore';
+import { toast } from 'sonner';
+import { useI18nFormatting } from '@/utils/i18nFormatting';
+import type { PriceAlertType } from '@/types/property';
 
-// Mock property data - in a real app this would come from an API
-const mockProperties = {
-  '1': {
-    id: '1',
-    name: 'Manhattan Tower Suite',
-    location: 'New York, NY',
-    type: 'Commercial',
-    description: 'Luxury commercial space in the heart of Manhattan with premium amenities and excellent connectivity.',
-    images: [
-      'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80'
-    ],
-    value: 524000,
-    tokens: 1048,
-    roi: 14.2,
-    monthlyIncome: 3280,
-    contractAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-    blockchain: 'ethereum',
-    details: {
-      bedrooms: 0,
-      bathrooms: 2,
-      squareFeet: 2500,
-      yearBuilt: 2019,
-      parking: 4
-    },
-    tokenInfo: {
-      available: 524,
-      totalSupply: 1048,
-      perToken: 500
-    }
-  },
-  '2': {
-    id: '2',
-    name: 'Sunset Beach Villa',
-    location: 'Miami, FL',
-    type: 'Residential',
-    description: 'Beautiful beachfront property with stunning ocean views and modern amenities.',
-    images: [
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop&q=80'
-    ],
-    value: 389000,
-    tokens: 778,
-    roi: 11.8,
-    monthlyIncome: 2450,
-    contractAddress: '0x1234567890123456789012345678901234567890',
-    blockchain: 'polygon',
-    details: {
-      bedrooms: 4,
-      bathrooms: 3,
-      squareFeet: 3200,
-      yearBuilt: 2021,
-      parking: 2
-    },
-    tokenInfo: {
-      available: 389,
-      totalSupply: 778,
-      perToken: 500
-    }
-  }
-};
-
-const blockchainColors = {
-  ethereum: '#627EEA',
-  polygon: '#8247E5',
-  bsc: '#F3BA2F'
-};
-
-const blockchainLabels = {
-  ethereum: 'Ethereum',
-  polygon: 'Polygon',
-  bsc: 'BSC'
-};
-
-interface PropertyDetailClientProps {
-  property: any;
+interface Props {
+  property: Property;
 }
 
-export default function PropertyDetailClient({ property: initialProperty }: PropertyDetailClientProps) {
-  const params = useParams();
-  const router = useRouter();
-  const [property, setProperty] = useState(initialProperty);
-  const [loading, setLoading] = useState(!initialProperty);
-  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+export function PropertyDetailClient({ property }: Props) {
+  const qrRef = useRef<HTMLCanvasElement>(null);
+  const [qrGenerated, setQrGenerated] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const { priceAlerts, addPriceAlert } = useNotificationStore();
+  const existingAlert = priceAlerts.find((a) => a.propertyId === property.id);
+  const { formatCurrency, formatNumber, formatDate } = useI18nFormatting();
+
+  const handleSetAlert = (alertType: PriceAlertType, targetPrice: number, emailNotification: boolean) => {
+    addPriceAlert({
+      id: `alert-${property.id}-${Date.now()}`,
+      propertyId: property.id,
+      propertyName: property.name,
+      propertyImage: property.images[0],
+      alertType,
+      targetPrice,
+      currentPrice: property.price.perToken,
+      createdAt: new Date().toISOString(),
+      isActive: true,
+      isTriggered: false,
+      userId: '',
+      emailNotification,
+    });
+    toast.success('Price alert set successfully');
+  };
+
+  const shareUrl =
+    typeof window !== 'undefined'
+      ? window.location.href
+      : `https://propchain.io/properties/${property.id}`;
 
   useEffect(() => {
-    if (initialProperty) return;
-
-    // Simulate API call
-    const timer = setTimeout(() => {
-      const propertyData = mockProperties[params.id as keyof typeof mockProperties];
-      if (propertyData) {
-        setProperty(propertyData);
-      }
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [params.id, initialProperty]);
-
-  const handleCopy = async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedItem(type);
-      toast.success(`${type} copied to clipboard!`);
-      setTimeout(() => setCopiedItem(null), 2000);
-    } catch (error) {
-      toast.error('Failed to copy to clipboard');
+    if (qrRef.current) {
+      QRCode.toCanvas(qrRef.current, shareUrl, { width: 160, margin: 1 }, () => {
+        setQrGenerated(true);
+      });
     }
+  }, [shareUrl]);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
-
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/properties/${property.id}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: property.name,
-          text: `Check out this property: ${property.name} in ${property.location}`,
-          url: shareUrl
-        });
-      } else {
-        await handleCopy(shareUrl, 'Property URL');
-      }
-    } catch (error) {
-      console.error('Error sharing:', error);
-    }
-  };
-
-  const handleViewOnExplorer = () => {
-    const explorerUrl = property.blockchain === 'ethereum' 
-      ? `https://etherscan.io/address/${property.contractAddress}`
-      : property.blockchain === 'polygon'
-      ? `https://polygonscan.com/address/${property.contractAddress}`
-      : `https://bscscan.com/address/${property.contractAddress}`;
-    
-    window.open(explorerUrl, '_blank');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading property details...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!property) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Property Not Found</h1>
-          <Button onClick={() => router.push('/properties')}>
-            Back to Properties
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -193,258 +68,246 @@ export default function PropertyDetailClient({ property: initialProperty }: Prop
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Link href="/properties" className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Properties
-              </Link>
-              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">PC</span>
-                </div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  PropChain
-                </h1>
+            <Link href="/properties" className="flex items-center gap-3" aria-label="Back to properties">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center" aria-hidden="true">
+                <span className="text-white font-bold text-sm">PC</span>
               </div>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">PropChain</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <PriceAlertBell />
+              <WalletConnector />
             </div>
-            <WalletConnector />
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-        >
-          {/* Left Column - Images and Basic Info */}
+        {/* Breadcrumb */}
+        <nav aria-label="Breadcrumb" className="mb-6">
+          <ol className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <li><Link href="/" className="hover:text-blue-600">Home</Link></li>
+            <li aria-hidden="true">/</li>
+            <li><Link href="/properties" className="hover:text-blue-600">Properties</Link></li>
+            <li aria-hidden="true">/</li>
+            <li className="text-gray-900 dark:text-white font-medium" aria-current="page">{property.name}</li>
+          </ol>
+        </nav>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left: Images + Details */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Image Gallery */}
-            <Card className="overflow-hidden">
-              <div className="relative h-96">
-                <Image
+            {/* Hero Image */}
+            {property.images[0] && (
+              <div className="rounded-xl overflow-hidden aspect-video bg-gray-200 dark:bg-gray-700">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={property.images[0]}
-                  alt={property.name}
-                  fill
-                  className="object-cover"
+                  alt={`${property.name} - main photo`}
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute top-4 left-4">
-                  <Badge 
-                    className="text-white"
-                    style={{ backgroundColor: blockchainColors[property.blockchain as keyof typeof blockchainColors] }}
-                  >
-                    {blockchainLabels[property.blockchain as keyof typeof blockchainLabels]}
-                  </Badge>
+              </div>
+            )}
+
+            {/* Property Info */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{property.name}</h1>
+                  <p className="text-gray-500 dark:text-gray-400 mt-1">
+                    {property.location.address}, {property.location.city}, {property.location.state}
+                  </p>
                 </div>
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-green-500 text-white">
-                    {property.roi}% ROI
-                  </Badge>
+                <div className="flex gap-2">
+                  {property.verified && (
+                    <span className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      Verified
+                    </span>
+                  )}
+                  {property.featured && (
+                    <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      Featured
+                    </span>
+                  )}
                 </div>
               </div>
-            </Card>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{property.description}</p>
+            </div>
+
+            {/* Metrics */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Investment Metrics</h2>
+              <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { label: 'Annual ROI', value: `${property.metrics.roi}%` },
+                  { label: 'Annual Return', value: formatCurrency(property.metrics.annualReturn) },
+                  { label: 'Appreciation', value: `${property.metrics.appreciationRate}%` },
+                  { label: 'Volume', value: formatCurrency(property.metrics.transactionVolume) },
+                ].map(({ label, value }) => (
+                  <div key={label} className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <dt className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</dt>
+                    <dd className="text-lg font-bold text-blue-600 dark:text-blue-400">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
 
             {/* Property Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5" />
-                  Property Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    {property.name}
-                  </h2>
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <MapPin className="w-4 h-4" />
-                    <span>{property.location}</span>
-                  </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Property Details</h2>
+              <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                {property.details.bedrooms !== undefined && (
+                  <div><dt className="text-gray-500 dark:text-gray-400">Bedrooms</dt><dd className="font-medium text-gray-900 dark:text-white">{property.details.bedrooms}</dd></div>
+                )}
+                {property.details.bathrooms !== undefined && (
+                  <div><dt className="text-gray-500 dark:text-gray-400">Bathrooms</dt><dd className="font-medium text-gray-900 dark:text-white">{property.details.bathrooms}</dd></div>
+                )}
+                <div><dt className="text-gray-500 dark:text-gray-400">Square Feet</dt><dd className="font-medium text-gray-900 dark:text-white">{formatNumber(property.details.squareFeet)} sqft</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Year Built</dt><dd className="font-medium text-gray-900 dark:text-white">{property.details.yearBuilt}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Listed</dt><dd className="font-medium text-gray-900 dark:text-white">{formatDate(property.listedDate)}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Type</dt><dd className="font-medium text-gray-900 dark:text-white capitalize">{property.propertyType}</dd></div>
+                <div><dt className="text-gray-500 dark:text-gray-400">Blockchain</dt><dd className="font-medium text-gray-900 dark:text-white capitalize">{property.blockchain}</dd></div>
+              </dl>
+              {property.details.amenities.length > 0 && (
+                <div className="mt-4">
+                  <dt className="text-sm text-gray-500 dark:text-gray-400 mb-2">Amenities</dt>
+                  <dd className="flex flex-wrap gap-2">
+                    {property.details.amenities.map((a) => (
+                      <span key={a} className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded">{a}</span>
+                    ))}
+                  </dd>
                 </div>
-
-                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                  {property.description}
-                </p>
-
-                {/* Property Details Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <Home className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Bedrooms</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {property.details.bedrooms || 'N/A'}
-                    </p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <Bath className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Bathrooms</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {property.details.bathrooms}
-                    </p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <Square className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Square Feet</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {property.details.squareFeet.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <TrendingUp className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Year Built</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {property.details.yearBuilt}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Contract Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wallet className="w-5 h-5" />
-                  Contract Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Smart Contract Address
-                  </label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg font-mono text-sm">
-                      {property.contractAddress}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopy(property.contractAddress, 'Contract Address')}
-                      className="flex items-center gap-2"
-                    >
-                      {copiedItem === 'Contract Address' ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                      {copiedItem === 'Contract Address' ? 'Copied!' : 'Copy'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleViewOnExplorer}
-                      className="flex items-center gap-2"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      Explorer
-                    </Button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Referral Link
-                  </label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg font-mono text-sm">
-                      {`${window.location.origin}/properties/${property.id}?ref=wallet123`}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopy(`${window.location.origin}/properties/${property.id}?ref=wallet123`, 'Referral Link')}
-                      className="flex items-center gap-2"
-                    >
-                      {copiedItem === 'Referral Link' ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                      {copiedItem === 'Referral Link' ? 'Copied!' : 'Copy'}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - Investment Info */}
-          <div className="space-y-6">
-            {/* Investment Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Investment Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Total Value</span>
-                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    ${property.value.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Monthly Income</span>
-                  <span className="text-lg font-semibold text-green-600">
-                    ${property.monthlyIncome.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Annual ROI</span>
-                  <span className="text-lg font-semibold text-blue-600">
-                    {property.roi}%
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Token Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Token Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Available Tokens</span>
-                    <span className="font-semibold">
-                      {property.tokenInfo.available.toLocaleString()} / {property.tokenInfo.totalSupply.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full"
-                      style={{ width: `${(property.tokenInfo.available / property.tokenInfo.totalSupply) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Price per Token</span>
-                  <span className="font-semibold">
-                    ${property.tokenInfo.perToken}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Button className="w-full" size="lg">
-                Invest Now
-              </Button>
-              <Button variant="outline" className="w-full" onClick={handleShare}>
-                <Share2 className="w-4 h-4 mr-2" />
-                Share Property
-              </Button>
+              )}
             </div>
           </div>
-        </motion.div>
+
+          {/* Right: Purchase + Share */}
+          <div className="space-y-6">
+            {/* Pricing Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm sticky top-24">
+              <div className="mb-4">
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(property.price.total)}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{formatCurrency(property.price.perToken)} per token</p>
+              </div>
+
+              {/* Token availability */}
+              <div className="mb-4">
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  <span>Tokens Available</span>
+                  <span>{formatNumber(property.tokenInfo.available)} / {formatNumber(property.tokenInfo.totalSupply)}</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2" role="progressbar" aria-valuenow={property.tokenInfo.sold} aria-valuemin={0} aria-valuemax={property.tokenInfo.totalSupply} aria-label="Tokens sold">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full"
+                    style={{ width: `${(property.tokenInfo.sold / property.tokenInfo.totalSupply) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="w-full bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 text-white font-semibold py-3 px-4 rounded-lg transition-colors focus:outline-none"
+                aria-label={`Purchase tokens for ${property.name}`}
+              >
+                Purchase Tokens
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsAlertModalOpen(true)}
+                className="w-full border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center gap-2"
+                aria-label={existingAlert ? 'Manage price alert' : 'Set price alert'}
+              >
+                {existingAlert ? (
+                  <>
+                    <span>🔔</span> Manage Alert
+                  </>
+                ) : (
+                  <>
+                    <span>🔔</span> Set Price Alert
+                  </>
+                )}
+              </button>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+                Token: {property.tokenInfo.tokenSymbol} · {property.blockchain}
+              </p>
+            </div>
+
+            {/* Share / QR Code */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Share This Property</h2>
+
+              {/* QR Code */}
+              <div className="flex flex-col items-center mb-4">
+                <canvas
+                  ref={qrRef}
+                  aria-label={`QR code linking to ${property.name} property page`}
+                  role="img"
+                  className={qrGenerated ? '' : 'opacity-0'}
+                />
+                {!qrGenerated && (
+                  <div className="w-40 h-40 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" aria-hidden="true" />
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">Scan to open on mobile</p>
+              </div>
+
+              {/* Copy link */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={shareUrl}
+                  aria-label="Shareable property URL"
+                  className="flex-1 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-600 dark:text-gray-300 truncate focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  aria-label="Copy property URL to clipboard"
+                  className="bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors focus:outline-none whitespace-nowrap"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+
+              {/* Social share links */}
+              <div className="flex gap-3 mt-4 justify-center">
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${property.name} on PropChain`)}&url=${encodeURIComponent(shareUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Share on Twitter"
+                  className="text-sm text-blue-500 hover:text-blue-700 underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                >
+                  Twitter
+                </a>
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Share on LinkedIn"
+                  className="text-sm text-blue-500 hover:text-blue-700 underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                >
+                  LinkedIn
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
+
+      <SetPriceAlertModal
+        property={property}
+        isOpen={isAlertModalOpen}
+        onOpenChange={setIsAlertModalOpen}
+        onSetAlert={handleSetAlert}
+        existingAlert={existingAlert ? {
+          alertType: existingAlert.alertType,
+          targetPrice: existingAlert.targetPrice,
+          isActive: existingAlert.isActive,
+        } : undefined}
+      />
     </div>
   );
 }

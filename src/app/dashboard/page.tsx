@@ -6,6 +6,15 @@ import { WalletConnector } from "@/components/WalletConnector";
 import { TransactionQueue } from "@/components/TransactionQueue";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CertificatesPanel } from "@/components/dashboard/CertificatesPanel";
+import { KycVerificationCenter } from "@/components/kyc/KycVerificationCenter";
+import { ComplianceAuditLog } from "@/components/kyc/ComplianceAuditLog";
+import { KycStatusBadge } from "@/components/kyc/KycStatusBadge";
+import { useKycStore } from "@/store/kycStore";
+import Link from "next/link";
+import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
+import { StakingPanel } from "@/components/dashboard/StakingPanel";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PortfolioOverview = dynamic(
   () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
@@ -27,6 +36,10 @@ const RecentTransactions = dynamic(
   () => import("@/components/dashboard/RecentTransactions").then((m) => m.RecentTransactions),
   { loading: () => <WidgetSkeleton className="h-[240px]" /> }
 );
+const YieldChart = dynamic(
+  () => import("@/components/dashboard/YieldChart").then((m) => m.YieldChart),
+  { loading: () => <WidgetSkeleton className="h-[340px]" /> }
+);
 const IncomeTracker = dynamic(
   () => import("@/components/dashboard/IncomeTracker").then((m) => m.IncomeTracker),
   { loading: () => <WidgetSkeleton className="h-[340px]" /> }
@@ -46,21 +59,11 @@ const DataRefreshWrapper = dynamic(
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeItem, setActiveItem] = useState("dashboard");
+  const { profile } = useKycStore();
 
   return (
     <div className="min-h-screen bg-background flex w-full">
-      {/* <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        activeItem={activeItem}
-        onItemClick={(item) => {
-          setActiveItem(item);
-          setSidebarOpen(false);
-        }}
-      /> */}
-
       <div className="flex-1 flex flex-col min-w-0">
-        {/* <Header onMenuToggle={() => setSidebarOpen(true)} /> */}
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
           <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,25 +82,31 @@ const Index = () => {
           </header>
 
           <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 overflow-auto">
-            {/* Welcome section */}
             <div className="space-y-1">
               <h2 className="text-2xl md:text-3xl font-bold">
                 Welcome back, <span className="text-[#155DFC]">John</span>
               </h2>
-              <p className="text-muted-foreground">
-                Here's an overview of your real estate token portfolio
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-muted-foreground">
+                  Here's an overview of your real estate token portfolio
+                </p>
+                <KycStatusBadge status={profile.status} thresholdEth={profile.thresholdEth} />
+              </div>
             </div>
 
-            {/* KPI Overview */}
-            {/* <PortfolioOverview /> */}
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/compliance"
+                className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                Open compliance center
+              </Link>
+            </div>
 
-             {/* Data Refresh Wrapper for KPIs */}
-          <DataRefreshWrapper lastUpdated={new Date(Date.now() - 120000)}>
-            <PortfolioOverview />
-          </DataRefreshWrapper>
+            <DataRefreshWrapper lastUpdated={new Date(Date.now() - 120000)}>
+              <PortfolioOverview />
+            </DataRefreshWrapper>
 
-            {/* Charts row */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2">
                 <PerformanceChart />
@@ -107,25 +116,31 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Income Tracker */}
-            <IncomeTracker />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <YieldChart />
+              <IncomeTracker />
+            </div>
 
-             {/* Risk Analysis */}
-          <RiskAnalysis />
+            <RiskAnalysis />
 
-          {/* Export Reports */}
-          <PortfolioReport />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <KycVerificationCenter />
+              <ComplianceAuditLog />
+            </div>
 
-            {/* Properties */}
+            <PortfolioReport />
+
             <PropertiesList />
 
-            {/* Transaction Management */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Transaction Management</h3>
+              <TransactionSecuritySettings />
               <Tabs defaultValue="queue" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
                   <TabsTrigger value="history">Transaction History</TabsTrigger>
+                  <TabsTrigger value="staking">Staking & Yield</TabsTrigger>
+                  <TabsTrigger value="certificates">My Certificates</TabsTrigger>
                 </TabsList>
                 <TabsContent value="queue">
                   <TransactionQueue />
@@ -133,10 +148,15 @@ const Index = () => {
                 <TabsContent value="history">
                   <TransactionHistory />
                 </TabsContent>
+                <TabsContent value="certificates">
+                  <CertificatesPanel />
+                </TabsContent>
+                <TabsContent value="staking">
+                  <StakingPanel />
+                </TabsContent>
               </Tabs>
             </div>
 
-            {/* Transactions */}
             <RecentTransactions />
           </main>
         </div>
@@ -149,8 +169,22 @@ export default Index;
 
 function WidgetSkeleton({ className = "h-40" }: { className?: string }) {
   return (
-    <div
-      className={`w-full rounded-xl bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 animate-pulse ${className}`}
-    />
+    <div className={`w-full rounded-xl bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 ${className}`}>
+      <div className="h-full w-full p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-5 w-16" />
+        </div>
+        <div className="flex-1 space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 w-24 rounded-lg" />
+          <Skeleton className="h-9 w-24 rounded-lg" />
+        </div>
+      </div>
+    </div>
   );
 }
