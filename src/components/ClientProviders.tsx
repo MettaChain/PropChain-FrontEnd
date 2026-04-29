@@ -12,6 +12,7 @@ import "@/lib/i18n";
 import dynamic from "next/dynamic";
 
 import { useOnboardingStore } from "@/store/onboardingStore";
+import { DomainWarningBanner } from "@/components/DomainWarningBanner";
 import { useEffect } from "react";
 
 interface ClientProvidersProps {
@@ -65,6 +66,7 @@ export function ClientProviders({ children }: ClientProvidersProps) {
           <PerformanceMonitor />
           <ServiceWorkerRegistration />
           <OfflineIndicator />
+          <DomainWarningBanner />
           {children}
           <TransactionMonitor />
           <NotificationSystem />
