@@ -16,6 +16,10 @@ const envSchema = z.object({
     .enum(["development", "staging", "production"])
     .default("development"),
   ANALYZE: z.string().optional().default("false"),
+  CSP_ENFORCE: z
+    .string()
+    .transform((val) => val === "true")
+    .default(false),
 
   // API Configurations
   NEXT_PUBLIC_PROPERTY_API_URL: z.string().url().optional(),
@@ -170,6 +174,7 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
     "Base URL for the application (include protocol and trailing slash)",
   NODE_ENV: "Current deployment environment (development, staging, production)",
   ANALYZE: 'Enable build analysis (set to "true" for bundle analysis)',
+  CSP_ENFORCE: "Enable CSP enforcement (report-only when false)",
   NEXT_PUBLIC_PROPERTY_API_URL:
     "Property API endpoint for fetching property data",
   NEXT_PUBLIC_ANALYTICS_API_URL: "Analytics API endpoint",
