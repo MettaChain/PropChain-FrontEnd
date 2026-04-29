@@ -11,6 +11,10 @@ import { LoadingProgressBar } from "@/components/LoadingProgressBar";
 import "@/lib/i18n";
 import dynamic from "next/dynamic";
 
+import { useOnboardingStore } from "@/store/onboardingStore";
+import { DomainWarningBanner } from "@/components/DomainWarningBanner";
+import { useEffect } from "react";
+
 interface ClientProvidersProps {
   children: React.ReactNode;
 }
@@ -35,31 +39,41 @@ const MobileBottomNavigation = dynamic(
   () => import("@/components/MobileBottomNavigation").then((m) => m.MobileBottomNavigation),
   { ssr: false }
 );
+const OnboardingTour = dynamic(
+  () => import("@/components/OnboardingTour").then((m) => m.OnboardingTour),
+  { ssr: false }
+);
 
 export function ClientProviders({ children }: ClientProvidersProps) {
+  const { startOnboarding, hasCompletedOnboarding } = useOnboardingStore();
+
+  useEffect(() => {
+    // Automatically start onboarding for new users after a short delay
+    const timer = setTimeout(() => {
+      if (!hasCompletedOnboarding) {
+        startOnboarding();
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [hasCompletedOnboarding, startOnboarding]);
+
   return (
     <WagmiProvider config={config}>
-      <ChainAwareProvider>
-        <LoadingProgressBar />
-        <PerformanceMonitor />
-        {children}
-        <TransactionMonitor />
-        <NotificationSystem />
-        <Toaster />
-        <FloatingComparisonBar />
-        <MobileBottomNavigation />
-      </ChainAwareProvider>
       <QueryProvider>
         <ChainAwareProvider>
           <LoadingProgressBar />
           <PerformanceMonitor />
           <ServiceWorkerRegistration />
           <OfflineIndicator />
+          <DomainWarningBanner />
           {children}
           <TransactionMonitor />
           <NotificationSystem />
           <Toaster />
+          <FloatingComparisonBar />
           <MobileBottomNavigation />
+          <OnboardingTour />
         </ChainAwareProvider>
       </QueryProvider>
     </WagmiProvider>

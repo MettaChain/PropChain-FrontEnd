@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { PropertyAlert } from '@/types/property';
 import { formatDistanceToNow } from 'date-fns';
 import { 
@@ -19,6 +18,7 @@ import {
   AlertCircle,
   TrendingUp
 } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface NotificationCenterProps {
   alerts: PropertyAlert[];
@@ -27,14 +27,14 @@ interface NotificationCenterProps {
   onClearAlert: (alertId: string) => void;
 }
 
-export const NotificationCenter: React.FC<NotificationCenterProps> = ({
+export const NotificationCenter = ({
   alerts,
   onMarkAsRead,
   onMarkAllAsRead,
   onClearAlert,
-}) => {
+}: NotificationCenterProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const unreadCount = alerts.filter(alert => !alert.isRead).length;
+  const unreadCount = alerts.filter((alert: PropertyAlert) => !alert.isRead).length;
 
   const handleMarkAsRead = (alertId: string) => {
     onMarkAsRead(alertId);
@@ -103,15 +103,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
         <ScrollArea className="h-[calc(100vh-180px)] mt-6">
           {alerts.length === 0 ? (
-            <div className="text-center py-12">
-              <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                No alerts yet
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Save property searches to receive notifications about new listings.
-              </p>
-            </div>
+            <EmptyState
+              title="No alerts yet"
+              description="Save property searches to receive notifications about new listings."
+              icon={Bell}
+              className="py-12"
+            />
           ) : (
             <div className="space-y-4">
               {alerts.map((alert) => (
