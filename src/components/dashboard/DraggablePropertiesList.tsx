@@ -3,9 +3,10 @@ import { logger } from '@/utils/logger';
 
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback, memo } from "react";
-import { GripVertical, RotateCcw } from "lucide-react";
+import { GripVertical, RotateCcw, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "./PropertyCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Property {
   id: string;
@@ -215,48 +216,61 @@ export const DraggablePropertiesList = memo(() => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {properties.map((property, index) => (
-          <motion.div
-            key={property.id}
-            layout
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className={`relative group ${
-              dragOverIndex === index ? 'scale-105' : ''
-            }`}
-          >
-            {/* Drag Handle */}
-            <div
-              className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-move bg-white/90 dark:bg-gray-800/90 rounded-md p-1.5 shadow-md"
-              draggable
-              onDragStart={(e) => handleDragStart(e, property)}
-              onDragEnd={handleDragEnd}
+      {properties.length === 0 ? (
+        <EmptyState
+          title="No investments yet"
+          description="You haven't invested in any properties yet. Start browsing to find your first investment opportunity."
+          icon={Briefcase}
+          action={{
+            label: "Explore Properties",
+            href: "/properties"
+          }}
+          className="bg-white/50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700"
+        />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {properties.map((property, index) => (
+            <motion.div
+              key={property.id}
+              layout
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className={`relative group ${
+                dragOverIndex === index ? 'scale-105' : ''
+              }`}
             >
-              <GripVertical className="w-4 h-4 text-gray-500" />
-            </div>
+              {/* Drag Handle */}
+              <div
+                className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-move bg-white/90 dark:bg-gray-800/90 rounded-md p-1.5 shadow-md"
+                draggable
+                onDragStart={(e) => handleDragStart(e, property)}
+                onDragEnd={handleDragEnd}
+              >
+                <GripVertical className="w-4 h-4 text-gray-500" />
+              </div>
 
-            {/* Draggable Property Card */}
-            <div
-              draggable
-              onDragStart={(e) => handleDragStart(e, property)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, index)}
-              onDragEnd={handleDragEnd}
-              onKeyDown={(e) => handleKeyDown(e, index)}
-              tabIndex={0}
-              role="button"
-              aria-label={`Property ${property.name}, press arrow keys to reorder`}
-              className="cursor-move focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-xl"
-            >
-              <PropertyCard property={property} index={index} />
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              {/* Draggable Property Card */}
+              <div
+                draggable
+                onDragStart={(e) => handleDragStart(e, property)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                onKeyDown={(e) => handleKeyDown(e, index)}
+                tabIndex={0}
+                role="button"
+                aria-label={`Property ${property.name}, press arrow keys to reorder`}
+                className="cursor-move focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-xl"
+              >
+                <PropertyCard property={property} index={index} />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
-};
+});

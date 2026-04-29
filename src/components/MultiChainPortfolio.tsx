@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { RefreshCw, TrendingUp, AlertTriangle, ExternalLink, Filter } from 'lucide-react';
+import { RefreshCw, TrendingUp, AlertTriangle, ExternalLink, Filter, Wallet, Briefcase } from 'lucide-react';
 import { usePortfolioStore } from '@/store/portfolioStore';
 import { useWalletStore } from '@/store/walletStore';
 import { CHAIN_CONFIG, type ChainId } from '@/config/chains';
 import { formatPrice } from '@/utils/searchUtils';
 import type { ChainPortfolio, BridgeSuggestion } from '@/types/portfolio';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export const MultiChainPortfolio: React.FC = () => {
   const { 
@@ -45,12 +46,19 @@ export const MultiChainPortfolio: React.FC = () => {
 
   if (!isConnected) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
-        <div className="text-gray-500 dark:text-gray-400 mb-4">
-          <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
-          <p>Connect your wallet to view your portfolio</p>
-        </div>
-      </div>
+      <EmptyState
+        title="Connect Wallet"
+        description="Please connect your wallet to view your multi-chain portfolio holdings."
+        icon={Wallet}
+        action={{
+          label: "Connect Wallet",
+          onClick: () => {
+            // This would typically trigger the wallet connection modal
+            // but for now we just show the requirement
+          }
+        }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg"
+      />
     );
   }
 
@@ -65,18 +73,33 @@ export const MultiChainPortfolio: React.FC = () => {
 
   if (error || !portfolio) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-600 dark:text-red-400 mb-4">
-          {error || 'Failed to load portfolio'}
-        </p>
-        <button
-          onClick={handleRefresh}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          Try Again
-        </button>
-      </div>
+      <EmptyState
+        title="Failed to load portfolio"
+        description={error || "Something went wrong while fetching your portfolio data."}
+        icon={AlertTriangle}
+        action={{
+          label: "Try Again",
+          onClick: handleRefresh
+        }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg"
+      />
+    );
+  }
+
+  const totalHoldings = portfolio.chains.reduce((sum, chain) => sum + chain.holdings.length, 0);
+
+  if (totalHoldings === 0) {
+    return (
+      <EmptyState
+        title="No investments found"
+        description="You don't have any property investments yet. Start browsing properties to build your portfolio."
+        icon={Briefcase}
+        action={{
+          label: "Browse Properties",
+          href: "/properties"
+        }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg"
+      />
     );
   }
 
