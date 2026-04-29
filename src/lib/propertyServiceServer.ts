@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { propertyService } from './propertyService';
 import type { Property } from '@/types/property';
 import { revalidatePath } from 'next/cache';
@@ -14,7 +15,7 @@ export async function getPropertyForISR(id: string): Promise<Property | null> {
     const property = await propertyService.getPropertyById(id);
     return property;
   } catch (error) {
-    console.error('Failed to fetch property for ISR:', error);
+    logger.error('Failed to fetch property for ISR:', error);
     return null;
   }
 }
@@ -28,7 +29,7 @@ export async function revalidateProperty(propertyId: string) {
     revalidatePath('/properties'); // Also revalidate the properties list
     return { success: true, message: 'Property revalidated successfully' };
   } catch (error) {
-    console.error('Failed to revalidate property:', error);
+    logger.error('Failed to revalidate property:', error);
     return { success: false, message: 'Failed to revalidate property' };
   }
 }
@@ -43,7 +44,7 @@ export async function revalidateAllProperties() {
     // For now, we'll revalidate the main properties page
     return { success: true, message: 'All properties revalidated successfully' };
   } catch (error) {
-    console.error('Failed to revalidate all properties:', error);
+    logger.error('Failed to revalidate all properties:', error);
     return { success: false, message: 'Failed to revalidate all properties' };
   }
 }

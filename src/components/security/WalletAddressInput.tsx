@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
@@ -79,7 +80,7 @@ export const WalletAddressInput: React.FC<WalletAddressInputProps> = ({
         onChange(address, result);
       }
     } catch (error) {
-      console.error('Address validation failed:', error);
+      logger.error('Address validation failed:', error);
       setValidationResult(null);
     } finally {
       setIsValidating(false);

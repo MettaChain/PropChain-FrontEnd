@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import { useCallback, useState } from 'react';
 import { ethers } from 'ethers';
@@ -144,7 +145,7 @@ export const useSecureTransaction = (): UseSecureTransactionReturn => {
 
         return signedTransaction;
       } catch (error) {
-        console.error('Failed to sign transaction:', error);
+        logger.error('Failed to sign transaction:', error);
         toast.error('Failed to sign transaction', {
           description: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -235,7 +236,7 @@ export const useSecureTransaction = (): UseSecureTransactionReturn => {
 
         return txHash;
       } catch (error) {
-        console.error('Failed to broadcast transaction:', error);
+        logger.error('Failed to broadcast transaction:', error);
         toast.error('Failed to broadcast transaction', {
           description: error instanceof Error ? error.message : 'Unknown error'
         });

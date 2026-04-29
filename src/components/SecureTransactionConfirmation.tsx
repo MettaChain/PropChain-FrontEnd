@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
@@ -143,7 +144,7 @@ export const SecureTransactionConfirmation: React.FC<SecureTransactionConfirmati
         });
       }
     } catch (error) {
-      console.error('Signing failed:', error);
+      logger.error('Signing failed:', error);
       setCurrentStep('validation');
     }
   };
@@ -162,7 +163,7 @@ export const SecureTransactionConfirmation: React.FC<SecureTransactionConfirmati
         onConfirm(txHash);
       }
     } catch (error) {
-      console.error('Broadcast failed:', error);
+      logger.error('Broadcast failed:', error);
       setCurrentStep('signing');
     }
   };

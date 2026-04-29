@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -81,7 +82,7 @@ export const MortgageCalculator: React.FC<{ propertyPrice?: number, defaultYield
         title: 'PropChain Investment Projection',
         text,
         url: window.location.href,
-      }).catch(console.error);
+      }).catch((err) => logger.error('Mortgage calculation error:', err));
     } else {
       navigator.clipboard.writeText(text);
       alert('Result copied to clipboard!');

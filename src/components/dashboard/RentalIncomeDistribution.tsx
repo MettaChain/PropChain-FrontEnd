@@ -1,4 +1,5 @@
 "use client";
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -83,7 +84,7 @@ const RentalIncomeDistribution = ({
         },
       ]);
     } catch (error) {
-      console.error("Failed to load distributions:", error);
+      logger.error("Failed to load distributions:", error);
     } finally {
       setIsLoading(false);
     }

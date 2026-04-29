@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTransactionStore } from "@/store/transactionStore";
 import type { Transaction, TransactionType, TransactionStatus } from "@/store/transactionStore";
@@ -78,7 +79,7 @@ export function useTransactionHistory() {
         await retryMutation.mutateAsync(transaction.id);
         return true;
       } catch (error) {
-        console.error('Failed to retry transaction:', error);
+        logger.error('Failed to retry transaction:', error);
         return false;
       }
     }

@@ -11,6 +11,7 @@ import type {
   NotificationFrequency,
 } from '@/types/property';
 import { MOCK_PROPERTIES, getUniqueLocations } from './mockData';
+import { logger } from '@/utils/logger';
 import {
   isBlockchainNetwork,
   isPropertyStatus,
@@ -62,14 +63,14 @@ class PropertyService {
           if (strategy === 'stale-while-revalidate' && isNetworkOnline()) {
             this.fetchAndCacheSearch(filters, sortBy, page, resultsPerPage).catch((error) => {
               // Silent fail for background refresh
-              console.warn('Background refresh failed:', error);
+              logger.warn('Background refresh failed:', error);
             });
           }
           
           return redisCached;
         }
       } catch (redisError) {
-        console.warn('Redis cache error, falling back to local cache:', redisError);
+        logger.warn('Redis cache error, falling back to local cache:', redisError);
       }
 
       // Fallback to local cache if Redis fails
@@ -85,7 +86,7 @@ class PropertyService {
         if (strategy === 'stale-while-revalidate' && isNetworkOnline()) {
           this.fetchAndCacheSearch(filters, sortBy, page, resultsPerPage).catch((error) => {
             // Silent fail for background refresh
-            console.warn('Background refresh failed:', error);
+            logger.warn('Background refresh failed:', error);
           });
         }
         
@@ -145,7 +146,7 @@ class PropertyService {
       await cacheSearchResult(filters, sortBy, result);
     } catch (error) {
       // Non-critical: log but don't fail
-      console.warn('Failed to cache search result:', error);
+      logger.warn('Failed to cache search result:', error);
     }
 
     return result;
@@ -181,7 +182,7 @@ class PropertyService {
           return redisCached;
         }
       } catch (redisError) {
-        console.warn('Redis cache error, falling back to local cache:', redisError);
+        logger.warn('Redis cache error, falling back to local cache:', redisError);
       }
 
       // Fallback to local cache if Redis fails
@@ -229,7 +230,7 @@ class PropertyService {
         await setCachedProperty(property);
       } catch (error) {
         // Non-critical: log but don't fail
-        console.warn('Failed to cache property:', error);
+        logger.warn('Failed to cache property:', error);
       }
     }
     

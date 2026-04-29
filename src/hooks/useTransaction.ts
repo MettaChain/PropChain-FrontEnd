@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import { useCallback } from 'react';
 import { ethers } from 'ethers';
@@ -89,7 +90,7 @@ export const useTransaction = () => {
             }
           }
         } catch (error) {
-          console.error('Secure transaction failed:', error);
+          logger.error('Secure transaction failed:', error);
           toast.error('Secure transaction failed', {
             description: error instanceof Error ? error.message : 'Unknown error'
           });

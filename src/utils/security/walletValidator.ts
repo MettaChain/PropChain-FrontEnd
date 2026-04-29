@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { isAddress, getAddress, formatEther, parseEther, Hex, isHex } from 'viem';
 import { publicClient } from '@/lib/viem-client';
 import { normalize } from 'viem/ens';
@@ -485,7 +486,7 @@ export class WalletValidator {
       });
       return address;
     } catch (error) {
-      console.error('ENS resolution failed:', error);
+      logger.error('ENS resolution failed:', error);
       return null;
     }
   }
@@ -511,7 +512,7 @@ export class WalletValidator {
       
       return true;
     } catch (error) {
-      console.error('Address verification failed:', error);
+      logger.error('Address verification failed:', error);
       return false;
     }
   }

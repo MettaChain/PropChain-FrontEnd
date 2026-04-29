@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateProperty, revalidateAllProperties } from '@/lib/propertyServiceServer';
 import crypto from 'crypto';
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log revalidation for monitoring
-    console.log(`ISR Revalidation: ${type}${propertyId ? ` for property ${propertyId}` : ''} - Reason: ${reason || 'Manual trigger'}`);
+    logger.info(`ISR Revalidation: ${type}${propertyId ? ` for property ${propertyId}` : ''} - Reason: ${reason || 'Manual trigger'}`);
 
     return NextResponse.json({
       success: true,
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Webhook revalidation error:', error);
+    logger.error('Webhook revalidation error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
