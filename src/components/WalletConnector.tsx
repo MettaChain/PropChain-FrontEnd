@@ -126,6 +126,7 @@ export const WalletConnector: React.FC = () => {
       <button
         onClick={() => setIsModalOpen(true)}
         disabled={isConnecting}
+        data-tour="wallet-connector"
         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
       >
         {isConnecting ? (
