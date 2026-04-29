@@ -58,9 +58,16 @@ export const useWalletPersistence = () => {
           setDisconnected();
         }
       } catch (error) {
-        logger.error('Failed to check wallet connection:', error);
+        // Only log as error if we were previously connected, as this indicates
+        // a genuine connection issue. Otherwise, silence errors when no wallet
+        // extension is present (normal state).
         if (isConnected) {
+          logger.error('Failed to check wallet connection:', error);
           setDisconnected();
+        } else {
+          // Silently handle wallet connection errors when not connected
+          // This prevents console pollution when no wallet extension is present
+          logger.debug('Wallet provider unavailable:', error);
         }
       }
     };
