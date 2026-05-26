@@ -14,6 +14,8 @@ import dynamic from "next/dynamic";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { DomainWarningBanner } from "@/components/DomainWarningBanner";
 import { useEffect } from "react";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { GlobalThemeToggle } from "@/components/GlobalThemeToggle";
 
 interface ClientProvidersProps {
   children: React.ReactNode;
@@ -59,23 +61,26 @@ export function ClientProviders({ children }: ClientProvidersProps) {
   }, [hasCompletedOnboarding, startOnboarding]);
 
   return (
-    <WagmiProvider config={config}>
-      <QueryProvider>
-        <ChainAwareProvider>
-          <LoadingProgressBar />
-          <PerformanceMonitor />
-          <ServiceWorkerRegistration />
-          <OfflineIndicator />
-          <DomainWarningBanner />
-          {children}
-          <TransactionMonitor />
-          <NotificationSystem />
-          <Toaster />
-          <FloatingComparisonBar />
-          <MobileBottomNavigation />
-          <OnboardingTour />
-        </ChainAwareProvider>
-      </QueryProvider>
-    </WagmiProvider>
+    <ThemeProvider>
+      <WagmiProvider config={config}>
+        <QueryProvider>
+          <ChainAwareProvider>
+            <LoadingProgressBar />
+            <PerformanceMonitor />
+            <ServiceWorkerRegistration />
+            <OfflineIndicator />
+            <DomainWarningBanner />
+            {children}
+            <GlobalThemeToggle />
+            <TransactionMonitor />
+            <NotificationSystem />
+            <Toaster />
+            <FloatingComparisonBar />
+            <MobileBottomNavigation />
+            <OnboardingTour />
+          </ChainAwareProvider>
+        </QueryProvider>
+      </WagmiProvider>
+    </ThemeProvider>
   );
 }
