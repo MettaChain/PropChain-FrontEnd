@@ -55,6 +55,86 @@ export const getWalletErrorMessage = (error: unknown): string => {
   return 'An unexpected error occurred';
 };
 
+export const WEB3_ERROR_CODES = {
+  USER_REJECTED: 4001,
+  JSON_RPC_INTERNAL: -32603,
+  INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
+  UNPREDICTABLE_GAS_LIMIT: 'UNPREDICTABLE_GAS_LIMIT',
+  NETWORK_ERROR: 'NETWORK_ERROR',
+} as const;
+
+export type Web3ErrorCode = (typeof WEB3_ERROR_CODES)[keyof typeof WEB3_ERROR_CODES];
+
+const extractWeb3ErrorCode = (error: unknown): number | string | undefined => {
+  const topLevelCode = getErrorCode(error);
+  if (topLevelCode !== undefined) return topLevelCode;
+
+  if (!isRecord(error)) return undefined;
+
+  const nestedError = error.error;
+  if (isRecord(nestedError)) {
+    const nestedCode = getErrorCode(nestedError);
+    if (nestedCode !== undefined) return nestedCode;
+    const nestedDataCode = isRecord(nestedError.data) ? getErrorCode(nestedError.data) : undefined;
+    if (nestedDataCode !== undefined) return nestedDataCode;
+  }
+
+  const nestedData = error.data;
+  if (isRecord(nestedData)) {
+    const nestedDataCode = getErrorCode(nestedData);
+    if (nestedDataCode !== undefined) return nestedDataCode;
+  }
+
+  return undefined;
+};
+
+export const getFriendlyWeb3ErrorMessage = (error: unknown): string => {
+  const code = extractWeb3ErrorCode(error);
+  const message = getErrorMessage(error).toLowerCase();
+
+  if (
+    code === WEB3_ERROR_CODES.USER_REJECTED ||
+    message.includes('user rejected') ||
+    message.includes('user denied')
+  ) {
+    return 'Transaction rejected by the user.';
+  }
+
+  if (code === WEB3_ERROR_CODES.JSON_RPC_INTERNAL || message.includes('internal json-rpc error')) {
+    return 'Internal blockchain error. Please try again later.';
+  }
+
+  if (
+    code === WEB3_ERROR_CODES.INSUFFICIENT_FUNDS ||
+    message.includes('insufficient funds') ||
+    message.includes('insufficient balance')
+  ) {
+    return 'Not enough ETH available to cover gas fees.';
+  }
+
+  if (
+    code === WEB3_ERROR_CODES.UNPREDICTABLE_GAS_LIMIT ||
+    message.includes('unpredictable gas limit') ||
+    message.includes('gas estimation')
+  ) {
+    return 'Gas estimation failed. This transaction may fail if submitted.';
+  }
+
+  if (
+    code === WEB3_ERROR_CODES.NETWORK_ERROR ||
+    message.includes('network error') ||
+    message.includes('rpc connection failed')
+  ) {
+    return 'Network connection failed. Please check your RPC provider and internet connection.';
+  }
+
+  if (message.includes('transaction failed')) {
+    return 'Transaction failed. Please check your wallet and try again.';
+  }
+
+  return 'Something went wrong while processing the transaction. Please try again.';
+};
+
 const getMessage = (error: unknown): string => {
   if (isRecord(error) && typeof error.message === 'string') return error.message;
   return getErrorMessage(error, '');
