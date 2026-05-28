@@ -306,12 +306,12 @@ export const TransactionHistory: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Hash</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">From</TableHead>
-                <TableHead className="hidden md:table-cell">To</TableHead>
-                <TableHead className="text-right">Time</TableHead>
+                <TableHead>{t('transactions.hash')}</TableHead>
+                <TableHead>{t('transactions.type')}</TableHead>
+                <TableHead>{t('transactions.status')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('transactions.from')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('transactions.to')}</TableHead>
+                <TableHead className="text-right">{t('transactions.time')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

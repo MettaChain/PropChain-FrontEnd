@@ -138,7 +138,12 @@
     "totalTransactions": "Total Transactions",
     "fromDate": "From date",
     "toDate": "To date",
-    "clear": "Clear"
+    "clear": "Clear",
+    "hash": "Hash",
+    "type": "Type",
+    "from": "From",
+    "to": "To",
+    "time": "Time"
   },
   "chains": {
     "ethereum": "Ethereum Mainnet",
