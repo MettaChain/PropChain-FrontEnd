@@ -8,7 +8,7 @@ import {
   Building2, 
   Briefcase, 
   Heart, 
-  User 
+  History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -45,20 +45,15 @@ const navItems: NavItem[] = [
     icon: Heart,
   },
   {
-    id: 'profile',
-    name: 'Profile',
-    href: '/dashboard',
-    icon: User,
+    id: 'transactions',
+    name: 'History',
+    href: '/transactions',
+    icon: History,
   },
 ];
 
 export const MobileBottomNavigation: React.FC = () => {
   const pathname = usePathname();
-
-  // Only show on mobile screens
-  if (typeof window !== 'undefined' && window.innerWidth >= 768) {
-    return null;
-  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
@@ -66,8 +61,7 @@ export const MobileBottomNavigation: React.FC = () => {
         <nav className="flex items-center justify-around h-16 px-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href || 
-                           (item.id === 'portfolio' && pathname.startsWith('/dashboard')) ||
-                           (item.id === 'profile' && pathname.startsWith('/dashboard'));
+                           (item.id === 'portfolio' && pathname.startsWith('/dashboard'));
             
             return (
               <Link

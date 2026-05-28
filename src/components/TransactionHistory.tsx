@@ -2,7 +2,8 @@
 import { logger } from '@/utils/logger';
 
 import React, { useState, useMemo } from 'react';
-import { useTransactionStore } from '@/store/transactionStore';
+import { useTranslation } from 'react-i18next';
+import { useTransactionHistory } from '@/hooks/useTransactionQuery';
 import type { Transaction, TransactionType, TransactionStatus } from '@/store/transactionStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Search, Download, CalendarIcon, FileSpreadsheet, FileText } from 'lucide-react';
+import { Search, CalendarIcon, FileSpreadsheet, FileText, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
@@ -31,7 +32,8 @@ const isTransactionStatus = (value: string): value is TransactionStatus =>
   TRANSACTION_STATUSES.includes(value as TransactionStatus);
 
 export const TransactionHistory: React.FC = () => {
-  const { transactions, getTransactionsByType, isLoading } = useTransactionStore();
+  const { t } = useTranslation('common');
+  const { transactions, getTransactionsByType, isLoading, error, refetch } = useTransactionHistory();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');
@@ -156,42 +158,53 @@ export const TransactionHistory: React.FC = () => {
     }
   };
 
-  const handleRetry = async (_transaction: Transaction) => {
-    toast.info('Retry functionality not yet implemented');
-  };
-
   const rowsToRender = isLoading ? [] : filteredTransactions;
 
   return (
-    <Card className="w-full">
+    <Card className="w-full" data-testid="transaction-list">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            Transaction History
+            {t('transactions.transactionHistory')}
             <Badge variant="secondary">{isLoading ? '…' : filteredTransactions.length}</Badge>
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowDateRange(!showDateRange)}>
               <CalendarIcon className="h-4 w-4 mr-2" />
-              Date Range
+              {t('transactions.dateRange')}
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleExport('csv')}>
               <FileText className="h-4 w-4 mr-2" />
-              Export CSV
+              {t('transactions.exportCsv')}
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleExport('excel')}>
               <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Export Excel
+              {t('transactions.exportExcel')}
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {error && (
+          <div
+            role="alert"
+            className="flex items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{error || t('transactions.loadError')}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              {t('transactions.retry')}
+            </Button>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search transactions..."
+              placeholder={t('transactions.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -206,15 +219,15 @@ export const TransactionHistory: React.FC = () => {
               }
             }}
           >
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-40" data-testid="transaction-filter">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="purchase">Purchase</SelectItem>
-              <SelectItem value="transfer">Transfer</SelectItem>
-              <SelectItem value="management">Management</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              <SelectItem value="all">{t('transactions.allTypes')}</SelectItem>
+              <SelectItem value="purchase">{t('transactions.purchase')}</SelectItem>
+              <SelectItem value="transfer">{t('transactions.transfer')}</SelectItem>
+              <SelectItem value="management">{t('transactions.management')}</SelectItem>
+              <SelectItem value="other">{t('transactions.other')}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -226,16 +239,16 @@ export const TransactionHistory: React.FC = () => {
               }
             }}
           >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Status" />
+            <SelectTrigger className="w-full sm:w-40" data-testid="transaction-status-filter">
+              <SelectValue placeholder={t('transactions.status')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="processing">Processing</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="all">{t('transactions.allStatus')}</SelectItem>
+              <SelectItem value="pending">{t('transactions.pending')}</SelectItem>
+              <SelectItem value="processing">{t('transactions.processing')}</SelectItem>
+              <SelectItem value="confirmed">{t('transactions.confirmed')}</SelectItem>
+              <SelectItem value="failed">{t('transactions.failed')}</SelectItem>
+              <SelectItem value="cancelled">{t('transactions.cancelled')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -244,13 +257,13 @@ export const TransactionHistory: React.FC = () => {
         {showDateRange && (
           <div className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg bg-muted/10">
             <div className="flex items-center gap-2 text-sm font-medium">
-              Date Range:
+              {t('transactions.dateRange')}:
             </div>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full sm:w-auto justify-start text-left font-normal">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? format(dateRange.from, 'PPP') : 'From date'}
+                  {dateRange.from ? format(dateRange.from, 'PPP') : t('transactions.fromDate')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -266,7 +279,7 @@ export const TransactionHistory: React.FC = () => {
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full sm:w-auto justify-start text-left font-normal">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.to ? format(dateRange.to, 'PPP') : 'To date'}
+                  {dateRange.to ? format(dateRange.to, 'PPP') : t('transactions.toDate')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -283,7 +296,7 @@ export const TransactionHistory: React.FC = () => {
               size="sm"
               onClick={() => setDateRange({ from: undefined, to: undefined })}
             >
-              Clear
+              {t('transactions.clear')}
             </Button>
           </div>
         )}
@@ -318,11 +331,11 @@ export const TransactionHistory: React.FC = () => {
                   <TableCell colSpan={6} className="p-0">
                     <EmptyState
                       title={searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
-                        ? 'No transactions match your filters'
-                        : 'No transactions found'}
+                        ? t('transactions.noMatchFilters')
+                        : t('transactions.noTransactions')}
                       description={searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
-                        ? 'Try adjusting your search or filters to see more results.'
-                        : 'Your transaction history will appear here once you start using the platform.'}
+                        ? t('transactions.adjustFilters')
+                        : t('transactions.emptyDescription')}
                       icon={History}
                       className="py-12"
                     />
@@ -330,7 +343,7 @@ export const TransactionHistory: React.FC = () => {
                 </TableRow>
               ) : (
                 rowsToRender.map((tx) => (
-                  <TableRow key={tx.id}>
+                  <TableRow key={tx.id} data-testid="transaction-item">
                     <TableCell className="font-mono text-xs">
                       {tx.hash.slice(0, 10)}…{tx.hash.slice(-8)}
                     </TableCell>
@@ -355,10 +368,10 @@ export const TransactionHistory: React.FC = () => {
         {!isLoading && filteredTransactions.length > 0 && (
           <div className="pt-4 border-t">
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Total Transactions: {filteredTransactions.length}</span>
+              <span>{t('transactions.totalTransactions')}: {filteredTransactions.length}</span>
               <span>
-                Confirmed: {filteredTransactions.filter(tx => tx.status === 'confirmed').length} |
-                Failed: {filteredTransactions.filter(tx => tx.status === 'failed').length}
+                {t('transactions.confirmed')}: {filteredTransactions.filter(tx => tx.status === 'confirmed').length} |
+                {t('transactions.failed')}: {filteredTransactions.filter(tx => tx.status === 'failed').length}
               </span>
             </div>
           </div>
