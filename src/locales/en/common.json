@@ -143,7 +143,18 @@
     "type": "Type",
     "from": "From",
     "to": "To",
-    "time": "Time"
+    "time": "Time",
+    "value": "Value",
+    "timestamp": "Timestamp",
+    "gasUsed": "Gas Used",
+    "gasPrice": "Gas Price",
+    "confirmations": "Confirmations",
+    "propertyId": "Property ID",
+    "description": "Description",
+    "error": "Error",
+    "transactionDetails": "Transaction Details",
+    "downloadReceipt": "Download Receipt",
+    "viewExplorer": "View in Explorer"
   },
   "chains": {
     "ethereum": "Ethereum Mainnet",

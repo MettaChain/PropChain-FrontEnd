@@ -143,7 +143,18 @@
     "type": "النوع",
     "from": "من",
     "to": "إلى",
-    "time": "الوقت"
+    "time": "الوقت",
+    "value": "القيمة",
+    "timestamp": "الطابع الزمني",
+    "gasUsed": "الغاز المستخدم",
+    "gasPrice": "سعر الغاز",
+    "confirmations": "التأكيدات",
+    "propertyId": "معرف العقار",
+    "description": "الوصف",
+    "error": "خطأ",
+    "transactionDetails": "تفاصيل المعاملة",
+    "downloadReceipt": "تحميل الإيصال",
+    "viewExplorer": "عرض في المستكشف"
   },
   "chains": {
     "ethereum": "Ethereum الرئيسية",

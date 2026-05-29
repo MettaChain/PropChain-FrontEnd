@@ -143,7 +143,18 @@
     "type": "Tipo",
     "from": "De",
     "to": "A",
-    "time": "Hora"
+    "time": "Hora",
+    "value": "Valor",
+    "timestamp": "Marca de tiempo",
+    "gasUsed": "Gas Usado",
+    "gasPrice": "Precio de Gas",
+    "confirmations": "Confirmaciones",
+    "propertyId": "ID de Propiedad",
+    "description": "Descripción",
+    "error": "Error",
+    "transactionDetails": "Detalles de Transacción",
+    "downloadReceipt": "Descargar Recibo",
+    "viewExplorer": "Ver en Explorer"
   },
   "chains": {
     "ethereum": "Ethereum Mainnet",

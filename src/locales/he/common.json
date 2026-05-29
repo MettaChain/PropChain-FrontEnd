@@ -143,7 +143,18 @@
     "type": "סוג",
     "from": "מ",
     "to": "אל",
-    "time": "זמן"
+    "time": "זמן",
+    "value": "ערך",
+    "timestamp": "חותמת זמן",
+    "gasUsed": "גז בשימוש",
+    "gasPrice": "מחיר גז",
+    "confirmations": "אישורים",
+    "propertyId": "מזהה נכס",
+    "description": "תיאור",
+    "error": "שגיאה",
+    "transactionDetails": "פרטי עסקה",
+    "downloadReceipt": "הורד קבלה",
+    "viewExplorer": "צפה ב-Explorer"
   },
   "chains": {
     "ethereum": "Ethereum ראשי",

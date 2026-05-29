@@ -143,7 +143,18 @@
     "type": "类型",
     "from": "从",
     "to": "到",
-    "time": "时间"
+    "time": "时间",
+    "value": "值",
+    "timestamp": "时间戳",
+    "gasUsed": "Gas使用量",
+    "gasPrice": "Gas价格",
+    "confirmations": "确认数",
+    "propertyId": "房产ID",
+    "description": "描述",
+    "error": "错误",
+    "transactionDetails": "交易详情",
+    "downloadReceipt": "下载收据",
+    "viewExplorer": "在浏览器中查看"
   },
   "chains": {
     "ethereum": "以太坊主网",
