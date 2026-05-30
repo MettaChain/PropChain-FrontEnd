@@ -23,6 +23,12 @@ export const getWalletErrorMessage = (error: unknown): string => {
     switch (code) {
       case WALLET_ERRORS.USER_REJECTED:
         return 'User rejected the request';
+      // Internal JSON-RPC error (node/provider side)
+      case -32603:
+        return 'Internal node error: the transaction failed on the node. It may have been reverted.';
+      // Provider returned a string code for network issues
+      case 'NETWORK_ERROR':
+        return 'Network error: failed to reach the RPC provider. Check your network or RPC settings.';
       case WALLET_ERRORS.UNAUTHORIZED:
         return 'Unauthorized to access this account';
       case WALLET_ERRORS.UNSUPPORTED_METHOD:
@@ -40,6 +46,16 @@ export const getWalletErrorMessage = (error: unknown): string => {
 
   const message = getErrorMessage(error);
   if (message) {
+    // Map common provider/ethers error messages to friendlier text
+    if (message.includes('INSUFFICIENT_FUNDS') || message.toLowerCase().includes('insufficient funds')) {
+      return 'Insufficient funds: you do not have enough ETH to pay for transaction value and gas.';
+    }
+    if (message.includes('UNPREDICTABLE_GAS_LIMIT') || message.includes('cannot estimate gas')) {
+      return 'Transaction likely to revert: the contract rejected the call or gas estimation failed.';
+    }
+    if (message.includes('Network Error') || message.includes('NETWORK_ERROR') || message.toLowerCase().includes('failed to fetch')) {
+      return 'Network error: failed to reach the RPC provider. Check your connection and RPC settings.';
+    }
     if (message.includes('MetaMask is not installed')) {
       return 'MetaMask is not installed. Please install MetaMask to continue.';
     }
@@ -80,6 +96,8 @@ export const isNetworkError = (error: unknown): boolean => {
 
   return (
     message.includes('network') ||
+    message.includes('network error') ||
+    message.includes('failed to fetch') ||
     message.includes('chain') ||
     code === WALLET_ERRORS.CHAIN_DISCONNECTED ||
     code === WALLET_ERRORS.CHAIN_NOT_ADDED
