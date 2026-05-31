@@ -13,13 +13,20 @@ interface NFTCertificateProps {
   certificate: NFTCertificate;
 }
 
+function truncateMiddle(value: string, startChars: number, endChars: number): string {
+  if (startChars < 0 || endChars < 0) return value;
+  const minLength = startChars + endChars + 3;
+  if (value.length <= minLength) return value;
+  return `${value.slice(0, startChars)}...${value.slice(-endChars)}`;
+}
+
 export function NFTCertificateCard({ certificate }: NFTCertificateProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
   const filename = `propchain-certificate-${certificate.propertyId}`;
-  const shortWallet = `${certificate.walletAddress.slice(0, 6)}...${certificate.walletAddress.slice(-4)}`;
-  const shortTx = `${certificate.transactionHash.slice(0, 10)}...${certificate.transactionHash.slice(-6)}`;
+  const shortWallet = truncateMiddle(certificate.walletAddress, 6, 4);
+  const shortTx = truncateMiddle(certificate.transactionHash, 10, 6);
 
   async function handleDownload(format: 'png' | 'pdf') {
     if (!ref.current) return;
