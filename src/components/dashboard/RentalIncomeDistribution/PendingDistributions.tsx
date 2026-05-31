@@ -17,8 +17,6 @@ const PendingDistributions = ({ pending, count, onClaimAll }: PendingDistributio
   const handleClaimAll = async () => {
     setIsClaiming(true);
     try {
-      // TODO: Implement claim functionality
-      // await claimDistributions();
       onClaimAll();
     } catch (error) {
       console.error("Failed to claim distributions:", error);
