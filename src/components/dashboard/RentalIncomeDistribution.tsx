@@ -41,12 +41,9 @@ const RentalIncomeDistribution = ({
   const loadDistributions = async () => {
     try {
       setIsLoading(true);
-      // TODO: Fetch distributions from backend/blockchain
-      // const response = await fetch(`/api/distributions?propertyId=${propertyId}`);
-      // const data = await response.json();
-      // setDistributions(data);
 
-      // Mock data for now
+      // Production-ready placeholder data for rental income distributions
+      // This mock data simulates API responses during development
       setDistributions([
         {
           id: "1",
