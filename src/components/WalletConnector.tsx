@@ -1,13 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from "next/dynamic";
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
-import { logger } from '@/utils/logger';
 import { useKycStore } from '@/store/kycStore';
 import { KycStatusBadge } from '@/components/kyc/KycStatusBadge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  formatAddress,
+  formatBalanceForDisplay,
+  disconnectWallet,
+  updateWalletBalance,
+} from '@/utils/walletHelpers';
 
 const WalletModal = dynamic(
   () => import("./WalletModal").then((m) => m.WalletModal),
@@ -18,6 +23,10 @@ const NetworkSwitcher = dynamic(
   { ssr: false }
 );
 
+/**
+ * WalletConnector component that handles wallet connection UI, balance display,
+ * network switching, and KYC status integration.
+ */
 export const WalletConnector: React.FC = () => {
   const {
     isConnected,
@@ -33,44 +42,23 @@ export const WalletConnector: React.FC = () => {
   const { currentChain, chainConfig } = useChain();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Fetch wallet balance when connected
   useEffect(() => {
     if (isConnected && address) {
-      updateBalance();
+      updateWalletBalance(window.ethereum, address, setBalance);
     }
-  }, [isConnected, address, currentChain]);
+  }, [isConnected, address, currentChain, setBalance]);
 
-  const updateBalance = async () => {
-    try {
-      if (window.ethereum && address) {
-        const balance = await window.ethereum.request<string>({
-          method: 'eth_getBalance',
-          params: [address, 'latest'],
-        });
+  // Stable disconnect handler
+  const handleDisconnect = useCallback(() => {
+    disconnectWallet(setDisconnected, clearError);
+  }, [setDisconnected, clearError]);
 
-        if (typeof balance !== 'string') {
-          throw new Error('Invalid balance response');
-        }
-
-        const balanceInEth = Number(BigInt(balance) / BigInt(10 ** 18));
-        setBalance(balanceInEth.toFixed(4));
-      }
-    } catch (error) {
-      logger.error('Failed to fetch balance:', error);
-    }
-  };
-
-  const handleDisconnect = () => {
-    setDisconnected();
-    clearError();
-  };
-
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
+  // Connected state
   if (isConnected && address) {
     const balanceRaw = useWalletStore.getState().balance;
-    const balanceText = balanceRaw ? parseFloat(balanceRaw).toFixed(3) : null;
+    const balanceText = balanceRaw ? formatBalanceForDisplay(balanceRaw) : null;
+
     return (
       <div className="flex items-center gap-3">
         <NetworkSwitcher />
@@ -121,6 +109,7 @@ export const WalletConnector: React.FC = () => {
     );
   }
 
+  // Disconnected state
   return (
     <div className="flex items-center justify-center gap-3">
       <button
