@@ -26,7 +26,6 @@ import {
 } from "@/types/errors";
 import { ErrorFactory } from "@/utils/errorFactory";
 import { errorReporting } from "@/utils/errorReporting";
-import { useTranslation } from "react-i18next";
 
 interface Props {
   children: ReactNode;
@@ -159,8 +158,6 @@ export class Web3ErrorBoundary extends Component<Props, State> {
       return null;
     }
 
-    const { t } = useTranslation("common");
-
     switch (this.state.error.recoveryAction) {
       case ErrorRecoveryAction.RETRY:
         return (
@@ -212,8 +209,6 @@ export class Web3ErrorBoundary extends Component<Props, State> {
     if (!this.state.error) {
       return "An unknown error occurred";
     }
-
-    const { t } = useTranslation("common");
 
     // Use user-friendly message if available
     if (this.state.error.userMessage) {

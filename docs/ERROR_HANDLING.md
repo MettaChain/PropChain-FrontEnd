@@ -157,6 +157,22 @@ function MyComponent() {
 }
 ```
 
+### Web3ErrorBoundary Props
+
+- `fallback?: React.ReactNode` — optional custom fallback UI displayed when a Web3 error is caught.
+- `onError?: (error: AppError) => void` — optional callback for error reporting or analytics.
+- `enableRetry?: boolean` — enables recovery action buttons when a recoverable Web3 error occurs.
+- `maxRetries?: number` — the maximum retry attempts for recoverable paths.
+
+### Accessibility Notes
+
+- Error status is surfaced using semantic alerts and clearly labeled actions.
+- Recovery buttons are keyboard-accessible and include descriptive text such as `Reconnect Wallet` and `Reload Page`.
+- When a custom `fallback` is provided, ensure the fallback content remains accessible and includes a clear call to action.
+- Keep message text concise and avoid relying on color alone to convey error state.
+
+> Storybook users can explore an interactive `Web3ErrorBoundary` example under `Components/Error Boundaries/Web3ErrorBoundary`.
+
 ### Advanced Error Boundary Usage
 
 ```tsx
