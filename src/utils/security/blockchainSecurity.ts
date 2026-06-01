@@ -26,10 +26,15 @@ export interface TransactionRisk {
 }
 
 export interface SecurityAlert {
+  /** Alert type indicating the security category */
   type: 'sanctions' | 'scam' | 'mixer' | 'gambling' | 'malware' | 'exchange_hack';
+  /** Alert severity level */
   severity: 'low' | 'medium' | 'high' | 'critical';
+  /** Human-readable description of the alert */
   description: string;
+  /** Source system that generated the alert */
   source: string;
+  /** Unix timestamp of when the alert was generated */
   timestamp: number;
 }
 

@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { History } from 'lucide-react';
+import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 
 const TRANSACTION_TYPES: TransactionType[] = ['purchase', 'transfer', 'management', 'other'];
 const TRANSACTION_STATUSES: TransactionStatus[] = ['pending', 'processing', 'confirmed', 'failed', 'cancelled'];
@@ -289,68 +290,61 @@ export const TransactionHistory: React.FC = () => {
         )}
 
         {/* Transaction Table */}
-        <div className="max-h-96 overflow-y-auto rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Hash</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">From</TableHead>
-                <TableHead className="hidden md:table-cell">To</TableHead>
-                <TableHead className="text-right">Time</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-40" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-40" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                  </TableRow>
-                ))
-              ) : rowsToRender.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton rows={8} columns={6} showHeader={true} />
+        ) : (
+          <div className="max-h-96 overflow-y-auto rounded-lg border border-border">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="p-0">
-                    <EmptyState
-                      title={searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
-                        ? 'No transactions match your filters'
-                        : 'No transactions found'}
-                      description={searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
-                        ? 'Try adjusting your search or filters to see more results.'
-                        : 'Your transaction history will appear here once you start using the platform.'}
-                      icon={History}
-                      className="py-12"
-                    />
-                  </TableCell>
+                  <TableHead>Hash</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden md:table-cell">From</TableHead>
+                  <TableHead className="hidden md:table-cell">To</TableHead>
+                  <TableHead className="text-right">Time</TableHead>
                 </TableRow>
-              ) : (
-                rowsToRender.map((tx) => (
-                  <TableRow key={tx.id}>
-                    <TableCell className="font-mono text-xs">
-                      {tx.hash.slice(0, 10)}…{tx.hash.slice(-8)}
-                    </TableCell>
-                    <TableCell className="capitalize">{tx.type}</TableCell>
-                    <TableCell className="capitalize">{tx.status}</TableCell>
-                    <TableCell className="hidden md:table-cell font-mono text-xs">
-                      {tx.from.slice(0, 10)}…{tx.from.slice(-8)}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell font-mono text-xs">
-                      {tx.to ? `${tx.to.slice(0, 10)}…${tx.to.slice(-8)}` : '-'}
-                    </TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">
-                      {new Date(tx.timestamp).toLocaleString()}
+              </TableHeader>
+              <TableBody>
+                {rowsToRender.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="p-0">
+                      <EmptyState
+                        title={searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
+                          ? 'No transactions match your filters'
+                          : 'No transactions found'}
+                        description={searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
+                          ? 'Try adjusting your search or filters to see more results.'
+                          : 'Your transaction history will appear here once you start using the platform.'}
+                        icon={History}
+                        className="py-12"
+                      />
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  rowsToRender.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="font-mono text-xs">
+                        {tx.hash.slice(0, 10)}…{tx.hash.slice(-8)}
+                      </TableCell>
+                      <TableCell className="capitalize">{tx.type}</TableCell>
+                      <TableCell className="capitalize">{tx.status}</TableCell>
+                      <TableCell className="hidden md:table-cell font-mono text-xs">
+                        {tx.from.slice(0, 10)}…{tx.from.slice(-8)}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell font-mono text-xs">
+                        {tx.to ? `${tx.to.slice(0, 10)}…${tx.to.slice(-8)}` : '-'}
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">
+                        {new Date(tx.timestamp).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         {!isLoading && filteredTransactions.length > 0 && (
           <div className="pt-4 border-t">
