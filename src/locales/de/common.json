@@ -200,6 +200,9 @@
     "byPropertyType": "Nach Immobilientyp",
     "byGeography": "Nach Geographie"
   },
+  "networkSwitcher": {
+    "selectNetwork": "Netzwerk auswählen",
+    "switchingNetwork": "Netzwerk wird gewechselt..."
   "referral": {
     "connectWallet": "Wallet Verbinden",
     "connectWalletPrompt": "Verbinde deine Wallet, um auf das Empfehlungsprogramm zuzugreifen",

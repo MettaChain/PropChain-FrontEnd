@@ -200,6 +200,9 @@
     "byPropertyType": "Par Type de Propriété",
     "byGeography": "Par Géographie"
   },
+  "networkSwitcher": {
+    "selectNetwork": "Sélectionner le réseau",
+    "switchingNetwork": "Changement de réseau..."
   "referral": {
     "connectWallet": "Connecter le Portefeuille",
     "connectWalletPrompt": "Connectez votre portefeuille pour accéder au programme de parrainage",

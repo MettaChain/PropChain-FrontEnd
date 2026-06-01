@@ -200,6 +200,9 @@
     "byPropertyType": "حسب نوع العقار",
     "byGeography": "حسب الجغرافيا"
   },
+  "networkSwitcher": {
+    "selectNetwork": "اختر الشبكة",
+    "switchingNetwork": "جارٍ تبديل الشبكة..."
   "referral": {
     "connectWallet": "ربط المحفظة",
     "connectWalletPrompt": "يرجى ربط محفظتك للوصول إلى برنامج الإحالة",

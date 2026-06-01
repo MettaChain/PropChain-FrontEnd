@@ -200,6 +200,9 @@
     "byPropertyType": "לפי סוג נכס",
     "byGeography": "לפי גאוגרפיה"
   },
+  "networkSwitcher": {
+    "selectNetwork": "בחר רשת",
+    "switchingNetwork": "מחליף רשת..."
   "referral": {
     "connectWallet": "חבר ארנק",
     "connectWalletPrompt": "חבר את הארנק שלך כדי לגשת לתוכנית ההפניות",

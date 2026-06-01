@@ -200,6 +200,9 @@
     "byPropertyType": "按房产类型",
     "byGeography": "按地理位置"
   },
+  "networkSwitcher": {
+    "selectNetwork": "选择网络",
+    "switchingNetwork": "正在切换网络..."
   "referral": {
     "connectWallet": "连接钱包",
     "connectWalletPrompt": "请连接您的钱包以访问推荐计划",

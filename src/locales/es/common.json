@@ -200,6 +200,9 @@
     "byPropertyType": "Por Tipo de Propiedad",
     "byGeography": "Por Geografía"
   },
+  "networkSwitcher": {
+    "selectNetwork": "Seleccionar red",
+    "switchingNetwork": "Cambiando de red..."
   "referral": {
     "connectWallet": "Conectar Billetera",
     "connectWalletPrompt": "Conecta tu billetera para acceder al programa de referidos",

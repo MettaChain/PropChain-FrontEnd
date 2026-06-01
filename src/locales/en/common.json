@@ -233,6 +233,9 @@
     "byPropertyType": "By Property Type",
     "byGeography": "By Geography"
   },
+  "networkSwitcher": {
+    "selectNetwork": "Select Network",
+    "switchingNetwork": "Switching network..."
   "referral": {
     "connectWallet": "Connect Wallet",
     "connectWalletPrompt": "Please connect your wallet to access the referral program",
