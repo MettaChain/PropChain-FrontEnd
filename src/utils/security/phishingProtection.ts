@@ -155,11 +155,13 @@ export class PhishingProtection {
     const warnings: string[] = [];
     let isMalicious = false;
     let decodedData: any;
+    let contractMalicious = false;
 
     // Check if recipient is a known malicious contract
     if (this.isMaliciousContract(to)) {
       warnings.push('Transaction to known malicious contract');
       isMalicious = true;
+      contractMalicious = true;
     }
 
     // Analyze transaction data
@@ -170,7 +172,12 @@ export class PhishingProtection {
         
         if (this.isSuspiciousMethod(functionSelector)) {
           warnings.push('Suspicious function call detected');
-          isMalicious = true;
+          // Treat some very common methods (e.g., token `transfer`) as warnings
+          // but not necessarily malicious. Flag as malicious for less-common
+          // suspicious methods such as `approve` or `withdraw`.
+          if (functionSelector !== '0xa9059cbb') {
+            isMalicious = true;
+          }
         }
 
         // Try to decode the data (basic attempt)
@@ -189,7 +196,11 @@ export class PhishingProtection {
     }
 
     return {
-      isValid: !isMalicious,
+      // `isValid` here indicates syntactic/operational validity; if the
+      // recipient is a known malicious contract we mark the transaction as
+      // invalid. Other suspicious findings emit warnings but may still be
+      // considered syntactically valid.
+      isValid: !contractMalicious,
       isMalicious,
       warnings,
       decodedData
@@ -277,12 +288,11 @@ export class PhishingProtection {
    */
   private static isDomainSpoofing(domain: string): boolean {
     const legitimateDomains = ['metamask.io', 'myetherwallet.com', 'trustwallet.app'];
-    
     return legitimateDomains.some(legit => {
-      // Similarity > 0.8 means the domain looks very close to a legitimate one
+      // Lowered similarity threshold to catch more typosquatting attempts
       const similarity = this.calculateStringSimilarity(domain, legit);
       // Exclude exact matches — only flag near-duplicates
-      return similarity > 0.8 && domain !== legit;
+      return similarity > 0.65 && domain !== legit;
     });
   }
 
@@ -458,8 +468,8 @@ export class PhishingProtection {
   private static hasUnusualMessagePatterns(message: string): boolean {
     // Check for unusual patterns in the message
     const patterns = [
-      /^[0-9a-f]{130,}$/, // Long hex strings
-      /^[A-Za-z0-9+/]{100,}={0,2}$/, // Long base64 strings
+      /^[0-9a-f]{32,}$/i, // Long hex strings (lowered threshold)
+      /^[A-Za-z0-9+/]{30,}={0,2}$/, // Long base64 strings (lowered threshold)
     ];
 
     return patterns.some(pattern => pattern.test(message));

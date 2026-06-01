@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { useSavedSearchStore } from '../savedSearchStore';
 import type { SavedSearch } from '@/types/property';
 
@@ -36,7 +36,9 @@ describe('savedSearchStore', () => {
   };
 
   beforeEach(() => {
-    // Reset the store before each test
+    // Reset the store and clear persisted state before each test
+    const { clearAllPersistedState } = require('@/store/base');
+    clearAllPersistedState();
     useSavedSearchStore.getState().reset();
     jest.clearAllMocks();
   });
@@ -91,18 +93,15 @@ describe('savedSearchStore', () => {
       }));
       
       const { result } = renderHook(() => useSavedSearchStore());
-      
-      // Start the async operation
-      const loadPromise = act(async () => {
-        await result.current.loadSearches('user-123');
+
+      // Start the async operation inside act so updates are captured.
+      await act(async () => {
+        const promise = result.current.loadSearches('user-123');
+        // Check loading state while the operation is in-flight
+        await waitFor(() => expect(result.current.isLoading).toBe(true));
+        await promise;
       });
-      
-      // Check loading state
-      expect(result.current.isLoading).toBe(true);
-      
-      // Wait for completion
-      await loadPromise;
-      
+
       expect(result.current.isLoading).toBe(false);
     });
   });
@@ -190,17 +189,14 @@ describe('savedSearchStore', () => {
         result.current.addSearch(mockSavedSearch);
       });
       
-      // Start the async operation
-      const removePromise = act(async () => {
-        await result.current.removeSearch('search-1', 'user-123');
+      // Start the async operation inside act so updates are captured.
+      await act(async () => {
+        const promise = result.current.removeSearch('search-1', 'user-123');
+        // Check loading state while the operation is in-flight
+        await waitFor(() => expect(result.current.isLoading).toBe(true));
+        await promise;
       });
-      
-      // Check loading state
-      expect(result.current.isLoading).toBe(true);
-      
-      // Wait for completion
-      await removePromise;
-      
+
       expect(result.current.isLoading).toBe(false);
     });
 
@@ -325,14 +321,15 @@ describe('savedSearchStore', () => {
         result.current.addSearch(mockSavedSearch);
       });
       
-      // Create a new hook instance to test persistence
-      const { result: result2 } = renderHook(() => useSavedSearchStore());
-      
-      expect(result2.current.searches).toHaveLength(1);
-      expect(result2.current.searches[0]).toEqual(mockSavedSearch);
+      // Inspect localStorage directly to validate persisted searches
+      const raw = localStorage.getItem('propchain-saved-searches');
+      expect(raw).not.toBeNull();
+      const parsed = JSON.parse(raw as string);
+      expect(parsed.state.searches).toHaveLength(1);
+      expect(parsed.state.searches[0]).toEqual(mockSavedSearch);
     });
 
-    it('should not persist transient data', () => {
+    it('should not persist transient data', async () => {
       const { result } = renderHook(() => useSavedSearchStore());
       
       act(() => {
@@ -341,11 +338,13 @@ describe('savedSearchStore', () => {
         result.current.setError('Some error');
       });
       
-      // Create a new hook instance
-      const { result: result2 } = renderHook(() => useSavedSearchStore());
-      
-      expect(result2.current.isLoading).toBe(false);
-      expect(result2.current.error).toBeNull();
+      // Inspect localStorage directly to ensure transient fields were not persisted
+      const raw = localStorage.getItem('propchain-saved-searches');
+      expect(raw).not.toBeNull();
+      const parsed = JSON.parse(raw as string);
+      // partialize ensures only `searches` are persisted
+      expect(parsed.state.isLoading).toBeUndefined();
+      expect(parsed.state.error).toBeUndefined();
     });
   });
 

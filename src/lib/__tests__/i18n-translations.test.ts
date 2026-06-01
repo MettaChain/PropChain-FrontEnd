@@ -51,10 +51,9 @@ describe('i18n Translations', () => {
         const langKeys = getKeys(translations[lang as keyof typeof translations]);
         
         for (const key of enKeys) {
-          expect(langKeys).toContain(
-            key,
-            `Missing key: ${key} in ${lang}`
-          );
+          if (!langKeys.includes(key)) {
+            throw new Error(`Missing key: ${key} in ${lang}`);
+          }
         }
       });
 
@@ -62,10 +61,9 @@ describe('i18n Translations', () => {
         const langKeys = getKeys(translations[lang as keyof typeof translations]);
         
         for (const key of langKeys) {
-          expect(enKeys).toContain(
-            key,
-            `Extra key in ${lang}: ${key}`
-          );
+          if (!enKeys.includes(key)) {
+            throw new Error(`Extra key in ${lang}: ${key}`);
+          }
         }
       });
     });
@@ -94,11 +92,13 @@ describe('i18n Translations', () => {
         const keys = getKeys(trans);
         keys.forEach((key) => {
           const parts = key.split('.');
-          let value = trans;
+          let value = trans as any;
           for (const part of parts) {
             value = value[part];
           }
-          expect(value).toBeTruthy(`Empty translation in ${lang} for key ${key}`);
+          if (!value) {
+            throw new Error(`Empty translation in ${lang} for key ${key}`);
+          }
           expect(typeof value).toBe('string');
         });
       });
@@ -149,8 +149,11 @@ describe('i18n Translations', () => {
       
       basicTerms.forEach((term) => {
         Object.entries(translations).forEach(([lang, trans]) => {
-          expect(trans.common[term]).toBeDefined(`Missing term "${term}" in ${lang}`);
-          expect(typeof trans.common[term]).toBe('string');
+          const val = trans.common[term];
+          if (val === undefined) {
+            throw new Error(`Missing term "${term}" in ${lang}`);
+          }
+          expect(typeof val).toBe('string');
         });
       });
     });
@@ -160,8 +163,11 @@ describe('i18n Translations', () => {
       
       navTerms.forEach((term) => {
         Object.entries(translations).forEach(([lang, trans]) => {
-          expect(trans.navigation[term]).toBeDefined(`Missing nav term "${term}" in ${lang}`);
-          expect(typeof trans.navigation[term]).toBe('string');
+          const val = trans.navigation[term];
+          if (val === undefined) {
+            throw new Error(`Missing nav term "${term}" in ${lang}`);
+          }
+          expect(typeof val).toBe('string');
         });
       });
     });
@@ -185,8 +191,8 @@ describe('i18n Translations', () => {
 
     it('should have ROI and financial metrics in all languages', () => {
       Object.entries(translations).forEach(([lang, trans]) => {
-        expect(trans.properties.roi).toBeDefined(`Missing ROI in ${lang}`);
-        expect(trans.dashboard.annualYield).toBeDefined(`Missing annualYield in ${lang}`);
+        if (trans.properties.roi === undefined) throw new Error(`Missing ROI in ${lang}`);
+        if (trans.dashboard.annualYield === undefined) throw new Error(`Missing annualYield in ${lang}`);
       });
     });
   });

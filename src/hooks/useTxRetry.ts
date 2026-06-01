@@ -33,6 +33,7 @@ export function useTxRetry(
       } catch (err: unknown) {
         const friendlyMessage = getFriendlyWeb3ErrorMessage(err);
         const e = err as { code?: string; message?: string };
+        const friendly = getWalletErrorMessage(err);
         const isRetryable = e.code ? RETRYABLE_CODES.has(e.code) : true;
         const nextAttempt = retryCount + 1;
 
