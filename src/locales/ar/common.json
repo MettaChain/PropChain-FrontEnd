@@ -168,6 +168,16 @@
     "liquidityDescription": "يقيس مدى سهولة بيع أصولك بدون تأثير كبير على السعر.",
     "correlationDescription": "يوضح كيف تتحرك محفظتك مع اتجاهات السوق الأوسع."
   },
+  "comparison": {
+    "title": "مقارنة العقارات المحددة ({count}/{max})",
+    "copyComparisonLink": "نسخ رابط المقارنة",
+    "linkCopied": "تم نسخ الرابط",
+    "compareNow": "قارن الآن",
+    "clear": "مسح",
+    "removeFromComparison": "إزالة من المقارنة",
+    "comparisonLink": "رابط المقارنة",
+    "shareComparison": "شارك هذه المقارنة مع الآخرين"
+  },
   "geography": {
     "northAmerica": "أمريكا الشمالية",
     "europe": "أوروبا",

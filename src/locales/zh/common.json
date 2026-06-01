@@ -168,6 +168,16 @@
     "liquidityDescription": "衡量您在不产生重大价格影响的情况下出售资产的难易程度。",
     "correlationDescription": "显示您的投资组合如何与更广泛的市场趋势一起变动。"
   },
+  "comparison": {
+    "title": "比较选定的房产 ({count}/{max})",
+    "copyComparisonLink": "复制比较链接",
+    "linkCopied": "链接已复制",
+    "compareNow": "立即比较",
+    "clear": "清除",
+    "removeFromComparison": "从比较中移除",
+    "comparisonLink": "比较链接",
+    "shareComparison": "与他人分享此比较"
+  },
   "geography": {
     "northAmerica": "北美",
     "europe": "欧洲",
