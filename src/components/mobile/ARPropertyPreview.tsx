@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { logger } from "@/utils/logger";
 import {
@@ -12,13 +12,11 @@ import {
   Move3D,
   Info,
   Share2,
-  Download,
   Loader2,
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import type { MobileProperty } from "@/types/mobileProperty";
 
 interface ARPropertyPreviewProps {
@@ -27,7 +25,7 @@ interface ARPropertyPreviewProps {
   onClose: () => void;
 }
 
-export const ARPropertyPreview = ({
+const ARPropertyPreviewInner = ({
   property,
   isOpen,
   onClose,
@@ -35,36 +33,48 @@ export const ARPropertyPreview = ({
   const [isARSupported, setIsARSupported] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Ref instead of state: avoids re-renders on stream change and prevents stale
+  // closure bugs in the useEffect cleanup (state captures the value at render time).
+  const cameraStreamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      checkARSupport();
-      startCamera();
-    } else {
-      stopCamera();
+  const stopCamera = useCallback(() => {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
     }
+  }, []);
 
-    return () => {
-      stopCamera();
-    };
-  }, [isOpen]);
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+      cameraStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (err) {
+      logger.error("Error accessing camera:", err);
+      setError("Unable to access camera");
+    }
+  }, []);
 
-  const checkARSupport = () => {
-    // Check for WebXR AR support
+  const checkARSupport = useCallback(() => {
     if (navigator.xr) {
       navigator.xr
         .isSessionSupported("immersive-ar")
         .then((supported: boolean) => {
           setIsARSupported(supported);
-          if (!supported) {
-            setError("AR is not supported on this device");
-          }
+          if (!supported) setError("AR is not supported on this device");
           setIsLoading(false);
         })
         .catch(() => {
@@ -77,114 +87,82 @@ export const ARPropertyPreview = ({
       setError("WebXR is not supported on this browser");
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment", // Use back camera
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-      });
+  useEffect(() => {
+    if (isOpen) {
+      checkARSupport();
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => {
+      stopCamera();
+    };
+  }, [isOpen, checkARSupport, startCamera, stopCamera]);
 
-      setCameraStream(stream);
+  const captureFrame = useCallback((): HTMLCanvasElement | null => {
+    if (!canvasRef.current || !videoRef.current) return null;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    return canvas;
+  }, []);
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+  const handleCapture = useCallback(() => {
+    const canvas = captureFrame();
+    if (!canvas) return;
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${property.name}-ar-preview.png`;
+        a.click();
+        URL.revokeObjectURL(url);
       }
-    } catch (error) {
-      logger.error("Error accessing camera:", error);
-      setError("Unable to access camera");
-    }
-  };
+    });
+  }, [captureFrame, property.name]);
 
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
-      setCameraStream(null);
-    }
-  };
+  const handleShare = useCallback(async () => {
+    const canvas = captureFrame();
+    if (!canvas) return;
+    canvas.toBlob(async (blob) => {
+      if (blob && navigator.share) {
+        try {
+          const file = new File([blob], `${property.name}-ar-preview.png`, {
+            type: "image/png",
+          });
+          await navigator.share({
+            title: `AR Preview: ${property.name}`,
+            text: `Check out this AR preview of ${property.name}`,
+            files: [file],
+          });
+        } catch (err) {
+          logger.debug("Error sharing:", err);
+        }
+      }
+    });
+  }, [captureFrame, property.name]);
 
-  const handleARSession = async () => {
+  const handleARSession = useCallback(async () => {
     if (!isARSupported || !navigator.xr) return;
-
     try {
-      // This is a simplified AR implementation
-      // In a real app, you would use WebXR or a library like AR.js or 8th Wall
-      const session = await navigator.xr.requestSession(
-        "immersive-ar",
-        {
-          requiredFeatures: ["local", "hit-test"],
-        },
-      );
-
-      // Handle AR session
+      const session = await navigator.xr.requestSession("immersive-ar", {
+        requiredFeatures: ["local", "hit-test"],
+      });
       logger.debug("AR session started:", session);
-    } catch (error) {
-      logger.error("Error starting AR session:", error);
+    } catch (err) {
+      logger.error("Error starting AR session:", err);
       setError("Failed to start AR session");
     }
-  };
+  }, [isARSupported]);
 
-  const handleCapture = () => {
-    if (!canvasRef.current || !videoRef.current) return;
-
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    const ctx = canvas.getContext("2d");
-
-    if (ctx) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-
-      // Convert to blob and trigger download
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${property.name}-ar-preview.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }
-      });
-    }
-  };
-
-  const handleShare = async () => {
-    if (!canvasRef.current || !videoRef.current) return;
-
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    const ctx = canvas.getContext("2d");
-
-    if (ctx) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-
-      canvas.toBlob(async (blob) => {
-        if (blob && navigator.share) {
-          try {
-            const file = new File([blob], `${property.name}-ar-preview.png`, {
-              type: "image/png",
-            });
-            await navigator.share({
-              title: `AR Preview: ${property.name}`,
-              text: `Check out this AR preview of ${property.name}`,
-              files: [file],
-            });
-          } catch (error) {
-            logger.debug("Error sharing:", error);
-          }
-        }
-      });
-    }
-  };
+  const toggleInfo = useCallback(() => setShowInfo((prev) => !prev), []);
 
   if (!isOpen) return null;
 
@@ -222,7 +200,7 @@ export const ARPropertyPreview = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowInfo(!showInfo)}
+                onClick={toggleInfo}
                 className="text-white hover:bg-white/20"
               >
                 <Info className="w-5 h-5" />
@@ -456,3 +434,5 @@ export const ARPropertyPreview = ({
     </AnimatePresence>
   );
 };
+
+export const ARPropertyPreview = memo(ARPropertyPreviewInner);
