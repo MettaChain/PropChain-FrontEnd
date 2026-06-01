@@ -102,6 +102,13 @@ export class NetworkErrorBoundary extends Component<Props, State> {
     // Report error
     errorReporting.reportError(appError);
 
+    logger.debug('NetworkErrorBoundary captured an error', {
+      error: appError,
+      componentStack: errorInfo.componentStack,
+      isOnline: this.state.isOnline,
+      lastSuccessfulFetch: this.state.lastSuccessfulFetch,
+    });
+
     // Call custom error handler
     if (this.props.onError) {
       this.props.onError(appError);
@@ -115,6 +122,7 @@ export class NetworkErrorBoundary extends Component<Props, State> {
 
   private handleOnline = () => {
     this.setState({ isOnline: true });
+    logger.debug('NetworkErrorBoundary online event received', { isOnline: true });
 
     // Automatically retry when coming back online
     if (this.state.hasError && this.state.error?.isRecoverable) {
@@ -124,10 +132,13 @@ export class NetworkErrorBoundary extends Component<Props, State> {
 
   private handleOffline = () => {
     this.setState({ isOnline: false });
+    logger.debug('NetworkErrorBoundary offline event received', { isOnline: false });
   };
 
   private checkOnlineStatus = async () => {
     if (typeof window === "undefined") return;
+
+    logger.debug('NetworkErrorBoundary checking online status');
 
     try {
       const response = await fetch("/api/health", {
@@ -137,10 +148,17 @@ export class NetworkErrorBoundary extends Component<Props, State> {
 
       if (response.ok) {
         this.setState({ isOnline: true, lastSuccessfulFetch: new Date() });
+        logger.debug('NetworkErrorBoundary /api/health check succeeded', {
+          status: response.status,
+        });
       } else {
         this.setState({ isOnline: false });
+        logger.debug('NetworkErrorBoundary /api/health returned non-ok status', {
+          status: response.status,
+        });
       }
     } catch (error) {
+      logger.debug('NetworkErrorBoundary /api/health fetch failed', { error });
       this.setState({ isOnline: false });
     }
   };

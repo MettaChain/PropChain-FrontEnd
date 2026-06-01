@@ -365,7 +365,7 @@ describe('Error Boundaries', () => {
 
 ```bash
 # Enable debug mode for detailed error logging
-NEXT_PUBLIC_ERROR_DEBUG=true
+NEXT_PUBLIC_DEBUG_MODE=true
 
 # Configure error reporting endpoint
 NEXT_PUBLIC_ERROR_ENDPOINT=https://api.propchain.com/errors
@@ -376,6 +376,11 @@ NEXT_PUBLIC_MAX_RETRIES=3
 # Enable graceful degradation (default: true)
 NEXT_PUBLIC_GRACEFUL_DEGRADATION=true
 ```
+
+### Debug logging for error boundaries
+
+`NetworkErrorBoundary` and other error boundary components emit structured debug logs using the shared logger when `NEXT_PUBLIC_DEBUG_MODE=true`.
+These debug logs are hidden in production builds unless the application is explicitly configured for verbose debugging.
 
 ### Error Reporting Configuration
 
