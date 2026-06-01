@@ -42,6 +42,14 @@ import {
 } from '@/utils/eip712/eip712Signing';
 import { toast } from 'sonner';
 
+import { 
+  formatAddress, 
+  formatEth, 
+  getRiskLevelColor, 
+  getRiskLevelBg, 
+  getProgressForStep 
+} from '@/utils/secureTransactionUtils';
+
 interface SecureTransactionConfirmationProps {
   isOpen: boolean;
   transaction: {
@@ -87,19 +95,7 @@ export const SecureTransactionConfirmation: React.FC<SecureTransactionConfirmati
 
   useEffect(() => {
     // Update progress based on current step
-    switch (currentStep) {
-      case 'validation':
-        setProgress(25);
-        break;
-      case 'signing':
-        setProgress(50);
-        break;
-      case 'broadcast':
-        setProgress(75);
-        break;
-      default:
-        setProgress(0);
-    }
+    setProgress(getProgressForStep(currentStep));
   }, [currentStep]);
 
   const validateTransactionData = () => {
@@ -168,36 +164,9 @@ export const SecureTransactionConfirmation: React.FC<SecureTransactionConfirmati
     }
   };
 
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
-
-  const formatEth = (wei: string) => {
-    return parseFloat(ethers.formatEther(wei || '0')).toFixed(6);
-  };
-
-  const getRiskLevelColor = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'critical': return 'text-red-600 dark:text-red-400';
-      case 'high': return 'text-orange-600 dark:text-orange-400';
-      case 'medium': return 'text-yellow-600 dark:text-yellow-400';
-      case 'low': return 'text-green-600 dark:text-green-400';
-      default: return 'text-gray-600 dark:text-gray-400';
-    }
-  };
-
-  const getRiskLevelBg = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'critical': return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-      case 'high': return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800';
-      case 'medium': return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
-      case 'low': return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
-      default: return 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800';
-    }
-  };
-
   const canProceed = validation?.isValid && !isSigning && !isBroadcasting;
   const canBroadcast = signedTransaction && signedTransaction.verified && !isBroadcasting;
+
 
   if (!isOpen) return null;
 
