@@ -131,7 +131,21 @@
     "arPropertyPreview": "Vista Previa de Propiedad AR",
     "locationBasedDiscovery": "Descubrimiento Basado en Ubicación",
     "offlinePropertyCache": "Caché de Propiedades Sin Conexión",
-    "mobilePropertyViewer": "Visor de Propiedades Móvil"
+    "mobilePropertyViewer": "Visor de Propiedades Móvil",
+    "viewer": {
+      "contact": "Contactar",
+      "scheduleTour": "Programar Visita",
+      "valueLabel": "Valor",
+      "roiLabel": "ROI",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} más",
+      "shareText": "Mira esta propiedad: {{name}} en {{location}}",
+      "bed_one": "{{count}} habitación",
+      "bed_other": "{{count}} habitaciones",
+      "bath_one": "{{count}} baño",
+      "bath_other": "{{count}} baños",
+      "sqft": "{{count}} pie²"
+    }
   },
   "forms": {
     "selectYear": "Seleccionar año",

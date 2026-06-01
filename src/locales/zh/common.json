@@ -131,7 +131,21 @@
     "arPropertyPreview": "AR房产预览",
     "locationBasedDiscovery": "基于位置的发现",
     "offlinePropertyCache": "离线房产缓存",
-    "mobilePropertyViewer": "移动房产查看器"
+    "mobilePropertyViewer": "移动房产查看器",
+    "viewer": {
+      "contact": "联系",
+      "scheduleTour": "预约参观",
+      "valueLabel": "价值",
+      "roiLabel": "投资回报率",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} 更多",
+      "shareText": "查看这个房产：{{name}}，位于{{location}}",
+      "bed_one": "{{count}} 间卧室",
+      "bed_other": "{{count}} 间卧室",
+      "bath_one": "{{count}} 间浴室",
+      "bath_other": "{{count}} 间浴室",
+      "sqft": "{{count}} 平方英尺"
+    }
   },
   "forms": {
     "selectYear": "选择年份",
