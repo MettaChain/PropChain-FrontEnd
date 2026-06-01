@@ -232,5 +232,15 @@
     "other": "Other",
     "byPropertyType": "By Property Type",
     "byGeography": "By Geography"
+  },
+  "referral": {
+    "connectWallet": "Connect Wallet",
+    "connectWalletPrompt": "Please connect your wallet to access the referral program",
+    "title": "Referral Program",
+    "subtitle": "Earn rewards by inviting investors to PropChain",
+    "viewTerms": "View Terms",
+    "topReferrers": "Top Referrers",
+    "leaderboardBlurb": "Check how you rank among other referrers in the PropChain community.",
+    "viewLeaderboard": "View Leaderboard"
   }
 }

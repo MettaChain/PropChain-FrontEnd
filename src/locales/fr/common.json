@@ -199,5 +199,15 @@
     "other": "Autre",
     "byPropertyType": "Par Type de Propriété",
     "byGeography": "Par Géographie"
+  },
+  "referral": {
+    "connectWallet": "Connecter le Portefeuille",
+    "connectWalletPrompt": "Connectez votre portefeuille pour accéder au programme de parrainage",
+    "title": "Programme de Parrainage",
+    "subtitle": "Gagnez des récompenses en invitant des investisseurs sur PropChain",
+    "viewTerms": "Voir les Conditions",
+    "topReferrers": "Meilleurs Parrains",
+    "leaderboardBlurb": "Découvrez votre classement parmi les parrains de la communauté PropChain.",
+    "viewLeaderboard": "Voir le Classement"
   }
 }

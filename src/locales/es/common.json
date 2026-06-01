@@ -199,5 +199,15 @@
     "other": "Otro",
     "byPropertyType": "Por Tipo de Propiedad",
     "byGeography": "Por Geografía"
+  },
+  "referral": {
+    "connectWallet": "Conectar Billetera",
+    "connectWalletPrompt": "Conecta tu billetera para acceder al programa de referidos",
+    "title": "Programa de Referidos",
+    "subtitle": "Gana recompensas invitando inversores a PropChain",
+    "viewTerms": "Ver Términos",
+    "topReferrers": "Mejores Referidores",
+    "leaderboardBlurb": "Consulta tu posición entre los referidores de la comunidad PropChain.",
+    "viewLeaderboard": "Ver Clasificación"
   }
 }

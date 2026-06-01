@@ -199,5 +199,15 @@
     "other": "أخرى",
     "byPropertyType": "حسب نوع العقار",
     "byGeography": "حسب الجغرافيا"
+  },
+  "referral": {
+    "connectWallet": "ربط المحفظة",
+    "connectWalletPrompt": "يرجى ربط محفظتك للوصول إلى برنامج الإحالة",
+    "title": "برنامج الإحالة",
+    "subtitle": "اكسب مكافآت بدعوة المستثمرين إلى PropChain",
+    "viewTerms": "عرض الشروط",
+    "topReferrers": "أفضل المحيلين",
+    "leaderboardBlurb": "تحقق من ترتيبك بين المحيلين في مجتمع PropChain.",
+    "viewLeaderboard": "عرض لوحة المتصدرين"
   }
 }
