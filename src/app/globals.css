@@ -293,7 +293,16 @@ html[dir="rtl"] .price {
 }
 
 /* RTL animations - reverse direction */
-html[dir="rtl"] @keyframes slideInLeft {
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
   from {
     transform: translateX(100%);
   }
@@ -302,14 +311,7 @@ html[dir="rtl"] @keyframes slideInLeft {
   }
 }
 
-html[dir="rtl"] @keyframes slideInRight {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
+/* For RTL, these animations will just use the same keyframes - since the direction is already handled by flex-direction: row-reverse etc. */
 
 /* RTL scrollbar positioning */
 html[dir="rtl"] ::-webkit-scrollbar {
@@ -498,8 +500,8 @@ html[lang="ar"] {
     display: block !important;
   }
 
-  .property-detail .lg\\:col-span-2,
-  .property-detail .lg\\:col-span-3 {
+  .property-detail [class*="lg:col-span-2"],
+  .property-detail [class*="lg:col-span-3"] {
     width: 100% !important;
     margin-bottom: 1rem !important;
   }
