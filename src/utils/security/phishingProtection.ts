@@ -1,4 +1,5 @@
 import { isAddress, isHex, recoverMessageAddress, type Hex } from 'viem';
+import { logger } from '@/utils/logger';
 
 export interface PhishingDetectionResult {
   isPhishing: boolean;
@@ -237,7 +238,7 @@ export class PhishingProtection {
   static async reportSuspiciousDomain(domain: string, reason: string): Promise<boolean> {
     try {
       // In a real implementation, this would send data to a security API
-      console.warn(`[Security] Reporting suspicious domain: ${domain}. Reason: ${reason}`);
+      logger.warn('[Security] Reporting suspicious domain', { domain, reason });
       
       // Placeholder for actual API call
       // await fetch('https://api.propchain.io/security/report', {
@@ -247,7 +248,7 @@ export class PhishingProtection {
       
       return true;
     } catch (error) {
-      console.error('Failed to report suspicious domain:', error);
+      logger.error('Failed to report suspicious domain', error);
       return false;
     }
   }
