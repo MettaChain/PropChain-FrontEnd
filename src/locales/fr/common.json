@@ -168,6 +168,16 @@
     "liquidityDescription": "Mesure la facilité avec laquelle vous pouvez vendre vos actifs sans impact significatif sur le prix.",
     "correlationDescription": "Montre comment votre portefeuille évolue avec les tendances du marché plus large."
   },
+  "comparison": {
+    "title": "Comparer les propriétés sélectionnées ({count}/{max})",
+    "copyComparisonLink": "Copier le lien de comparaison",
+    "linkCopied": "Lien copié",
+    "compareNow": "Comparer maintenant",
+    "clear": "Effacer",
+    "removeFromComparison": "Retirer de la comparaison",
+    "comparisonLink": "Lien de comparaison",
+    "shareComparison": "Partagez cette comparaison avec d'autres"
+  },
   "geography": {
     "northAmerica": "Amérique du Nord",
     "europe": "Europe",

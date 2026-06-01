@@ -168,6 +168,16 @@
     "liquidityDescription": "Measures how easily you can sell your assets without significant price impact.",
     "correlationDescription": "Shows how your portfolio moves with broader market trends."
   },
+  "comparison": {
+    "title": "Compare selected properties ({count}/{max})",
+    "copyComparisonLink": "Copy Comparison Link",
+    "linkCopied": "Link Copied",
+    "compareNow": "Compare Now",
+    "clear": "Clear",
+    "removeFromComparison": "Remove from comparison",
+    "comparisonLink": "Comparison Link",
+    "shareComparison": "Share this comparison with others"
+  },
   "geography": {
     "northAmerica": "North America",
     "europe": "Europe",
