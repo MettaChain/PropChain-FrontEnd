@@ -131,7 +131,21 @@
     "arPropertyPreview": "Aperçu de Propriété AR",
     "locationBasedDiscovery": "Découverte Basée sur la Localisation",
     "offlinePropertyCache": "Cache de Propriétés Hors Ligne",
-    "mobilePropertyViewer": "Visionneur de Propriétés Mobile"
+    "mobilePropertyViewer": "Visionneur de Propriétés Mobile",
+    "viewer": {
+      "contact": "Contacter",
+      "scheduleTour": "Planifier une Visite",
+      "valueLabel": "Valeur",
+      "roiLabel": "ROI",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} de plus",
+      "shareText": "Découvrez cette propriété : {{name}} à {{location}}",
+      "bed_one": "{{count}} chambre",
+      "bed_other": "{{count}} chambres",
+      "bath_one": "{{count}} salle de bain",
+      "bath_other": "{{count}} salles de bain",
+      "sqft": "{{count}} pi²"
+    }
   },
   "forms": {
     "selectYear": "Sélectionner l'année",

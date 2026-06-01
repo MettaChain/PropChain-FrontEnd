@@ -131,7 +131,21 @@
     "arPropertyPreview": "תצוגה מקדימה של נכס AR",
     "locationBasedDiscovery": "גילוי מבוסס מיקום",
     "offlinePropertyCache": "מטמון נכסים לא מקוון",
-    "mobilePropertyViewer": "מציג נכסים נייד"
+    "mobilePropertyViewer": "מציג נכסים נייד",
+    "viewer": {
+      "contact": "יצירת קשר",
+      "scheduleTour": "תיאום סיור",
+      "valueLabel": "ערך",
+      "roiLabel": "תשואה",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} נוספות",
+      "shareText": "בדוק את הנכס הזה: {{name}} ב{{location}}",
+      "bed_one": "{{count}} חדר שינה",
+      "bed_other": "{{count}} חדרי שינה",
+      "bath_one": "{{count}} חדר אמבטיה",
+      "bath_other": "{{count}} חדרי אמבטיה",
+      "sqft": "{{count}} רגל²"
+    }
   },
   "forms": {
     "selectYear": "בחר שנה",

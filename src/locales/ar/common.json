@@ -131,7 +131,21 @@
     "arPropertyPreview": "معاينة عقار AR",
     "locationBasedDiscovery": "اكتشاف قائم على الموقع",
     "offlinePropertyCache": "ذاكرة تخزين مؤقت للعقارات بدون اتصال",
-    "mobilePropertyViewer": "عارض العقارات المحمول"
+    "mobilePropertyViewer": "عارض العقارات المحمول",
+    "viewer": {
+      "contact": "تواصل",
+      "scheduleTour": "جدولة جولة",
+      "valueLabel": "القيمة",
+      "roiLabel": "العائد على الاستثمار",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} المزيد",
+      "shareText": "اطلع على هذا العقار: {{name}} في {{location}}",
+      "bed_one": "{{count}} غرفة نوم",
+      "bed_other": "{{count}} غرف نوم",
+      "bath_one": "{{count}} حمام",
+      "bath_other": "{{count}} حمامات",
+      "sqft": "{{count}} قدم²"
+    }
   },
   "forms": {
     "selectYear": "اختر السنة",

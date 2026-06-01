@@ -131,7 +131,21 @@
     "arPropertyPreview": "AR Property Preview",
     "locationBasedDiscovery": "Location-Based Discovery",
     "offlinePropertyCache": "Offline Property Cache",
-    "mobilePropertyViewer": "Mobile Property Viewer"
+    "mobilePropertyViewer": "Mobile Property Viewer",
+    "viewer": {
+      "contact": "Contact",
+      "scheduleTour": "Schedule Tour",
+      "valueLabel": "Value",
+      "roiLabel": "ROI",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} more",
+      "shareText": "Check out this property: {{name}} in {{location}}",
+      "bed_one": "{{count}} bed",
+      "bed_other": "{{count}} beds",
+      "bath_one": "{{count}} bath",
+      "bath_other": "{{count}} baths",
+      "sqft": "{{count}} sqft"
+    }
   },
   "forms": {
     "selectYear": "Select year",
