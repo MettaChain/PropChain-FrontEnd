@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     
     // Parse query parameters
     const page = parseInt(searchParams.get('page') || '1');
-    const resultsPerPage = parseInt(searchParams.get('limit') || '12');
+    const resultsPerPage = parseInt(searchParams.get('size') || searchParams.get('limit') || '12');
     const sortBy = (searchParams.get('sortBy') || 'newest') as SortOption;
     const useCache = searchParams.get('cache') !== 'false'; // Default to true
     

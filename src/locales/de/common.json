@@ -168,6 +168,16 @@
     "liquidityDescription": "Misst, wie einfach Sie Ihre Vermögenswerte ohne signifikanten Preisausfall verkaufen können.",
     "correlationDescription": "Zeigt, wie sich Ihr Portfolio mit breiteren Markttrends bewegt."
   },
+  "comparison": {
+    "title": "Ausgewählte Immobilien vergleichen ({count}/{max})",
+    "copyComparisonLink": "Vergleichslink kopieren",
+    "linkCopied": "Link kopiert",
+    "compareNow": "Jetzt vergleichen",
+    "clear": "Löschen",
+    "removeFromComparison": "Aus Vergleich entfernen",
+    "comparisonLink": "Vergleichslink",
+    "shareComparison": "Teilen Sie diesen Vergleich mit anderen"
+  },
   "geography": {
     "northAmerica": "Nordamerika",
     "europe": "Europa",

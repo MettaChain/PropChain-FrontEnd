@@ -168,6 +168,16 @@
     "liquidityDescription": "מודד כמה קל למכור את הנכסים שלך ללא השפעה משמעותית על המחיר.",
     "correlationDescription": "מראה כיצד התיק שלך זז עם מגמות שוק רחבות יותר."
   },
+  "comparison": {
+    "title": "השוואת נכסים נבחרים ({count}/{max})",
+    "copyComparisonLink": "העתק קישור להשוואה",
+    "linkCopied": "הקישור הועתק",
+    "compareNow": "השווה עכשיו",
+    "clear": "ניקוי",
+    "removeFromComparison": "הסר מהשוואה",
+    "comparisonLink": "קישור להשוואה",
+    "shareComparison": "שתף השוואה זו עם אחרים"
+  },
   "geography": {
     "northAmerica": "צפון אמריקה",
     "europe": "אירופה",

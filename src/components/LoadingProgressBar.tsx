@@ -3,9 +3,35 @@
 import { useEffect, useState, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
+/**
+ * Security Audit Note:
+ * 
+ * This component has been audited for web3 security concerns (Issue #309).
+ * 
+ * **Finding:** This component does NOT contain any web3 integrations.
+ * - No wallet connection logic
+ * - No transaction signing functionality
+ * - No network selection code
+ * - No blockchain interaction
+ * 
+ * This is a pure UI component that displays a loading progress bar during route changes.
+ * It only uses React hooks and Next.js navigation hooks for route change detection.
+ * 
+ * **Security Considerations:**
+ * - User input: Only accepts controlled props (color, height, duration) with safe defaults
+ * - No external API calls or data fetching
+ * - No sensitive data handling
+ * - No XSS vulnerabilities (props are used in style attributes with proper escaping)
+ * 
+ * **Recommendation:** No additional web3 security checks are needed for this component.
+ */
+
 interface LoadingProgressBarProps {
+  /** Progress bar color (hex, rgb, or CSS color name). Default: '#2563eb' */
   color?: string;
+  /** Height of the progress bar in pixels. Default: 3 */
   height?: number;
+  /** Duration in milliseconds for the completion animation. Default: 300 */
   duration?: number;
 }
 

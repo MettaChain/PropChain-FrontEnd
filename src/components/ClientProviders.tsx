@@ -15,6 +15,8 @@ import { KeyboardShortcutsProvider } from "@/components/keyboard-shortcuts/Keybo
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { DomainWarningBanner } from "@/components/DomainWarningBanner";
 import { useEffect } from "react";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { GlobalThemeToggle } from "@/components/GlobalThemeToggle";
 
 interface ClientProvidersProps {
   children: React.ReactNode;
@@ -64,12 +66,17 @@ export function ClientProviders({ children }: ClientProvidersProps) {
       <QueryProvider>
         <ChainAwareProvider>
           <KeyboardShortcutsProvider>
+    <ThemeProvider>
+      <WagmiProvider config={config}>
+        <QueryProvider>
+          <ChainAwareProvider>
             <LoadingProgressBar />
             <PerformanceMonitor />
             <ServiceWorkerRegistration />
             <OfflineIndicator />
             <DomainWarningBanner />
             {children}
+            <GlobalThemeToggle />
             <TransactionMonitor />
             <NotificationSystem />
             <Toaster />
@@ -80,5 +87,9 @@ export function ClientProviders({ children }: ClientProvidersProps) {
         </ChainAwareProvider>
       </QueryProvider>
     </WagmiProvider>
+          </ChainAwareProvider>
+        </QueryProvider>
+      </WagmiProvider>
+    </ThemeProvider>
   );
 }

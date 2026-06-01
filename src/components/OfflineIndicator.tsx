@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { WifiOff, RefreshCw } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
@@ -17,8 +17,11 @@ const RECONNECTED_DURATION_MS = 4000;
  *  - When offline: a red banner with the queued-transaction count.
  *  - When the connection returns and there were queued transactions: a brief
  *    success banner that auto-dismisses.
+ * 
+ * Optimized with React.memo to prevent unnecessary re-renders when the parent
+ * component re-renders but online status and queue length remain the same.
  */
-export function OfflineIndicator(): React.ReactElement | null {
+export const OfflineIndicator = memo(function OfflineIndicator(): React.ReactElement | null {
   const isOnline = useOnlineStatus();
   const [queueLength, setQueueLength] = useState(0);
   const [showReconnected, setShowReconnected] = useState(false);
@@ -26,12 +29,17 @@ export function OfflineIndicator(): React.ReactElement | null {
 
   useEffect(() => {
     let mounted = true;
+    
+    // Initial fetch of queued transactions
     getQueuedTransactions().then((items: QueuedTransaction[]) => {
       if (mounted) setQueueLength(items.length);
     });
+
+    // Subscribe to queue changes
     const unsubscribe = subscribeToQueue((queue) => {
       if (mounted) setQueueLength(queue.length);
     });
+
     return () => {
       mounted = false;
       unsubscribe();
@@ -44,14 +52,20 @@ export function OfflineIndicator(): React.ReactElement | null {
       setShowReconnected(false);
       return undefined;
     }
+
+    // Only show reconnected banner if we were previously offline
     if (wasOffline) {
       setShowReconnected(true);
       const timeout = window.setTimeout(
-        () => setShowReconnected(false),
+        () => {
+          setShowReconnected(false);
+          setWasOffline(false); // Reset wasOffline so we don't show the banner again until the next offline event
+        },
         RECONNECTED_DURATION_MS
       );
       return () => window.clearTimeout(timeout);
     }
+    
     return undefined;
   }, [isOnline, wasOffline]);
 
@@ -92,4 +106,4 @@ export function OfflineIndicator(): React.ReactElement | null {
   }
 
   return null;
-}
+});
