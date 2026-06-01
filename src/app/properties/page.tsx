@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 import { SearchFilterForm } from "@/components/forms/SearchFilterForm";
 import { SearchResults } from "@/components/SearchResults";
 import { WalletConnector } from "@/components/WalletConnector";
@@ -12,15 +12,14 @@ import { useNotificationStore } from "@/store/notificationStore";
 import { useWalletStore } from "@/store/walletStore";
 import { useNotificationChecker } from "@/hooks/useNotificationChecker";
 import { useFavoritesStore } from "@/store/favoritesStore";
+import { usePaginationParams, isValidPageSize, type PageSize } from "@/hooks/usePaginationParams";
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import PropertyPageSkeleton from "@/components/PropertyPageSkeleton";
 
 function PropertiesContent() {
   const { viewMode: storeViewMode, setViewMode: setStoreViewMode } =
     useSearchStore();
-  const { address } = useWalletStore();
   const { alerts, markAsRead, markAllAsRead, clearAlert } =
     useNotificationStore();
 
@@ -34,20 +33,49 @@ function PropertiesContent() {
 
   const { favorites } = useFavoritesStore();
 
+  // URL-driven pagination params (?page=N&size=N)
+  const { page: urlPage, size: urlSize, setPage: setUrlPage, setSize: setUrlSize, buildHref } =
+    usePaginationParams();
+
   const {
     filters,
     sortBy,
-    page,
+    page: storePage,
+    resultsPerPage: storeSize,
     properties,
     totalResults,
     totalPages,
     isLoading,
     error,
-    setFilter,
+    setFilters,
     clearFilters,
     setSortBy,
-    setPage,
+    setPage: setStorePage,
+    setResultsPerPage,
   } = usePropertySearch();
+
+  // Keep Zustand store in sync with URL params on mount and when URL changes
+  useEffect(() => {
+    if (urlPage !== storePage) {
+      setStorePage(urlPage);
+    }
+  }, [urlPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (urlSize !== storeSize) {
+      setResultsPerPage(urlSize);
+    }
+  }, [urlSize]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Page change: update URL (which triggers the effect above to sync the store)
+  const handlePageChange = (newPage: number) => {
+    setUrlPage(newPage);
+  };
+
+  // Page size change: update URL (resets to page 1 inside setUrlSize)
+  const handlePageSizeChange = (newSize: PageSize) => {
+    setUrlSize(newSize);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -109,8 +137,15 @@ function PropertiesContent() {
           </h1>
           <SearchFilterForm
             filters={filters}
-            onApplyFilters={setFilter}
-            onClearFilters={clearFilters}
+            onApplyFilters={(newFilters) => {
+              // Apply full filter object and reset to page 1
+              setFilters(newFilters);
+              setUrlPage(1);
+            }}
+            onClearFilters={() => {
+              clearFilters();
+              setUrlPage(1);
+            }}
           />
         </div>
 
@@ -123,12 +158,18 @@ function PropertiesContent() {
             error={error}
             viewMode={viewMode}
             sortBy={sortBy}
-            page={page}
+            page={storePage}
             totalPages={totalPages}
+            pageSize={urlSize}
             filters={filters}
             onViewModeChange={setViewMode}
-            onSortChange={setSortBy}
-            onPageChange={setPage}
+            onSortChange={(newSort) => {
+              setSortBy(newSort);
+              setUrlPage(1);
+            }}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            buildPageHref={buildHref}
           />
         </div>
       </div>

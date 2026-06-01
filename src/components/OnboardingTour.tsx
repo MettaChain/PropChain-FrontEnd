@@ -7,12 +7,21 @@ import { Button } from '@/components/ui/button';
 import { X, ChevronRight, ChevronLeft, Building2, Wallet, Search, BarChart3, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+type StepId = 'welcome' | 'wallet' | 'browse' | 'purchase' | 'portfolio';
+
 interface Step {
-  id: string;
+  id: StepId;
   title: string;
   description: string;
-  target?: string;
-  icon: React.ReactNode;
+  /** CSS selector for the element to highlight. Omit for full-screen steps. */
+  target?: `[data-tour="${string}"]`;
+  icon: React.ReactElement;
+}
+
+interface TourCardPosition {
+  top: number | 'auto';
+  bottom: number | 'auto';
+  left: number;
 }
 
 const steps: Step[] = [
@@ -63,7 +72,7 @@ export const OnboardingTour: React.FC = () => {
   } = useOnboardingStore();
 
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  const portalRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement | null>(null);
 
   const step = steps[currentStep];
 
@@ -128,11 +137,14 @@ export const OnboardingTour: React.FC = () => {
             "pointer-events-auto w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 p-6 m-4",
             targetRect ? "absolute" : "relative"
           )}
-          style={targetRect ? {
-            top: targetRect.bottom + 20 > window.innerHeight - 200 ? 'auto' : targetRect.bottom + 20,
-            bottom: targetRect.bottom + 20 > window.innerHeight - 200 ? window.innerHeight - targetRect.top + 20 : 'auto',
-            left: Math.max(20, Math.min(window.innerWidth - 380, targetRect.left + (targetRect.width / 2) - 192)),
-          } : {}}
+          style={targetRect ? (() => {
+            const pos: TourCardPosition = {
+              top: targetRect.bottom + 20 > window.innerHeight - 200 ? 'auto' : targetRect.bottom + 20,
+              bottom: targetRect.bottom + 20 > window.innerHeight - 200 ? window.innerHeight - targetRect.top + 20 : 'auto',
+              left: Math.max(20, Math.min(window.innerWidth - 380, targetRect.left + (targetRect.width / 2) - 192)),
+            };
+            return pos;
+          })() : {}}
         >
           <button 
             onClick={stopOnboarding}
