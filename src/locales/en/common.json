@@ -185,5 +185,9 @@
     "other": "Other",
     "byPropertyType": "By Property Type",
     "byGeography": "By Geography"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "Select Network",
+    "switchingNetwork": "Switching network..."
   }
 }

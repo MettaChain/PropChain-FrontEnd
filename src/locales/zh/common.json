@@ -185,5 +185,9 @@
     "other": "其他",
     "byPropertyType": "按房产类型",
     "byGeography": "按地理位置"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "选择网络",
+    "switchingNetwork": "正在切换网络..."
   }
 }

@@ -185,5 +185,9 @@
     "other": "Andere",
     "byPropertyType": "Nach Immobilientyp",
     "byGeography": "Nach Geographie"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "Netzwerk auswählen",
+    "switchingNetwork": "Netzwerk wird gewechselt..."
   }
 }

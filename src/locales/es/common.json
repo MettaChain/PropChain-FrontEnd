@@ -185,5 +185,9 @@
     "other": "Otro",
     "byPropertyType": "Por Tipo de Propiedad",
     "byGeography": "Por Geografía"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "Seleccionar red",
+    "switchingNetwork": "Cambiando de red..."
   }
 }

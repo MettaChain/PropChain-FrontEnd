@@ -185,5 +185,9 @@
     "other": "אחר",
     "byPropertyType": "לפי סוג נכס",
     "byGeography": "לפי גאוגרפיה"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "בחר רשת",
+    "switchingNetwork": "מחליף רשת..."
   }
 }

@@ -185,5 +185,9 @@
     "other": "أخرى",
     "byPropertyType": "حسب نوع العقار",
     "byGeography": "حسب الجغرافيا"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "اختر الشبكة",
+    "switchingNetwork": "جارٍ تبديل الشبكة..."
   }
 }
