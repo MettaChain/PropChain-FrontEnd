@@ -23,6 +23,11 @@ PropChain FrontEnd has a comprehensive testing suite covering:
 - **Multiple Browsers**: Chromium, Firefox, WebKit (Safari)
 - **Mobile Testing**: Responsive design validation
 
+### Visual Regression Testing
+- **Storybook**: Component isolation and visual documentation
+- **Chromatic**: Automated visual regression testing
+- **Jest Snapshots**: DOM-based snapshot testing for components
+
 ### Coverage & Reporting
 - **Jest Coverage**: Built-in code coverage reporting
 - **Codecov**: Coverage tracking and visualization
@@ -80,6 +85,22 @@ npm run test:e2e:ui
 
 # Debug E2E tests
 npm run test:e2e:debug
+```
+
+### Visual Regression Tests
+
+```bash
+# Run Storybook for visual testing
+npm run storybook
+
+# Build Storybook for production
+npm run build-storybook
+
+# Run Jest snapshot tests
+npm test -- TransactionConfirmation.test.tsx
+
+# Update Jest snapshots (if changes are intentional)
+npm test -- TransactionConfirmation.test.tsx -u
 ```
 
 ### Performance Tests
