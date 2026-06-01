@@ -1,10 +1,6 @@
 'use client';
 
-/**
- * Referral Terms and Conditions Page
- */
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { useAccount } from 'wagmi';
 import { useReferralStore } from '@/store/referralStore';
 import { referralService } from '@/lib/referralService';
@@ -17,6 +13,8 @@ export default function ReferralTermsPage() {
   const [accepted, setAccepted] = useState(false);
   const { termsAccepted, updateTermsAccepted, setNotification } =
     useReferralStore();
+  const checkboxId = useId();
+  const termsContentId = useId();
 
   useEffect(() => {
     setAccepted(termsAccepted);
@@ -56,11 +54,12 @@ export default function ReferralTermsPage() {
           <Link
             href="/referral"
             className="mb-4 inline-flex items-center text-blue-600 hover:text-blue-700"
+            aria-label="Back to referral dashboard"
           >
             ← Back to Dashboard
           </Link>
           <h1 className="text-4xl font-bold text-slate-900">
-            Referral Program Terms & Conditions
+            Referral Program Terms &amp; Conditions
           </h1>
           <p className="mt-2 text-slate-600">
             Last updated: {new Date().toLocaleDateString()}
@@ -68,7 +67,12 @@ export default function ReferralTermsPage() {
         </div>
 
         {/* Content */}
-        <div className="space-y-8 rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
+        <div
+          id={termsContentId}
+          role="document"
+          aria-label="Referral program terms and conditions"
+          className="space-y-8 rounded-lg border border-slate-200 bg-white p-8 shadow-sm"
+        >
           {/* 1. Eligibility */}
           <section>
             <h2 className="mb-4 text-2xl font-bold text-slate-900">
@@ -412,12 +416,14 @@ export default function ReferralTermsPage() {
                 <div className="flex items-start gap-4">
                   <input
                     type="checkbox"
-                    id="accept-terms"
+                    id={checkboxId}
                     checked={accepted}
                     onChange={(e) => setAccepted(e.target.checked)}
+                    aria-describedby={termsContentId}
+                    aria-checked={accepted}
                     className="mt-1 h-5 w-5 rounded border-slate-300"
                   />
-                  <label htmlFor="accept-terms" className="flex-1 text-slate-700">
+                  <label htmlFor={checkboxId} className="flex-1 text-slate-700">
                     I have read and agree to the PropChain Referral Program
                     Terms and Conditions. I understand that participation is
                     subject to these terms and that PropChain may enforce these
@@ -428,6 +434,12 @@ export default function ReferralTermsPage() {
                 <button
                   onClick={handleAccept}
                   disabled={!accepted || isAccepting || termsAccepted}
+                  aria-disabled={!accepted || isAccepting || termsAccepted}
+                  aria-label={
+                    termsAccepted
+                      ? 'Terms already accepted'
+                      : 'Accept the referral program terms and conditions'
+                  }
                   className="mt-6 w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
                 >
                   {isAccepting
@@ -441,7 +453,10 @@ export default function ReferralTermsPage() {
           )}
 
           {!isConnected && (
-            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-center text-yellow-800">
+            <div
+              role="alert"
+              className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-center text-yellow-800"
+            >
               Please connect your wallet to accept the terms and conditions
             </div>
           )}
