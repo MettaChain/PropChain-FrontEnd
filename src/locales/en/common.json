@@ -93,6 +93,39 @@
     "performance": "Performance",
     "transactions": "Transactions"
   },
+  "multiChainPortfolio": {
+    "connectWalletTitle": "Connect Wallet",
+    "connectWalletDescription": "Please connect your wallet to view your multi-chain portfolio holdings.",
+    "connectWalletAction": "Connect Wallet",
+    "loadingPortfolio": "Loading portfolio...",
+    "failedToLoad": "Failed to load portfolio",
+    "failedToLoadDescription": "Something went wrong while fetching your portfolio data.",
+    "tryAgain": "Try Again",
+    "noInvestmentsTitle": "No investments found",
+    "noInvestmentsDescription": "You don't have any property investments yet. Start browsing properties to build your portfolio.",
+    "browseProperties": "Browse Properties",
+    "portfolioOverview": "Portfolio Overview",
+    "totalValueUSD": "Total Value (USD)",
+    "totalValue": "Total Value",
+    "totalProperties": "Total Properties",
+    "chainsUsed": "Chains Used",
+    "filterByChain": "Filter by Chain",
+    "allChains": "All Chains",
+    "bridgeSuggestions": "Bridge Suggestions",
+    "show": "Show",
+    "hide": "Hide",
+    "gasBalance": "Gas Balance",
+    "valueInUSD": "Value in USD",
+    "fromLabel": "From: {{chain}}",
+    "toLabel": "To: {{chain}}",
+    "saveAmount": "Save: {{amount}}",
+    "bridgeAction": "Bridge",
+    "properties": "{{count}} property",
+    "properties_plural": "{{count}} properties",
+    "tokens": "{{count}} token",
+    "tokens_plural": "{{count}} tokens",
+    "allChainsWithCount": "All Chains ({{count}})"
+  },
   "transactions": {
     "title": "Transactions",
     "recentTransactions": "Recent Transactions",
@@ -131,7 +164,21 @@
     "arPropertyPreview": "AR Property Preview",
     "locationBasedDiscovery": "Location-Based Discovery",
     "offlinePropertyCache": "Offline Property Cache",
-    "mobilePropertyViewer": "Mobile Property Viewer"
+    "mobilePropertyViewer": "Mobile Property Viewer",
+    "viewer": {
+      "contact": "Contact",
+      "scheduleTour": "Schedule Tour",
+      "valueLabel": "Value",
+      "roiLabel": "ROI",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} more",
+      "shareText": "Check out this property: {{name}} in {{location}}",
+      "bed_one": "{{count}} bed",
+      "bed_other": "{{count}} beds",
+      "bath_one": "{{count}} bath",
+      "bath_other": "{{count}} baths",
+      "sqft": "{{count}} sqft"
+    }
   },
   "forms": {
     "selectYear": "Select year",
@@ -189,5 +236,14 @@
   "networkSwitcher": {
     "selectNetwork": "Select Network",
     "switchingNetwork": "Switching network..."
+  "referral": {
+    "connectWallet": "Connect Wallet",
+    "connectWalletPrompt": "Please connect your wallet to access the referral program",
+    "title": "Referral Program",
+    "subtitle": "Earn rewards by inviting investors to PropChain",
+    "viewTerms": "View Terms",
+    "topReferrers": "Top Referrers",
+    "leaderboardBlurb": "Check how you rank among other referrers in the PropChain community.",
+    "viewLeaderboard": "View Leaderboard"
   }
 }

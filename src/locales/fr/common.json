@@ -131,7 +131,21 @@
     "arPropertyPreview": "Aperçu de Propriété AR",
     "locationBasedDiscovery": "Découverte Basée sur la Localisation",
     "offlinePropertyCache": "Cache de Propriétés Hors Ligne",
-    "mobilePropertyViewer": "Visionneur de Propriétés Mobile"
+    "mobilePropertyViewer": "Visionneur de Propriétés Mobile",
+    "viewer": {
+      "contact": "Contacter",
+      "scheduleTour": "Planifier une Visite",
+      "valueLabel": "Valeur",
+      "roiLabel": "ROI",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} de plus",
+      "shareText": "Découvrez cette propriété : {{name}} à {{location}}",
+      "bed_one": "{{count}} chambre",
+      "bed_other": "{{count}} chambres",
+      "bath_one": "{{count}} salle de bain",
+      "bath_other": "{{count}} salles de bain",
+      "sqft": "{{count}} pi²"
+    }
   },
   "forms": {
     "selectYear": "Sélectionner l'année",
@@ -189,5 +203,14 @@
   "networkSwitcher": {
     "selectNetwork": "Sélectionner le réseau",
     "switchingNetwork": "Changement de réseau..."
+  "referral": {
+    "connectWallet": "Connecter le Portefeuille",
+    "connectWalletPrompt": "Connectez votre portefeuille pour accéder au programme de parrainage",
+    "title": "Programme de Parrainage",
+    "subtitle": "Gagnez des récompenses en invitant des investisseurs sur PropChain",
+    "viewTerms": "Voir les Conditions",
+    "topReferrers": "Meilleurs Parrains",
+    "leaderboardBlurb": "Découvrez votre classement parmi les parrains de la communauté PropChain.",
+    "viewLeaderboard": "Voir le Classement"
   }
 }
