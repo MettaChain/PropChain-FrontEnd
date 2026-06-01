@@ -175,5 +175,15 @@
     "other": "Andere",
     "byPropertyType": "Nach Immobilientyp",
     "byGeography": "Nach Geographie"
+  },
+  "referral": {
+    "connectWallet": "Wallet Verbinden",
+    "connectWalletPrompt": "Verbinde deine Wallet, um auf das Empfehlungsprogramm zuzugreifen",
+    "title": "Empfehlungsprogramm",
+    "subtitle": "Verdiene Belohnungen, indem du Investoren zu PropChain einlädst",
+    "viewTerms": "Bedingungen ansehen",
+    "topReferrers": "Top-Empfehlende",
+    "leaderboardBlurb": "Sieh, wie du im Ranking der PropChain-Community abschneidest.",
+    "viewLeaderboard": "Rangliste ansehen"
   }
 }

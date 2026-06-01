@@ -175,5 +175,15 @@
     "other": "אחר",
     "byPropertyType": "לפי סוג נכס",
     "byGeography": "לפי גאוגרפיה"
+  },
+  "referral": {
+    "connectWallet": "חבר ארנק",
+    "connectWalletPrompt": "חבר את הארנק שלך כדי לגשת לתוכנית ההפניות",
+    "title": "תוכנית הפניות",
+    "subtitle": "הרוויח תגמולים על ידי הזמנת משקיעים ל-PropChain",
+    "viewTerms": "הצג תנאים",
+    "topReferrers": "המפנים המובילים",
+    "leaderboardBlurb": "בדוק את דירוגך בין המפנים בקהילת PropChain.",
+    "viewLeaderboard": "הצג לוח מובילים"
   }
 }

@@ -175,5 +175,15 @@
     "other": "其他",
     "byPropertyType": "按房产类型",
     "byGeography": "按地理位置"
+  },
+  "referral": {
+    "connectWallet": "连接钱包",
+    "connectWalletPrompt": "请连接您的钱包以访问推荐计划",
+    "title": "推荐计划",
+    "subtitle": "通过邀请投资者加入PropChain来赚取奖励",
+    "viewTerms": "查看条款",
+    "topReferrers": "顶级推荐人",
+    "leaderboardBlurb": "查看您在PropChain社区推荐者中的排名。",
+    "viewLeaderboard": "查看排行榜"
   }
 }
