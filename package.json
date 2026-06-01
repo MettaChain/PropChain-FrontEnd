@@ -63,7 +63,7 @@
     "@tanstack/react-query-devtools": "^5.100.2",
     "@tanstack/react-virtual": "^3.13.24",
     "@wagmi/connectors": "^7.1.2",
-    "@wagmi/core": "^3.2.2",
+    "@wagmi/core": "3.4.0",
     "@walletconnect/web3-provider": "^1.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
