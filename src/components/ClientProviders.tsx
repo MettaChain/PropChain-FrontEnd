@@ -10,6 +10,7 @@ import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { LoadingProgressBar } from "@/components/LoadingProgressBar";
 import "@/lib/i18n";
 import dynamic from "next/dynamic";
+import { KeyboardShortcutsProvider } from "@/components/keyboard-shortcuts/KeyboardShortcutsProvider";
 
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { DomainWarningBanner } from "@/components/DomainWarningBanner";
@@ -61,6 +62,10 @@ export function ClientProviders({ children }: ClientProvidersProps) {
   }, [hasCompletedOnboarding, startOnboarding]);
 
   return (
+    <WagmiProvider config={config}>
+      <QueryProvider>
+        <ChainAwareProvider>
+          <KeyboardShortcutsProvider>
     <ThemeProvider>
       <WagmiProvider config={config}>
         <QueryProvider>
@@ -81,6 +86,10 @@ export function ClientProviders({ children }: ClientProvidersProps) {
             <FloatingComparisonBar />
             <MobileBottomNavigation />
             <OnboardingTour />
+          </KeyboardShortcutsProvider>
+        </ChainAwareProvider>
+      </QueryProvider>
+    </WagmiProvider>
           </ChainAwareProvider>
         </QueryProvider>
       </WagmiProvider>
