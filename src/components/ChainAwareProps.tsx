@@ -1,21 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { useChain } from '@/providers/ChainAwareProvider';
 import { useWalletStore } from '@/store/walletStore';
 import { logger } from '@/utils/logger';
+import type { ChainId } from '@/config/chains';
+
+type ChainConfig = typeof import('@/config/chains').CHAIN_CONFIG[ChainId];
+
+type ChainAwareChildrenProps = {
+  chainId: ChainId;
+  chainName: ChainConfig['name'];
+  chainSymbol: ChainConfig['symbol'];
+  chainColor: ChainConfig['color'];
+  isConnected: boolean;
+  address: string | null;
+  balance: string | null;
+};
+
+const GAS_PRICE_BY_CHAIN: Record<ChainId, number> = {
+  1: 20,
+  137: 30,
+  56: 5,
+};
 
 interface ChainAwareProps {
-  children: (props: {
-    chainId: number;
-    chainName: string;
-    chainSymbol: string;
-    chainColor: string;
-    isConnected: boolean;
-    address: string | null;
-    balance: string | null;
-  }) => React.ReactNode;
-  fallback?: React.ReactNode;
+  children: (props: ChainAwareChildrenProps) => ReactNode;
+  fallback?: ReactNode;
 }
 
 export const ChainAware: React.FC<ChainAwareProps> = ({ children, fallback }) => {
@@ -42,9 +53,9 @@ export const ChainAware: React.FC<ChainAwareProps> = ({ children, fallback }) =>
 };
 
 interface ChainSpecificProps {
-  chainId: number;
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+  chainId: ChainId;
+  children: ReactNode;
+  fallback?: ReactNode;
 }
 
 export const ChainSpecific: React.FC<ChainSpecificProps> = ({ chainId, children, fallback }) => {
@@ -58,12 +69,12 @@ export const ChainSpecific: React.FC<ChainSpecificProps> = ({ chainId, children,
 };
 
 interface MultiChainProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
 export const MultiChainBadge: React.FC<MultiChainProps> = ({ children, className = '' }) => {
-  const { currentChain, chainConfig } = useChain();
+  const { chainConfig } = useChain();
 
   return (
     <div className={`inline-flex items-center gap-2 ${className}`}>
@@ -87,21 +98,10 @@ interface GasEstimationProps {
 export const GasEstimation: React.FC<GasEstimationProps> = ({ gasLimit = '21000', className = '' }) => {
   const { currentChain, chainConfig } = useChain();
 
-  const getGasPrice = () => {
-    switch (currentChain) {
-      case 1: // Ethereum
-        return '20';
-      case 137: // Polygon
-        return '30';
-      case 56: // BSC
-        return '5';
-      default:
-        return '20';
-    }
-  };
-
-  const gasPrice = getGasPrice();
-  const gasCost = (parseInt(gasLimit) * parseInt(gasPrice)) / 1e9;
+  const gasPrice = GAS_PRICE_BY_CHAIN[currentChain] ?? 20;
+  const parsedGasLimit = Number(gasLimit);
+  const gasLimitValue = Number.isFinite(parsedGasLimit) && parsedGasLimit > 0 ? parsedGasLimit : 21000;
+  const gasCost = (gasLimitValue * gasPrice) / 1e9;
 
   return (
     <div className={`text-sm text-gray-600 dark:text-gray-400 ${className}`}>
@@ -113,7 +113,7 @@ export const GasEstimation: React.FC<GasEstimationProps> = ({ gasLimit = '21000'
 interface TransactionButtonProps {
   onTransaction: () => Promise<void>;
   disabled?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -123,7 +123,7 @@ export const TransactionButton: React.FC<TransactionButtonProps> = ({
   children,
   className = '',
 }) => {
-  const { currentChain, chainConfig } = useChain();
+  const { chainConfig } = useChain();
   const { isConnected, isConnecting } = useWalletStore();
   const [isPending, setIsPending] = React.useState(false);
 

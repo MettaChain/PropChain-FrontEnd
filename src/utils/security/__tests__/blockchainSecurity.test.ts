@@ -113,7 +113,8 @@ describe('BlockchainSecurityService', () => {
       ];
 
       for (const { score, expectedLevel } of testCases) {
-        // Mock the simulation to return specific score
+        // Clear cache and mock the simulation to return specific score
+        service.clearCache();
         jest.spyOn(service as any, 'simulateAddressRiskCheck').mockResolvedValueOnce({
           score,
           categories: [`${expectedLevel}_risk`],

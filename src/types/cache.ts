@@ -18,6 +18,7 @@ export interface CacheMetadata {
   accessCount: number;
   size: number;
   version: number;
+  dataType: string;
   etag?: string;
   checksum?: string;
 }
@@ -48,11 +49,22 @@ export interface CacheStats {
   missRate: number;
   oldestEntry: number | null;
   newestEntry: number | null;
+  evictionCount: number;
+  invalidationCount: number;
+  entitiesByType: Record<string, number>;
+  sizeByType: Record<string, number>;
+}
+
+// Per-data-type cache configuration
+export interface DataTypeCacheConfig {
+  ttl: number;
+  maxSize?: number;
+  maxEntries?: number;
 }
 
 // Cache configuration options
 export interface CacheConfig {
-  // Time-to-live in milliseconds
+  // Time-to-live in milliseconds (default)
   ttl: number;
   // Maximum cache size in bytes
   maxSize: number;
@@ -64,6 +76,12 @@ export interface CacheConfig {
   compression: boolean;
   // Cache version for migrations
   version: number;
+  // Per-data-type TTL configurations
+  dataTypeTtls: Record<string, number>;
+  // Enable LRU eviction
+  enableLRU: boolean;
+  // Cache version migration handlers
+  versionMigrations?: Record<number, (data: unknown) => unknown>;
 }
 
 // Default cache configuration
@@ -74,6 +92,12 @@ export const DEFAULT_CACHE_CONFIG: CacheConfig = {
   cleanupInterval: 5 * 60 * 1000, // 5 minutes
   compression: false,
   version: 1,
+  dataTypeTtls: {
+    'property': 24 * 60 * 60 * 1000, // 24 hours for properties
+    'mobile-property': 12 * 60 * 60 * 1000, // 12 hours for mobile properties
+    'search': 1 * 60 * 60 * 1000, // 1 hour for search results
+  },
+  enableLRU: true,
 };
 
 // Cache strategies
@@ -96,7 +120,10 @@ export type CacheEventType =
   | 'expire'
   | 'clear'
   | 'error'
-  | 'cleanup';
+  | 'cleanup'
+  | 'invalidate'
+  | 'evict'
+  | 'migrate';
 
 // Cache event
 export interface CacheEvent {
@@ -105,6 +132,8 @@ export interface CacheEvent {
   timestamp: number;
   metadata?: Partial<CacheMetadata>;
   error?: Error;
+  dataType?: string;
+  reason?: string;
 }
 
 // Cache event listener

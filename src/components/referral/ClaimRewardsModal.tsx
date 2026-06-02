@@ -1,15 +1,23 @@
 'use client';
 
-/**
- * ClaimRewardsModal - Modal for claiming on-chain rewards
- */
-
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useReferralStore, useReferralStats } from '@/store/referralStore';
 import { referralService } from '@/lib/referralService';
 import { createWalletAddress } from '@/types/referral';
 import { formatUnits } from 'viem';
+
+const SUPPORTED_CHAIN_NAMES: Record<number, string> = {
+  1: 'Ethereum',
+  137: 'Polygon',
+  56: 'BSC',
+};
+
+function getChainName(chainId: number): string {
+  return SUPPORTED_CHAIN_NAMES[chainId] ?? `Chain ${chainId}`;
+}
+
+const MAX_REWARD_IDS = 50;
 
 export interface ClaimRewardsModalProps {
   rewardIds: string[];
@@ -38,6 +46,21 @@ export default function ClaimRewardsModal({
   const handleClaim = async () => {
     if (!address || !chainId) {
       setError('Wallet not connected');
+      return;
+    }
+
+    if (rewardIds.length === 0) {
+      setError('No rewards selected');
+      return;
+    }
+
+    if (rewardIds.length > MAX_REWARD_IDS) {
+      setError(`Cannot claim more than ${MAX_REWARD_IDS} rewards at once`);
+      return;
+    }
+
+    if (!SUPPORTED_CHAIN_NAMES[chainId]) {
+      setError(`Unsupported network (chain ID ${chainId}). Please switch to Ethereum, Polygon, or BSC.`);
       return;
     }
 
@@ -94,7 +117,7 @@ export default function ClaimRewardsModal({
               <div className="flex items-center justify-between text-sm text-slate-600">
                 <span>Network</span>
                 <span className="font-semibold capitalize">
-                  {chainId === 1 ? 'Ethereum' : chainId === 137 ? 'Polygon' : 'BSC'}
+                  {chainId ? getChainName(chainId) : 'Unknown'}
                 </span>
               </div>
             </div>

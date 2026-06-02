@@ -11,7 +11,6 @@ import { ErrorCategory, ErrorSeverity } from "@/types/errors";
 import { logger } from "@/utils/logger";
 import { WalletConnector } from "@/components/WalletConnector";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import {
   ChainAware,
   ChainSpecific,
@@ -118,7 +117,6 @@ function HomeContent() {
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <ThemeSwitcher />
               <LanguageSwitcher />
               <WalletConnector />
             </div>

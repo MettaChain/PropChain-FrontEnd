@@ -175,7 +175,21 @@
     "arPropertyPreview": "תצוגה מקדימה של נכס AR",
     "locationBasedDiscovery": "גילוי מבוסס מיקום",
     "offlinePropertyCache": "מטמון נכסים לא מקוון",
-    "mobilePropertyViewer": "מציג נכסים נייד"
+    "mobilePropertyViewer": "מציג נכסים נייד",
+    "viewer": {
+      "contact": "יצירת קשר",
+      "scheduleTour": "תיאום סיור",
+      "valueLabel": "ערך",
+      "roiLabel": "תשואה",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} נוספות",
+      "shareText": "בדוק את הנכס הזה: {{name}} ב{{location}}",
+      "bed_one": "{{count}} חדר שינה",
+      "bed_other": "{{count}} חדרי שינה",
+      "bath_one": "{{count}} חדר אמבטיה",
+      "bath_other": "{{count}} חדרי אמבטיה",
+      "sqft": "{{count}} רגל²"
+    }
   },
   "forms": {
     "selectYear": "בחר שנה",
@@ -212,6 +226,16 @@
     "liquidityDescription": "מודד כמה קל למכור את הנכסים שלך ללא השפעה משמעותית על המחיר.",
     "correlationDescription": "מראה כיצד התיק שלך זז עם מגמות שוק רחבות יותר."
   },
+  "comparison": {
+    "title": "השוואת נכסים נבחרים ({count}/{max})",
+    "copyComparisonLink": "העתק קישור להשוואה",
+    "linkCopied": "הקישור הועתק",
+    "compareNow": "השווה עכשיו",
+    "clear": "ניקוי",
+    "removeFromComparison": "הסר מהשוואה",
+    "comparisonLink": "קישור להשוואה",
+    "shareComparison": "שתף השוואה זו עם אחרים"
+  },
   "geography": {
     "northAmerica": "צפון אמריקה",
     "europe": "אירופה",
@@ -219,5 +243,18 @@
     "other": "אחר",
     "byPropertyType": "לפי סוג נכס",
     "byGeography": "לפי גאוגרפיה"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "בחר רשת",
+    "switchingNetwork": "מחליף רשת..."
+  "referral": {
+    "connectWallet": "חבר ארנק",
+    "connectWalletPrompt": "חבר את הארנק שלך כדי לגשת לתוכנית ההפניות",
+    "title": "תוכנית הפניות",
+    "subtitle": "הרוויח תגמולים על ידי הזמנת משקיעים ל-PropChain",
+    "viewTerms": "הצג תנאים",
+    "topReferrers": "המפנים המובילים",
+    "leaderboardBlurb": "בדוק את דירוגך בין המפנים בקהילת PropChain.",
+    "viewLeaderboard": "הצג לוח מובילים"
   }
 }

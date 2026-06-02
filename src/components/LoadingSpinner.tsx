@@ -6,12 +6,15 @@ interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   color?: string;
   className?: string;
+  /** Accessible label announced to screen readers. Defaults to "Loading". */
+  label?: string;
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
   color = 'border-blue-600',
   className = '',
+  label = 'Loading',
 }) => {
   const sizeClasses = {
     sm: 'w-4 h-4',
@@ -21,13 +24,18 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   return (
     <div
+      role="status"
+      aria-label={label}
       className={`
         ${sizeClasses[size]} 
         border-2 ${color} border-t-transparent 
         rounded-full animate-spin
         ${className}
       `}
-    />
+    >
+      {/* Visually hidden text for screen readers that don't support aria-label on div */}
+      <span className="sr-only">{label}</span>
+    </div>
   );
 };
 
@@ -43,9 +51,15 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex items-center justify-center gap-3 ${className}`}>
-      <LoadingSpinner size={size} />
-      <span className="text-gray-600 dark:text-gray-400">{message}</span>
+    <div
+      role="status"
+      aria-live="polite"
+      className={`flex items-center justify-center gap-3 ${className}`}
+    >
+      <LoadingSpinner size={size} label={message} />
+      <span className="text-gray-600 dark:text-gray-400" aria-hidden="true">
+        {message}
+      </span>
     </div>
   );
 };
@@ -58,10 +72,15 @@ export const FullPageLoading: React.FC<FullPageLoadingProps> = ({
   message = 'Connecting to wallet...',
 }) => {
   return (
-    <div className="fixed inset-0 bg-white dark:bg-gray-900 bg-opacity-90 flex items-center justify-center z-50">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label={message}
+      className="fixed inset-0 bg-white dark:bg-gray-900 bg-opacity-90 flex items-center justify-center z-50"
+    >
       <div className="text-center">
-        <LoadingSpinner size="lg" />
-        <p className="mt-4 text-lg font-medium text-gray-700 dark:text-gray-300">
+        <LoadingSpinner size="lg" label={message} />
+        <p className="mt-4 text-lg font-medium text-gray-700 dark:text-gray-300" aria-hidden="true">
           {message}
         </p>
       </div>
@@ -76,7 +95,7 @@ interface SkeletonProps {
 
 export const Skeleton: React.FC<SkeletonProps> = ({ className = '', lines = 1 }) => {
   return (
-    <div className={`space-y-2 ${className}`}>
+    <div role="status" aria-busy="true" aria-label="Loading content" className={`space-y-2 ${className}`}>
       {Array.from({ length: lines }).map((_, index) => (
         <div
           key={index}
@@ -86,6 +105,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({ className = '', lines = 1 })
           }}
         />
       ))}
+      <span className="sr-only">Loading content</span>
     </div>
   );
 };
