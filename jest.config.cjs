@@ -21,7 +21,6 @@ const customJestConfig = {
     '/node_modules/(?!.*(wagmi|viem|@wagmi|@viem|@walletconnect|@metamask|@coinbase|@radix-ui|@storybook))'
   ],
   testPathIgnorePatterns: [
-    '<rootDir>/src/components/responsive/__tests__/ResponsiveContainer.test.tsx',
     '<rootDir>/src/lib/__tests__/mobile-optimizer.test.ts',
     '<rootDir>/src/lib/__tests__/verify-performance-monitoring.ts'
   ],
