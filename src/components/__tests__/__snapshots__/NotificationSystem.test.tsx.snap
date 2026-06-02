@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`NotificationSystem matches snapshot when there are no transactions 1`] = `<div />`;
+
+exports[`NotificationSystem matches snapshot with a cancelled transaction 1`] = `<div />`;
+
+exports[`NotificationSystem matches snapshot with a confirmed transaction 1`] = `<div />`;
+
+exports[`NotificationSystem matches snapshot with a failed transaction 1`] = `<div />`;
+
+exports[`NotificationSystem matches snapshot with multiple transactions in different states 1`] = `<div />`;

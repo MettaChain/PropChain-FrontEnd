@@ -1,4 +1,5 @@
 "use client";
+import { logger } from '@/utils/logger';
 
 /**
  * Touch Handler Module
@@ -66,7 +67,7 @@ export function validateTouchTarget(element: HTMLElement): boolean {
     const meetsMinHeight = height >= MIN_TOUCH_TARGET_SIZE;
     
     if (!meetsMinWidth || !meetsMinHeight) {
-      console.warn(
+      logger.warn(
         `Touch target validation failed: Element has dimensions ${width}x${height}px, ` +
         `but minimum required is ${MIN_TOUCH_TARGET_SIZE}x${MIN_TOUCH_TARGET_SIZE}px`,
         element
@@ -83,7 +84,7 @@ export function validateTouchTarget(element: HTMLElement): boolean {
       const spacing = calculateSpacing(rect, siblingRect);
       
       if (spacing < MIN_TOUCH_TARGET_SPACING) {
-        console.warn(
+        logger.warn(
           `Touch target spacing validation failed: ${spacing}px spacing between elements, ` +
           `but minimum required is ${MIN_TOUCH_TARGET_SPACING}px`,
           element,
@@ -95,7 +96,7 @@ export function validateTouchTarget(element: HTMLElement): boolean {
     
     return true;
   } catch (error) {
-    console.error('Touch target validation error:', error);
+    logger.error('Touch target validation error:', error);
     return false;
   }
 }
@@ -194,7 +195,7 @@ export function addTouchFeedback(element: HTMLElement): void {
       element.classList.remove('touch-feedback');
     };
   } catch (error) {
-    console.error('Failed to add touch feedback:', error);
+    logger.error('Failed to add touch feedback:', error);
   }
 }
 
@@ -227,7 +228,7 @@ export function registerGestures(
   try {
     // Validate touch target before registering gestures
     if (!validateTouchTarget(element)) {
-      console.warn('Registering gestures on element that does not meet touch target requirements');
+      logger.warn('Registering gestures on element that does not meet touch target requirements');
     }
     
     // Add touch feedback
@@ -375,7 +376,7 @@ export function registerGestures(
       }
     };
   } catch (error) {
-    console.error('Failed to register gestures:', error);
+    logger.error('Failed to register gestures:', error);
     return () => {}; // Return no-op cleanup function
   }
 }
@@ -409,7 +410,7 @@ export function preventDoubleTapZoom(element: HTMLElement): void {
       element.style.touchAction = '';
     };
   } catch (error) {
-    console.error('Failed to prevent double-tap zoom:', error);
+    logger.error('Failed to prevent double-tap zoom:', error);
   }
 }
 

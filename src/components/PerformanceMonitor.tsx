@@ -34,12 +34,6 @@ export function PerformanceMonitor(): React.ReactElement | null {
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch(() => {});
-      });
-    }
-
     if ("PerformanceObserver" in window) {
       const longTaskObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
