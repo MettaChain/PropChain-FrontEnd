@@ -11,7 +11,8 @@ Built with modern web technologies and Web3 integration, this frontend serves as
 ### Core Capabilities
 - **🏠 Property Discovery**: Browse and search tokenized real estate properties with advanced filtering
 - **💰 Wallet Integration**: Connect MetaMask, WalletConnect, and other Web3 wallets seamlessly
-- **🔗 Smart Contract Interaction**: Execute property purchases, transfers, and management through intuitive UI
+- **� Route-Level Error Handling**: Full-page route fallback UI with retry and home navigation using `RouteErrorBoundary`
+- **�🔗 Smart Contract Interaction**: Execute property purchases, transfers, and management through intuitive UI
 - **📊 Real-Time Data**: Live property valuations, market trends, and portfolio analytics
 - **🔐 Web3 Authentication**: Secure wallet-based authentication with multi-network support
 - **� Responsive Design**: Mobile-first design that works perfectly on all devices
