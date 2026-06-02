@@ -16,6 +16,7 @@ import { DomainWarningBanner } from "@/components/DomainWarningBanner";
 import { useEffect } from "react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GlobalThemeToggle } from "@/components/GlobalThemeToggle";
+import { ToastProvider } from "@/contexts/toast";
 
 interface ClientProvidersProps {
   children: React.ReactNode;
@@ -65,6 +66,21 @@ export function ClientProviders({ children }: ClientProvidersProps) {
       <WagmiProvider config={config}>
         <QueryProvider>
           <ChainAwareProvider>
+            <ToastProvider>
+              <LoadingProgressBar />
+              <PerformanceMonitor />
+              <ServiceWorkerRegistration />
+              <OfflineIndicator />
+              <DomainWarningBanner />
+              {children}
+              <GlobalThemeToggle />
+              <TransactionMonitor />
+              <NotificationSystem />
+              <Toaster />
+              <FloatingComparisonBar />
+              <MobileBottomNavigation />
+              <OnboardingTour />
+            </ToastProvider>
             {/* aria-live region: announces loading, offline, and notification changes to screen readers */}
             <div aria-live="polite" aria-atomic="false" className="sr-only" id="app-status-announcer" />
             <LoadingProgressBar />
