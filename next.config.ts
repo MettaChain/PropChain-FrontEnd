@@ -1,6 +1,27 @@
 import type { NextConfig } from "next";
 
 const isAnalyzeEnabled = process.env.ANALYZE === "true";
+const isDev = process.env.NODE_ENV === "development";
+
+const cspReportOnly = [
+  "default-src 'self'",
+  `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data: https:",
+  isDev
+    ? "connect-src 'self' https: wss: ws: http:"
+    : "connect-src 'self' https: wss:",
+  "media-src 'self' data: blob: https:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "report-uri /api/csp-report",
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+].join("; ");
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -21,6 +42,7 @@ const nextConfig: NextConfig = {
     ],
     formats: ["image/avif", "image/webp"],
   },
+  turbopack: {},
   async headers() {
     return [
       {
@@ -47,6 +69,37 @@ const nextConfig: NextConfig = {
           {
             key: "Cache-Control",
             value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
+      {
+        source: "/properties/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=60, stale-while-revalidate=300, s-maxage=300",
+          },
+          {
+            key: "Vary",
+            value: "Accept-Encoding",
+          },
+        ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: cspReportOnly,
           },
         ],
       },

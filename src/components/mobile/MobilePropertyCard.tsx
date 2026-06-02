@@ -36,7 +36,7 @@ export const MobilePropertyCard = ({
   const [showViewer, setShowViewer] = useState(false);
   const isPositiveROI = property.roi >= 0;
 
-  const handleShare = async (e: React.MouseEvent) => {
+  const handleShare = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
     if (navigator.share) {
@@ -54,7 +54,7 @@ export const MobilePropertyCard = ({
     }
   };
 
-  const handleSave = (e: React.MouseEvent) => {
+  const handleSave = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setIsSaved(!isSaved);
   };

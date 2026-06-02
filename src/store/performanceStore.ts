@@ -22,8 +22,10 @@ const MAX_METRICS = 200;
 export const usePerformanceStore = create<PerformanceState>((set) => ({
   metrics: [],
   addMetric: (metric) =>
-    set((state) => ({
-      metrics: [metric, ...state.metrics].slice(0, MAX_METRICS),
-    })),
+    set((state) => {
+      const metrics = [metric, ...state.metrics];
+      metrics.sort((a, b) => b.timestamp - a.timestamp);
+      return { metrics: metrics.slice(0, MAX_METRICS) };
+    }),
   clearMetrics: () => set({ metrics: [] }),
 }));

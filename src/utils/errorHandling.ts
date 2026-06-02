@@ -23,6 +23,12 @@ export const getWalletErrorMessage = (error: unknown): string => {
     switch (code) {
       case WALLET_ERRORS.USER_REJECTED:
         return 'User rejected the request';
+      // Internal JSON-RPC error (node/provider side)
+      case -32603:
+        return 'Internal node error: the transaction failed on the node. It may have been reverted.';
+      // Provider returned a string code for network issues
+      case 'NETWORK_ERROR':
+        return 'Network error: failed to reach the RPC provider. Check your network or RPC settings.';
       case WALLET_ERRORS.UNAUTHORIZED:
         return 'Unauthorized to access this account';
       case WALLET_ERRORS.UNSUPPORTED_METHOD:
@@ -40,6 +46,16 @@ export const getWalletErrorMessage = (error: unknown): string => {
 
   const message = getErrorMessage(error);
   if (message) {
+    // Map common provider/ethers error messages to friendlier text
+    if (message.includes('INSUFFICIENT_FUNDS') || message.toLowerCase().includes('insufficient funds')) {
+      return 'Insufficient funds: you do not have enough ETH to pay for transaction value and gas.';
+    }
+    if (message.includes('UNPREDICTABLE_GAS_LIMIT') || message.includes('cannot estimate gas')) {
+      return 'Transaction likely to revert: the contract rejected the call or gas estimation failed.';
+    }
+    if (message.includes('Network Error') || message.includes('NETWORK_ERROR') || message.toLowerCase().includes('failed to fetch')) {
+      return 'Network error: failed to reach the RPC provider. Check your connection and RPC settings.';
+    }
     if (message.includes('MetaMask is not installed')) {
       return 'MetaMask is not installed. Please install MetaMask to continue.';
     }
@@ -53,6 +69,86 @@ export const getWalletErrorMessage = (error: unknown): string => {
   }
 
   return 'An unexpected error occurred';
+};
+
+export const WEB3_ERROR_CODES = {
+  USER_REJECTED: 4001,
+  JSON_RPC_INTERNAL: -32603,
+  INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
+  UNPREDICTABLE_GAS_LIMIT: 'UNPREDICTABLE_GAS_LIMIT',
+  NETWORK_ERROR: 'NETWORK_ERROR',
+} as const;
+
+export type Web3ErrorCode = (typeof WEB3_ERROR_CODES)[keyof typeof WEB3_ERROR_CODES];
+
+const extractWeb3ErrorCode = (error: unknown): number | string | undefined => {
+  const topLevelCode = getErrorCode(error);
+  if (topLevelCode !== undefined) return topLevelCode;
+
+  if (!isRecord(error)) return undefined;
+
+  const nestedError = error.error;
+  if (isRecord(nestedError)) {
+    const nestedCode = getErrorCode(nestedError);
+    if (nestedCode !== undefined) return nestedCode;
+    const nestedDataCode = isRecord(nestedError.data) ? getErrorCode(nestedError.data) : undefined;
+    if (nestedDataCode !== undefined) return nestedDataCode;
+  }
+
+  const nestedData = error.data;
+  if (isRecord(nestedData)) {
+    const nestedDataCode = getErrorCode(nestedData);
+    if (nestedDataCode !== undefined) return nestedDataCode;
+  }
+
+  return undefined;
+};
+
+export const getFriendlyWeb3ErrorMessage = (error: unknown): string => {
+  const code = extractWeb3ErrorCode(error);
+  const message = getErrorMessage(error).toLowerCase();
+
+  if (
+    code === WEB3_ERROR_CODES.USER_REJECTED ||
+    message.includes('user rejected') ||
+    message.includes('user denied')
+  ) {
+    return 'Transaction rejected by the user.';
+  }
+
+  if (code === WEB3_ERROR_CODES.JSON_RPC_INTERNAL || message.includes('internal json-rpc error')) {
+    return 'Internal blockchain error. Please try again later.';
+  }
+
+  if (
+    code === WEB3_ERROR_CODES.INSUFFICIENT_FUNDS ||
+    message.includes('insufficient funds') ||
+    message.includes('insufficient balance')
+  ) {
+    return 'Not enough ETH available to cover gas fees.';
+  }
+
+  if (
+    code === WEB3_ERROR_CODES.UNPREDICTABLE_GAS_LIMIT ||
+    message.includes('unpredictable gas limit') ||
+    message.includes('gas estimation')
+  ) {
+    return 'Gas estimation failed. This transaction may fail if submitted.';
+  }
+
+  if (
+    code === WEB3_ERROR_CODES.NETWORK_ERROR ||
+    message.includes('network error') ||
+    message.includes('rpc connection failed')
+  ) {
+    return 'Network connection failed. Please check your RPC provider and internet connection.';
+  }
+
+  if (message.includes('transaction failed')) {
+    return 'Transaction failed. Please check your wallet and try again.';
+  }
+
+  return 'Something went wrong while processing the transaction. Please try again.';
 };
 
 const getMessage = (error: unknown): string => {
@@ -80,6 +176,8 @@ export const isNetworkError = (error: unknown): boolean => {
 
   return (
     message.includes('network') ||
+    message.includes('network error') ||
+    message.includes('failed to fetch') ||
     message.includes('chain') ||
     code === WALLET_ERRORS.CHAIN_DISCONNECTED ||
     code === WALLET_ERRORS.CHAIN_NOT_ADDED
