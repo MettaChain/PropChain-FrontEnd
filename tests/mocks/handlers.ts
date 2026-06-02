@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { MOCK_PROPERTIES } from '@/lib/mockData';
+import { getMockApiTransactions } from '@/lib/mockTransactionData';
 import type { Property, PropertySearchResult } from '@/types/property';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -110,33 +111,7 @@ export const handlers = [
       );
     }
 
-    // Mock transaction history
-    const transactions = [
-      {
-        id: 'tx-1',
-        type: 'purchase',
-        propertyId: '1',
-        propertyName: 'Luxury Downtown Penthouse',
-        amount: 10,
-        totalCost: 1000,
-        transactionHash: '0xabc123',
-        timestamp: new Date().toISOString(),
-        status: 'completed',
-      },
-      {
-        id: 'tx-2',
-        type: 'purchase',
-        propertyId: '2',
-        propertyName: 'Modern Office Complex',
-        amount: 5,
-        totalCost: 1000,
-        transactionHash: '0xdef456',
-        timestamp: new Date(Date.now() - 86400000).toISOString(),
-        status: 'completed',
-      },
-    ];
-
-    return HttpResponse.json(transactions);
+    return HttpResponse.json(getMockApiTransactions());
   }),
 
   // Get user balance

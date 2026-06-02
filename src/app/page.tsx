@@ -163,9 +163,10 @@ function HomeContent() {
         </ChainAware>
 
         {/* Feature links — Issues #75, #76, #85, #89 */}
-        <nav aria-label="Platform features" className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <nav aria-label="Platform features" className="mt-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             { href: '/properties', emoji: '🏠', label: 'Browse Properties', desc: 'Shareable property pages with QR codes' },
+            { href: '/transactions', emoji: '📜', label: 'Transaction History', desc: 'Search, filter, and export on-chain activity' },
             { href: '/governance', emoji: '🗳️', label: 'Governance', desc: 'Vote on property management decisions' },
             { href: '/tax-report', emoji: '📄', label: 'Tax Reports', desc: 'Form 8949 & Schedule D PDF export' },
             { href: '/accessibility', emoji: '♿', label: 'Accessibility', desc: 'WCAG 2.1 AA compliance demo' },
