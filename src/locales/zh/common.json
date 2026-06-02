@@ -112,6 +112,16 @@
     "completed": "已完成",
     "failed": "失败"
   },
+  "transactionProgress": {
+    "title": "交易进行中",
+    "overallProgress": "总体进度",
+    "blockConfirmations": "区块确认数",
+    "securedByBlockchain": "由区块链保障安全",
+    "close": "关闭",
+    "closeAria": "关闭交易进度",
+    "processing": "处理中...",
+    "_direction": "ltr"
+  },
   "chains": {
     "ethereum": "以太坊主网",
     "polygon": "Polygon",

@@ -112,6 +112,16 @@
     "completed": "הושלם",
     "failed": "נכשל"
   },
+  "transactionProgress": {
+    "title": "העסקה בתהליך",
+    "overallProgress": "התקדמות כללית",
+    "blockConfirmations": "אישורי בלוק",
+    "securedByBlockchain": "מוגן על ידי בלוקצ׳יין",
+    "close": "סגור",
+    "closeAria": "סגור התקדמות עסקה",
+    "processing": "מעבד...",
+    "_direction": "rtl"
+  },
   "chains": {
     "ethereum": "Ethereum ראשי",
     "polygon": "Polygon",

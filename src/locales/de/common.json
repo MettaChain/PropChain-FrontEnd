@@ -112,6 +112,16 @@
     "completed": "Abgeschlossen",
     "failed": "Fehlgeschlagen"
   },
+  "transactionProgress": {
+    "title": "Transaktion in Bearbeitung",
+    "overallProgress": "Gesamtfortschritt",
+    "blockConfirmations": "Block-Bestätigungen",
+    "securedByBlockchain": "Durch Blockchain gesichert",
+    "close": "Schließen",
+    "closeAria": "Transaktionsfortschritt schließen",
+    "processing": "Verarbeitung läuft...",
+    "_direction": "ltr"
+  },
   "chains": {
     "ethereum": "Ethereum Mainnet",
     "polygon": "Polygon",
