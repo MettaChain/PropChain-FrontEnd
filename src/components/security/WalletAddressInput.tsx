@@ -1,323 +1,267 @@
 'use client';
-
-import React, { useState, useCallback, useMemo } from 'react';
 import { logger } from '@/utils/logger';
 
-/**
- * Wallet Address Validation Status
- */
-export enum AddressValidationStatus {
-  EMPTY = 'empty',
-  INVALID = 'invalid',
-  VALID = 'valid',
-  CHECKSUM = 'checksum',
-}
+import React, { useState, useCallback, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { WalletValidator, AddressValidationResult } from '@/utils/security/walletValidator';
+import { 
+  AlertTriangle, 
+  Shield, 
+  CheckCircle, 
+  X, 
+  Info,
+  ExternalLink,
+  RefreshCw
+} from 'lucide-react';
 
-/**
- * Wallet Address Input Props
- */
-export interface WalletAddressInputProps {
-  /** Current value of the wallet address */
+interface WalletAddressInputProps {
   value: string;
-  /** Callback when address changes */
-  onChange: (address: string) => void;
-  /** Callback when address is validated */
-  onValidationChange?: (status: AddressValidationStatus, address: string) => void;
-  /** Placeholder text for the input */
+  onChange: (address: string, validationResult?: AddressValidationResult) => void;
   placeholder?: string;
-  /** Whether the input is disabled */
   disabled?: boolean;
-  /** Whether to show validation status */
-  showValidation?: boolean;
-  /** Custom error message */
-  error?: string;
-  /** Maximum length for input */
-  maxLength?: number;
-  /** Whether to auto-format the address */
-  autoFormat?: boolean;
-  /** CSS class name for custom styling */
+  allowENS?: boolean;
+  requireChecksum?: boolean;
+  checkBlacklist?: boolean;
+  showValidationDetails?: boolean;
   className?: string;
-  /** ID attribute for the input element */
-  id?: string;
-  /** Name attribute for the input element */
-  name?: string;
-  /** Whether the input is required */
-  required?: boolean;
-  /** Custom validation function */
-  customValidator?: (address: string) => boolean;
 }
 
-/**
- * Wallet Address Validation Result
- */
-interface ValidationResult {
-  status: AddressValidationStatus;
-  message?: string;
-}
-
-/**
- * Ethereum address checksum validation pattern
- */
-const ETH_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
-
-/**
- * Validate Ethereum address format and checksum
- */
-const validateEthereumAddress = (address: string): ValidationResult => {
-  if (!address) {
-    return { status: AddressValidationStatus.EMPTY };
-  }
-
-  // Check basic format
-  if (!ETH_ADDRESS_PATTERN.test(address)) {
-    return { 
-      status: AddressValidationStatus.INVALID,
-      message: 'Invalid Ethereum address format'
-    };
-  }
-
-  // Checksum validation (EIP-55)
-  const addressLower = address.toLowerCase();
-  const addressHash = addressLower.slice(2);
-  
-  // Simple checksum check - in production, use proper EIP-55 validation
-  const hasMixedCase = /[A-F]/.test(address) && /[a-f]/.test(address);
-  
-  if (hasMixedCase) {
-    return { 
-      status: AddressValidationStatus.CHECKSUM,
-      message: 'Valid address with checksum'
-    };
-  }
-
-  return { 
-    status: AddressValidationStatus.VALID,
-    message: 'Valid address'
-  };
-};
-
-/**
- * Format Ethereum address (add 0x prefix if missing, proper case)
- */
-const formatEthereumAddress = (address: string): string => {
-  if (!address) return '';
-  
-  let formatted = address.trim();
-  
-  // Add 0x prefix if missing
-  if (!formatted.startsWith('0x')) {
-    formatted = `0x${formatted}`;
-  }
-  
-  return formatted;
-};
-
-/**
- * WalletAddressInput Component
- * 
- * A type-safe React component for inputting and validating wallet addresses
- * with strong TypeScript typing and comprehensive validation.
- */
 export const WalletAddressInput: React.FC<WalletAddressInputProps> = ({
   value,
   onChange,
-  onValidationChange,
-  placeholder = '0x...',
+  placeholder = '0x... or ENS name (e.g., vitalik.eth)',
   disabled = false,
-  showValidation = true,
-  error,
-  maxLength = 42,
-  autoFormat = true,
+  allowENS = true,
+  requireChecksum = true,
+  checkBlacklist = true,
+  showValidationDetails = true,
   className = '',
-  id = 'wallet-address-input',
-  name = 'walletAddress',
-  required = false,
-  customValidator,
 }) => {
-  const [internalValue, setInternalValue] = useState<string>(value);
-  const [validationResult, setValidationResult] = useState<ValidationResult>(
-    validateEthereumAddress(value)
-  );
-  const [isFocused, setIsFocused] = useState<boolean>(false);
+  const [validationResult, setValidationResult] = useState<AddressValidationResult | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
-  // Update internal value when prop changes
-  React.useEffect(() => {
-    setInternalValue(value);
-    const newValidation = validateEthereumAddress(value);
-    setValidationResult(newValidation);
+  // Debounce input to avoid excessive validation calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [value]);
 
-  // Handle input change with validation
-  const handleChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = event.target.value;
-      
-      // Apply auto-formatting if enabled
-      const processedValue = autoFormat ? formatEthereumAddress(newValue) : newValue;
-      
-      setInternalValue(processedValue);
-      
-      // Validate the new value
-      let validation: ValidationResult;
-      if (customValidator) {
-        const isValid = customValidator(processedValue);
-        validation = isValid 
-          ? validateEthereumAddress(processedValue)
-          : { 
-              status: AddressValidationStatus.INVALID,
-              message: 'Address failed custom validation'
-            };
-      } else {
-        validation = validateEthereumAddress(processedValue);
-      }
-      
-      setValidationResult(validation);
-      
-      // Notify parent of changes
-      onChange(processedValue);
-      
-      // Notify parent of validation change if callback provided
-      if (onValidationChange) {
-        onValidationChange(validation.status, processedValue);
-      }
-    },
-    [onChange, onValidationChange, autoFormat, customValidator]
-  );
-
-  // Handle focus events
-  const handleFocus = useCallback(() => {
-    setIsFocused(true);
-  }, []);
-
-  const handleBlur = useCallback(() => {
-    setIsFocused(false);
-  }, []);
-
-  // Determine if input should show error state
-  const hasError = useMemo(() => {
-    return Boolean(
-      error || 
-      (validationResult.status === AddressValidationStatus.INVALID && internalValue)
-    );
-  }, [error, validationResult.status, internalValue]);
-
-  // Determine if input should show success state
-  const isSuccess = useMemo(() => {
-    return !hasError && (
-      validationResult.status === AddressValidationStatus.VALID ||
-      validationResult.status === AddressValidationStatus.CHECKSUM
-    ) && Boolean(internalValue);
-  }, [hasError, validationResult.status, internalValue]);
-
-  // Generate status message
-  const statusMessage = useMemo(() => {
-    if (error) return error;
-    if (validationResult.message && showValidation) {
-      return validationResult.message;
+  // Validate address when debounced value changes
+  useEffect(() => {
+    if (debouncedValue.trim()) {
+      validateAddress(debouncedValue);
+    } else {
+      setValidationResult(null);
     }
-    return '';
-  }, [error, validationResult.message, showValidation]);
+  }, [debouncedValue, allowENS, requireChecksum, checkBlacklist]);
 
-  // Base input classes
-  const baseInputClasses = useMemo(() => {
-    return [
-      'w-full px-4 py-2 rounded-lg border-2 transition-colors duration-200',
-      'focus:outline-none focus:ring-2 focus:ring-offset-2',
-      disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white',
-      hasError 
-        ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
-        : isSuccess 
-          ? 'border-green-500 focus:border-green-500 focus:ring-green-500'
-          : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
-      isFocused && !hasError && !isSuccess ? 'border-blue-500' : '',
-      className,
-    ].filter(Boolean).join(' ');
-  }, [disabled, hasError, isSuccess, isFocused, className]);
+  const validateAddress = useCallback(async (address: string) => {
+    setIsValidating(true);
+    try {
+      const result = await WalletValidator.validateWalletAddressInput(address, {
+        allowENS,
+        requireChecksum,
+        checkBlacklist,
+      });
+      setValidationResult(result);
+      
+      // Call onChange with the validated address and result
+      if (result.isValid) {
+        onChange(result.address, result);
+      } else {
+        onChange(address, result);
+      }
+    } catch (error) {
+      logger.error('Address validation failed:', error);
+      setValidationResult(null);
+    } finally {
+      setIsValidating(false);
+    }
+  }, [allowENS, requireChecksum, checkBlacklist, onChange]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    onChange(newValue);
+  };
+
+  const formatAddress = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const getRiskLevelColor = (riskScore: number) => {
+    if (riskScore >= 75) return 'text-red-600 dark:text-red-400';
+    if (riskScore >= 50) return 'text-yellow-600 dark:text-yellow-400';
+    if (riskScore >= 25) return 'text-orange-600 dark:text-orange-400';
+    return 'text-green-600 dark:text-green-400';
+  };
+
+  const getRiskLevelBg = (riskScore: number) => {
+    if (riskScore >= 75) return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
+    if (riskScore >= 50) return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
+    if (riskScore >= 25) return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800';
+    return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
+  };
+
+  const getRiskLevelText = (riskScore: number) => {
+    if (riskScore >= 75) return 'Critical Risk';
+    if (riskScore >= 50) return 'High Risk';
+    if (riskScore >= 25) return 'Medium Risk';
+    return 'Low Risk';
+  };
+
+  const renderValidationStatus = () => {
+    if (!validationResult || !debouncedValue.trim()) return null;
+
+    const { isValid, errors, warnings, riskScore, isBlacklisted, isVerified, ensName } = validationResult;
+
+    if (isBlacklisted) {
+      return (
+        <Alert className="mt-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+          <X className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800 dark:text-red-200">
+            <strong>Blocked:</strong> This address is flagged as a known scam or compromised address.
+            Transactions to this address are not allowed.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    if (!isValid) {
+      return (
+        <Alert className="mt-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+          <X className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800 dark:text-red-200">
+            <div className="space-y-1">
+              {errors.map((error, index) => (
+                <div key={index}>{error}</div>
+              ))}
+            </div>
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    return (
+      <div className="mt-2 space-y-2">
+        {/* Risk Assessment */}
+        <div className={`rounded-lg border p-3 ${getRiskLevelBg(riskScore)}`}>
+          <div className="flex items-center gap-2">
+            {riskScore >= 50 ? (
+              <AlertTriangle className={`h-4 w-4 ${getRiskLevelColor(riskScore)}`} />
+            ) : (
+              <Shield className={`h-4 w-4 ${getRiskLevelColor(riskScore)}`} />
+            )}
+            <span className={`text-sm font-medium ${getRiskLevelColor(riskScore)}`}>
+              {getRiskLevelText(riskScore)} (Risk Score: {riskScore}/100)
+            </span>
+          </div>
+        </div>
+
+        {/* Address Info */}
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                {ensName ? `ENS: ${ensName}` : formatAddress(validationResult.address)}
+              </span>
+            </div>
+            {ensName && (
+              <Badge variant="secondary" className="text-xs">
+                Resolved
+              </Badge>
+            )}
+          </div>
+          {ensName && (
+            <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+              Address: {formatAddress(validationResult.address)}
+            </div>
+          )}
+        </div>
+
+        {/* Verification Status */}
+        <div className="flex items-center gap-2 text-sm">
+          {isVerified ? (
+            <>
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span className="text-green-600 dark:text-green-400">Verified address</span>
+            </>
+          ) : (
+            <>
+              <Info className="h-4 w-4 text-yellow-600" />
+              <span className="text-yellow-600 dark:text-yellow-400">Unverified address - exercise caution</span>
+            </>
+          )}
+        </div>
+
+        {/* Warnings */}
+        {warnings.length > 0 && (
+          <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+              <div className="space-y-1">
+                <strong>Warnings:</strong>
+                {warnings.map((warning, index) => (
+                  <div key={index} className="text-sm">• {warning}</div>
+                ))}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="w-full">
+    <div className={`space-y-2 ${className}`}>
       <div className="relative">
-        <input
-          id={id}
-          name={name}
-          type="text"
-          value={internalValue}
-          onChange={handleChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+        <Input
+          value={value}
+          onChange={handleInputChange}
           placeholder={placeholder}
-          disabled={disabled}
-          maxLength={maxLength}
-          required={required}
-          className={baseInputClasses}
-          aria-invalid={hasError}
-          aria-describedby={hasError ? `${id}-error` : undefined}
+          disabled={disabled || isValidating}
+          className={`pr-10 ${validationResult && !validationResult.isValid ? 'border-red-300' : ''}`}
         />
-        
-        {/* Validation status indicator */}
-        {showValidation && !disabled && internalValue && (
+        {isValidating && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            {hasError && (
-              <svg
-                className="w-5 h-5 text-red-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            )}
-            {isSuccess && (
-              <svg
-                className="w-5 h-5 text-green-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            )}
+            <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
           </div>
         )}
       </div>
 
-      {/* Error/Status message */}
-      {(statusMessage || required) && (
-        <div className="mt-1">
-          {hasError && statusMessage && (
-            <p 
-              id={`${id}-error`}
-              className="text-sm text-red-600"
-              role="alert"
-            >
-              {statusMessage}
-            </p>
-          )}
-          {!hasError && isSuccess && showValidation && statusMessage && (
-            <p className="text-sm text-green-600">
-              {statusMessage}
-            </p>
-          )}
-          {required && !internalValue && !isFocused && (
-            <p className="text-sm text-gray-500">
-              Wallet address is required
-            </p>
-          )}
+      {showValidationDetails && renderValidationStatus()}
+
+      {/* Help Section */}
+      {showHelp && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+          <h4 className="font-medium text-gray-900 dark:text-white mb-2">Address Validation Help</h4>
+          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+            <div>• <strong>Ethereum Address:</strong> Must start with "0x" followed by 40 hex characters</div>
+            <div>• <strong>ENS Names:</strong> Human-readable names ending in ".eth" (e.g., vitalik.eth)</div>
+            <div>• <strong>Checksum:</strong> Addresses must use proper capitalization (EIP-55)</div>
+            <div>• <strong>Verification:</strong> We check addresses against known scams and verify activity</div>
+            <div>• <strong>Risk Score:</strong> Lower scores indicate safer addresses (0-100 scale)</div>
+          </div>
         </div>
       )}
+
+      {/* Help Toggle */}
+      <button
+        type="button"
+        onClick={() => setShowHelp(!showHelp)}
+        className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+      >
+        <ExternalLink className="h-3 w-3" />
+        {showHelp ? 'Hide' : 'Show'} validation help
+      </button>
     </div>
   );
 };
-
-/**
- * Default export for convenience
- */
-export default WalletAddressInput;

@@ -67,86 +67,91 @@ const DEFAULT_STATE = {
   properties: [],
 };
 
+const storeCreator = (set: (partial: SearchStore | Partial<SearchStore> | ((state: SearchStore) => Partial<SearchStore>)) => void, get: () => SearchStore) => ({
+  ...DEFAULT_STATE,
+
+  setFilters: (newFilters: Partial<SearchFilters>) => {
+    set((state) => ({
+      filters: { ...state.filters, ...newFilters },
+      page: 1, // Reset to first page when filters change
+      lastUpdated: Date.now(),
+    }));
+  },
+
+  setFilter: <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) => {
+    set((state) => ({
+      filters: { ...state.filters, [key]: value },
+      page: 1,
+      lastUpdated: Date.now(),
+    }));
+  },
+
+  clearFilters: () => {
+    set({
+      filters: DEFAULT_STATE.filters,
+      page: 1,
+      lastUpdated: Date.now(),
+    });
+  },
+
+  setSortBy: (sortBy: SortOption) => {
+    set({ sortBy, page: 1, lastUpdated: Date.now() });
+  },
+
+  setViewMode: (viewMode: ViewMode) => {
+    set({ viewMode, lastUpdated: Date.now() });
+  },
+
+  setPage: (page: number) => {
+    set({ page, lastUpdated: Date.now() });
+  },
+
+  setResultsPerPage: (resultsPerPage: number) => {
+    set({ resultsPerPage, page: 1, lastUpdated: Date.now() });
+  },
+
+  setProperties: (properties: Property[], total: number) => {
+    set({
+      properties,
+      totalResults: total,
+      isLoading: false,
+      error: null,
+      lastUpdated: Date.now(),
+    });
+  },
+
+  setLoading: (isLoading: boolean) => {
+    set({ isLoading });
+  },
+
+  setError: (error: string | null) => {
+    set({ error, isLoading: false });
+  },
+
+  setLastUpdated: (timestamp: number) => {
+    set({ lastUpdated: timestamp });
+  },
+
+  reset: () => {
+    set({ ...DEFAULT_STATE, lastUpdated: Date.now() });
+  },
+});
+
+// Disable persistence in test environments to avoid rehydration races
+const isTestEnv = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+const shouldPersist = !isTestEnv && typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
 export const useSearchStore = create<SearchStore>()(
-  persist(
-    (set: (partial: SearchStore | Partial<SearchStore> | ((state: SearchStore) => Partial<SearchStore>)) => void, get: () => SearchStore) => ({
-      ...DEFAULT_STATE,
-
-      setFilters: (newFilters: Partial<SearchFilters>) => {
-        set((state) => ({
-          filters: { ...state.filters, ...newFilters },
-          page: 1, // Reset to first page when filters change
-          lastUpdated: Date.now(),
-        }));
-      },
-
-      setFilter: <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) => {
-        set((state) => ({
-          filters: { ...state.filters, [key]: value },
-          page: 1,
-          lastUpdated: Date.now(),
-        }));
-      },
-
-      clearFilters: () => {
-        set({
-          filters: DEFAULT_STATE.filters,
-          page: 1,
-          lastUpdated: Date.now(),
-        });
-      },
-
-      setSortBy: (sortBy: SortOption) => {
-        set({ sortBy, page: 1, lastUpdated: Date.now() });
-      },
-
-      setViewMode: (viewMode: ViewMode) => {
-        set({ viewMode, lastUpdated: Date.now() });
-      },
-
-      setPage: (page: number) => {
-        set({ page, lastUpdated: Date.now() });
-      },
-
-      setResultsPerPage: (resultsPerPage: number) => {
-        set({ resultsPerPage, page: 1, lastUpdated: Date.now() });
-      },
-
-      setProperties: (properties: Property[], total: number) => {
-        set({
-          properties,
-          totalResults: total,
-          isLoading: false,
-          error: null,
-          lastUpdated: Date.now(),
-        });
-      },
-
-      setLoading: (isLoading: boolean) => {
-        set({ isLoading });
-      },
-
-      setError: (error: string | null) => {
-        set({ error, isLoading: false });
-      },
-
-      setLastUpdated: (timestamp: number) => {
-        set({ lastUpdated: timestamp });
-      },
-
-      reset: () => {
-        set({...DEFAULT_STATE, lastUpdated: Date.now()});
-      },
-    }),
-    {
-      name: 'propchain-search',
-      partialize: (state: SearchStore) => ({
-        filters: state.filters,
-        sortBy: state.sortBy,
-        viewMode: state.viewMode,
-        resultsPerPage: state.resultsPerPage,
-        lastUpdated: state.lastUpdated,
-      }),
-    }
-  )
+  shouldPersist
+    ? persist(storeCreator, {
+        name: 'propchain-search',
+        partialize: (state: SearchStore) => ({
+          filters: state.filters,
+          sortBy: state.sortBy,
+          viewMode: state.viewMode,
+          resultsPerPage: state.resultsPerPage,
+          lastUpdated: state.lastUpdated,
+        }),
+      })
+    : storeCreator
 );

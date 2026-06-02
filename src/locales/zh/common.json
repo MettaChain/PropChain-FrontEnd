@@ -131,7 +131,21 @@
     "arPropertyPreview": "AR房产预览",
     "locationBasedDiscovery": "基于位置的发现",
     "offlinePropertyCache": "离线房产缓存",
-    "mobilePropertyViewer": "移动房产查看器"
+    "mobilePropertyViewer": "移动房产查看器",
+    "viewer": {
+      "contact": "联系",
+      "scheduleTour": "预约参观",
+      "valueLabel": "价值",
+      "roiLabel": "投资回报率",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} 更多",
+      "shareText": "查看这个房产：{{name}}，位于{{location}}",
+      "bed_one": "{{count}} 间卧室",
+      "bed_other": "{{count}} 间卧室",
+      "bath_one": "{{count}} 间浴室",
+      "bath_other": "{{count}} 间浴室",
+      "sqft": "{{count}} 平方英尺"
+    }
   },
   "forms": {
     "selectYear": "选择年份",
@@ -168,6 +182,16 @@
     "liquidityDescription": "衡量您在不产生重大价格影响的情况下出售资产的难易程度。",
     "correlationDescription": "显示您的投资组合如何与更广泛的市场趋势一起变动。"
   },
+  "comparison": {
+    "title": "比较选定的房产 ({count}/{max})",
+    "copyComparisonLink": "复制比较链接",
+    "linkCopied": "链接已复制",
+    "compareNow": "立即比较",
+    "clear": "清除",
+    "removeFromComparison": "从比较中移除",
+    "comparisonLink": "比较链接",
+    "shareComparison": "与他人分享此比较"
+  },
   "geography": {
     "northAmerica": "北美",
     "europe": "欧洲",
@@ -175,5 +199,18 @@
     "other": "其他",
     "byPropertyType": "按房产类型",
     "byGeography": "按地理位置"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "选择网络",
+    "switchingNetwork": "正在切换网络..."
+  "referral": {
+    "connectWallet": "连接钱包",
+    "connectWalletPrompt": "请连接您的钱包以访问推荐计划",
+    "title": "推荐计划",
+    "subtitle": "通过邀请投资者加入PropChain来赚取奖励",
+    "viewTerms": "查看条款",
+    "topReferrers": "顶级推荐人",
+    "leaderboardBlurb": "查看您在PropChain社区推荐者中的排名。",
+    "viewLeaderboard": "查看排行榜"
   }
 }

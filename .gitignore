@@ -189,3 +189,6 @@ temp/
 
 # Mac
 .DS_Store
+
+# Agents
+AGENTS.md

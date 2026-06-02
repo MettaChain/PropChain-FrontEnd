@@ -2,8 +2,9 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import type { ErrorReportingData } from '@/types/errors';
 import { logger } from '@/utils/logger';
+import { withRateLimit } from '@/lib/rateLimit';
 
-export async function POST(request: NextRequest) {
+async function handleErrorsPost(request: NextRequest) {
   try {
     const body: ErrorReportingData = await request.json();
     
@@ -47,9 +48,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+// Export the rate-limited POST handler
+export const POST = withRateLimit(handleErrorsPost);
+
+async function handleErrorsGet() {
   return NextResponse.json(
     { message: 'Error reporting endpoint. Use POST to report errors.' },
     { status: 200 }
   );
 }
+
+// Export the rate-limited GET handler
+export const GET = withRateLimit(handleErrorsGet);
