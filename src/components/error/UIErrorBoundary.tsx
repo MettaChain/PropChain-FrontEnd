@@ -99,12 +99,6 @@ export class UIErrorBoundary extends Component<Props, State> {
     }
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
-    if (this.state.hasError && !prevState.hasError) {
-      this.titleRef.current?.focus();
-    }
-  }
-
   private handleRetry = async () => {
     if (!this.state.error || !this.state.error.isRecoverable) {
       return;
