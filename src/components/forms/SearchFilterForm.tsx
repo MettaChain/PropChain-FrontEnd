@@ -1,15 +1,14 @@
 "use client"
 
-import React, { useEffect } from "react"
+import React, { useEffect, useCallback } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, Controller } from "react-hook-form"
+import { useForm, Controller, useWatch } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Form,
   FormControl,
   FormDescription,
-  FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
@@ -19,13 +18,12 @@ import {
   BLOCKCHAIN_LABELS,
   DEFAULT_FILTERS,
   PROPERTY_TYPE_LABELS,
-  PROPERTY_TYPES,
   PROPERTY_STATUSES,
-  BLOCKCHAIN_NETWORKS,
   type SearchFilters,
   type PropertyType,
   type BlockchainNetwork,
 } from "@/types/property"
+import { useDebounce } from "@/hooks/useDebounce"
 
 interface SearchFilterFormProps {
   filters: SearchFilters
@@ -67,20 +65,53 @@ export function SearchFilterForm({ filters, onApplyFilters, onClearFilters }: Se
   const form = useForm<SearchFilterFormValues>({
     resolver: zodResolver(searchFilterSchema),
     defaultValues: filtersToFormValues(filters),
-    mode: "onBlur",
+    mode: "onChange",
   })
 
+  const watchedValues = useWatch({ control: form.control })
+  const debouncedQuery = useDebounce(watchedValues.query, 300)
+
+  // Sync initial values
   useEffect(() => {
     form.reset(filtersToFormValues(filters))
-  }, [filters])
+  }, [filters, form])
 
-  const submitHandler = (values: SearchFilterFormValues) => {
+  // Apply changes immediately (except query which is debounced)
+  const handleApplyFilters = useCallback((values: SearchFilterFormValues) => {
     onApplyFilters(valueToFilters(values))
-  }
+  }, [onApplyFilters])
+
+  // Apply debounced query
+  useEffect(() => {
+    const currentValues = form.getValues()
+    handleApplyFilters({ ...currentValues, query: debouncedQuery })
+  }, [debouncedQuery, handleApplyFilters, form])
+
+  // Apply all other changes immediately
+  useEffect(() => {
+    const { query, ...otherValues } = watchedValues
+    const currentQuery = form.getValues().query
+    handleApplyFilters({ ...watchedValues, query: currentQuery })
+  }, [
+    watchedValues.priceMin,
+    watchedValues.priceMax,
+    watchedValues.propertyTypes,
+    watchedValues.blockchains,
+    watchedValues.roiMin,
+    watchedValues.roiMax,
+    watchedValues.location,
+    watchedValues.bedrooms,
+    watchedValues.bathrooms,
+    watchedValues.squareFeetMin,
+    watchedValues.squareFeetMax,
+    watchedValues.status,
+    handleApplyFilters,
+    form,
+  ])
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(submitHandler)} className="grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Search Properties</h2>
@@ -162,7 +193,6 @@ export function SearchFilterForm({ filters, onApplyFilters, onClearFilters }: Se
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button type="submit">Apply filters</Button>
             <Button type="button" variant="outline" onClick={() => {
               form.reset(filtersToFormValues(DEFAULT_FILTERS))
               onClearFilters()
@@ -345,7 +375,7 @@ export function SearchFilterForm({ filters, onApplyFilters, onClearFilters }: Se
             </FormItem>
           </div>
         </div>
-      </form>
+      </div>
     </Form>
   )
 }
