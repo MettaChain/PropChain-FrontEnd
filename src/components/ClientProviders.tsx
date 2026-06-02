@@ -16,6 +16,7 @@ import { DomainWarningBanner } from "@/components/DomainWarningBanner";
 import { useEffect } from "react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GlobalThemeToggle } from "@/components/GlobalThemeToggle";
+import { ToastProvider } from "@/contexts/toast";
 
 interface ClientProvidersProps {
   children: React.ReactNode;
@@ -65,19 +66,21 @@ export function ClientProviders({ children }: ClientProvidersProps) {
       <WagmiProvider config={config}>
         <QueryProvider>
           <ChainAwareProvider>
-            <LoadingProgressBar />
-            <PerformanceMonitor />
-            <ServiceWorkerRegistration />
-            <OfflineIndicator />
-            <DomainWarningBanner />
-            {children}
-            <GlobalThemeToggle />
-            <TransactionMonitor />
-            <NotificationSystem />
-            <Toaster />
-            <FloatingComparisonBar />
-            <MobileBottomNavigation />
-            <OnboardingTour />
+            <ToastProvider>
+              <LoadingProgressBar />
+              <PerformanceMonitor />
+              <ServiceWorkerRegistration />
+              <OfflineIndicator />
+              <DomainWarningBanner />
+              {children}
+              <GlobalThemeToggle />
+              <TransactionMonitor />
+              <NotificationSystem />
+              <Toaster />
+              <FloatingComparisonBar />
+              <MobileBottomNavigation />
+              <OnboardingTour />
+            </ToastProvider>
           </ChainAwareProvider>
         </QueryProvider>
       </WagmiProvider>
