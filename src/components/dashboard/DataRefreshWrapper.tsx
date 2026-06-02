@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DataRefreshWrapperProps {
   children: ReactNode;
@@ -16,7 +17,6 @@ type RefreshState = "idle" | "loading" | "success" | "error";
 export const DataRefreshWrapper = ({
   children,
   onRefresh,
-//   lastUpdated = new Date(),
   autoRefreshInterval,
 }: DataRefreshWrapperProps) => {
   const [refreshState, setRefreshState] = useState<RefreshState>("idle");
@@ -51,24 +51,10 @@ export const DataRefreshWrapper = ({
     }
   }, [onRefresh]);
 
-//   const formatLastUpdated = (date: Date) => {
-//     const now = new Date();
-//     const diffMs = now.getTime() - date.getTime();
-//     const diffMins = Math.floor(diffMs / 60000);
-
-//     if (diffMins < 1) return "Just now";
-//     if (diffMins < 60) return `${diffMins}m ago`;
-//     const diffHours = Math.floor(diffMins / 60);
-//     if (diffHours < 24) return `${diffHours}h ago`;
-//     return date.toLocaleDateString();
-//   };
-
   return (
     <div className="relative">
-      {/* Refresh Controls */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {/* <span>Last updated: {formatLastUpdated(lastUpdated)}</span> */}
           {autoRefreshInterval && (
             <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
               Auto-refresh: {autoRefreshInterval / 1000}s
@@ -90,7 +76,6 @@ export const DataRefreshWrapper = ({
         </Button>
       </div>
 
-      {/* Status Notifications */}
       <AnimatePresence>
         {refreshState === "success" && (
           <motion.div
@@ -125,7 +110,6 @@ export const DataRefreshWrapper = ({
         )}
       </AnimatePresence>
 
-      {/* Loading Overlay */}
       <AnimatePresence>
         {refreshState === "loading" && (
           <motion.div
@@ -134,18 +118,32 @@ export const DataRefreshWrapper = ({
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-20 bg-background/50 backdrop-blur-sm rounded-xl flex items-center justify-center"
           >
-            <div className="flex flex-col items-center gap-3">
-              <div className="relative">
-                <div className="w-12 h-12 border-4 border-muted rounded-full" />
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="w-full px-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="glass-card rounded-xl p-6 border border-border/50 bg-white/60 dark:bg-gray-900/40"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-3 flex-1">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-8 w-32" />
+                        <Skeleton className="h-4 w-28" />
+                      </div>
+                      <Skeleton className="h-11 w-11 rounded-lg" />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <p className="text-sm text-muted-foreground">Fetching latest data...</p>
+              <div className="mt-4 flex justify-center">
+                <Skeleton className="h-4 w-40" />
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Content */}
       <div className={refreshState === "loading" ? "opacity-50 pointer-events-none" : ""}>
         {children}
       </div>
@@ -153,44 +151,43 @@ export const DataRefreshWrapper = ({
   );
 };
 
-// Skeleton components for loading states
 export const MetricCardSkeleton = () => (
-  <div className="glass-card rounded-xl p-6 animate-pulse">
+  <div className="glass-card rounded-xl p-6">
     <div className="flex items-start justify-between">
       <div className="space-y-3 flex-1">
-        <div className="h-4 bg-muted rounded w-24" />
-        <div className="h-8 bg-muted rounded w-32" />
-        <div className="h-4 bg-muted rounded w-28" />
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-4 w-28" />
       </div>
-      <div className="p-3 rounded-lg bg-muted w-11 h-11" />
+      <Skeleton className="h-11 w-11 rounded-lg" />
     </div>
   </div>
 );
 
 export const ChartSkeleton = () => (
-  <div className="glass-card rounded-xl p-6 animate-pulse">
+  <div className="glass-card rounded-xl p-6">
     <div className="space-y-4">
       <div className="flex justify-between">
-        <div className="h-6 bg-muted rounded w-40" />
+        <Skeleton className="h-6 w-40" />
         <div className="flex gap-2">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-8 bg-muted rounded w-12" />
+            <Skeleton key={i} className="h-8 w-12" />
           ))}
         </div>
       </div>
-      <div className="h-64 bg-muted rounded" />
+      <Skeleton className="h-64 w-full" />
     </div>
   </div>
 );
 
 export const TableSkeleton = () => (
-  <div className="glass-card rounded-xl p-6 animate-pulse space-y-4">
-    <div className="h-6 bg-muted rounded w-40" />
+  <div className="glass-card rounded-xl p-6 space-y-4">
+    <Skeleton className="h-6 w-40" />
     {[1, 2, 3, 4, 5].map((i) => (
       <div key={i} className="flex gap-4">
-        <div className="h-10 bg-muted rounded flex-1" />
-        <div className="h-10 bg-muted rounded w-24" />
-        <div className="h-10 bg-muted rounded w-20" />
+        <Skeleton className="h-10 flex-1" />
+        <Skeleton className="h-10 w-24" />
+        <Skeleton className="h-10 w-20" />
       </div>
     ))}
   </div>

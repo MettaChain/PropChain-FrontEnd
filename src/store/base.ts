@@ -70,9 +70,24 @@ export const withAsyncAction = async <T>(
     const result = await action();
     return result;
   } catch (error: any) {
-    const errorMessage = error?.message || 'An unknown error occurred';
+    let errorMessage: string;
+    if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error.message === 'string') {
+      errorMessage = error.message;
+    } else if (error !== undefined && error !== null) {
+      try {
+        errorMessage = String(error);
+      } catch {
+        errorMessage = 'An unknown error occurred';
+      }
+    } else {
+      errorMessage = 'An unknown error occurred';
+    }
+
     setError(errorMessage);
-    throw error;
+    // Don't rethrow — return null so callers can continue.
+    return Promise.resolve(null as any);
   } finally {
     setLoading(false);
   }

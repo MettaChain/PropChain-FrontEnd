@@ -87,13 +87,38 @@ export const PropertyCard = ({ property, index }: PropertyCardProps) => {
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Tokens Held</p>
-            <p className="font-semibold font-mono text-sm">
-              {property.tokens.toLocaleString()}
+            <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+              Tokens Held
+              <span className="text-xs text-blue-500 cursor-help" title="Digital assets representing fractional ownership of property">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
             </p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold font-mono text-sm">
+                {property.tokens.toLocaleString()}
+              </p>
+              <button
+                onClick={() => navigator.clipboard.writeText(property.tokens.toString())}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                title="Copy token amount"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+            </div>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">ROI</p>
+            <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+              ROI
+              <span className="text-xs text-blue-500 cursor-help" title="Return on Investment - earnings generated as a percentage of investment">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+            </p>
             <div className={`flex items-center gap-1 font-semibold font-mono text-sm ${
               isPositiveROI ? "text-success" : "text-destructive"
             }`}>
@@ -131,10 +156,34 @@ export const PropertyCard = ({ property, index }: PropertyCardProps) => {
             />
           )}
 
-          <Button onClick={handlePurchase} className="w-full">
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Purchase Tokens
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => {
+                const shareUrl = `${window.location.origin}/properties/${property.id}`;
+                if (navigator.share) {
+                  navigator.share({
+                    title: property.name,
+                    text: `Check out this property: ${property.name} in ${property.location}`,
+                    url: shareUrl
+                  });
+                } else {
+                  navigator.clipboard.writeText(shareUrl);
+                }
+              }}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-4.732 2.684m4.732-2.684a3 3 0 00-4.732-2.684M3 12a3 3 0 104.732 2.684M3 12a3 3 0 014.732-2.684" />
+              </svg>
+              Share
+            </Button>
+            <Button onClick={handlePurchase} className="flex-1">
+              <ShoppingCart className="w-4 h-4 mr-1" />
+              Purchase
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>

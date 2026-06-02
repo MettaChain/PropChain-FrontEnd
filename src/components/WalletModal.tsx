@@ -1,10 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useWalletStore } from '@/store/walletStore';
 import { getWalletErrorMessage } from '@/utils/errorHandling';
 import { toChainId } from '@/config/chains';
-import { getErrorCode } from '@/utils/typeGuards';
+import { useSecurity } from '@/hooks/useSecurity';
+import { useWalletConnector } from '@/hooks/useWalletConnector';
+import { AlertTriangle, Shield, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ModalTransition } from './PageTransition';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -12,111 +16,184 @@ interface WalletModalProps {
 }
 
 export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => {
-  const { setConnecting, setConnected, setError } = useWalletStore();
+  const { setConnecting, setConnected, setError, error } = useWalletStore();
+  const { validateWalletConnection } = useSecurity();
+  const { connectWallet: lazyConnectWallet, isLoadingConnector } = useWalletConnector();
+  const [securityValidation, setSecurityValidation] = useState<{
+    isValid: boolean;
+    warnings: string[];
+    blocks: string[];
+  } | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<'connector' | 'security' | null>(null);
 
   type SupportedWalletId = 'metamask' | 'walletconnect' | 'coinbase';
 
   const connectWallet = async (walletType: SupportedWalletId) => {
     try {
+      setIsConnecting(true);
       setConnecting(true);
       setError(null);
+      setSecurityValidation(null);
 
-      if (walletType === 'metamask') {
-        await connectMetaMask();
-      } else if (walletType === 'walletconnect') {
-        await connectWalletConnect();
-      } else if (walletType === 'coinbase') {
-        await connectCoinbase();
+      // Lazy load the wallet connector module
+      setLoadingStep('connector');
+      const result = await lazyConnectWallet(walletType);
+      const { address, chainId: chainIdNumber } = result;
+
+      // Validate security
+      setLoadingStep('security');
+      const validation = await validateWalletConnection(address, walletType, chainIdNumber);
+      setSecurityValidation(validation);
+
+      if (!validation.isValid) {
+        // Don't connect if security validation fails
+        throw new Error('Security validation failed');
       }
+
+      const parsedChainId = toChainId(chainIdNumber);
+      if (!parsedChainId) {
+        throw new Error(`Unsupported network (chain ${chainIdNumber})`);
+      }
+
+      setConnected(address, walletType, parsedChainId);
+      onClose();
     } catch (error: unknown) {
       setError(getWalletErrorMessage(error));
     } finally {
+      setIsConnecting(false);
+      setLoadingStep(null);
       setConnecting(false);
-      onClose();
     }
   };
 
-  const connectMetaMask = async () => {
-    if (!window.ethereum) {
-      throw new Error('MetaMask is not installed');
+  const renderSecurityStatus = () => {
+    if (!securityValidation) return null;
+
+    const { isValid, warnings, blocks } = securityValidation;
+
+    if (!isValid) {
+      return (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <X className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">
+                Connection Blocked
+              </h4>
+              <div className="space-y-1">
+                {blocks.map((block, index) => (
+                  <p key={index} className="text-sm text-red-700 dark:text-red-300">
+                    • {block}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     }
 
-    try {
-      const accounts = await window.ethereum.request<string[]>({
-        method: 'eth_requestAccounts',
-      });
-
-      const chainId = await window.ethereum.request<string>({
-        method: 'eth_chainId',
-      });
-
-      if (!Array.isArray(accounts) || accounts.length === 0 || typeof accounts[0] !== 'string') {
-        throw new Error('Wallet returned an invalid account response');
-      }
-
-      if (typeof chainId !== 'string') {
-        throw new Error('Wallet returned an invalid chain id response');
-      }
-
-      const address = accounts[0];
-      const chainIdNumber = parseInt(chainId, 16);
-      const parsedChainId = toChainId(chainIdNumber);
-
-      if (!parsedChainId) {
-        throw new Error(`Unsupported network (chain ${chainIdNumber})`);
-      }
-
-      setConnected(address, 'metamask', parsedChainId);
-    } catch (error: unknown) {
-      if (getErrorCode(error) === 4001) {
-        throw new Error('User rejected the connection request');
-      }
-      throw error;
+    if (warnings.length > 0) {
+      return (
+        <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                Security Warnings
+              </h4>
+              <div className="space-y-1">
+                {warnings.map((warning, index) => (
+                  <p key={index} className="text-sm text-yellow-700 dark:text-yellow-300">
+                    • {warning}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     }
+
+    return (
+      <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+        <div className="flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-medium text-green-800 dark:text-green-200">
+              Security Verified
+            </h4>
+            <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+              Connection passed all security checks
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  const connectWalletConnect = async () => {
-    throw new Error('WalletConnect v2 integration needed. Please implement with @walletconnect/web3-provider v2');
-  };
-
-  const connectCoinbase = async () => {
-    if (!window.ethereum || !window.ethereum.isCoinbaseWallet) {
-      throw new Error('Coinbase Wallet is not installed');
+  const renderLoadingStep = () => {
+    if (loadingStep === 'connector') {
+      return (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Loading wallet connector...
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Please wait while we prepare the wallet connection.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
     }
 
-    try {
-      const accounts = await window.ethereum.request<string[]>({
-        method: 'eth_requestAccounts',
-      });
-
-      const chainId = await window.ethereum.request<string>({
-        method: 'eth_chainId',
-      });
-
-      if (!Array.isArray(accounts) || accounts.length === 0 || typeof accounts[0] !== 'string') {
-        throw new Error('Wallet returned an invalid account response');
-      }
-
-      if (typeof chainId !== 'string') {
-        throw new Error('Wallet returned an invalid chain id response');
-      }
-
-      const address = accounts[0];
-      const chainIdNumber = parseInt(chainId, 16);
-      const parsedChainId = toChainId(chainIdNumber);
-
-      if (!parsedChainId) {
-        throw new Error(`Unsupported network (chain ${chainIdNumber})`);
-      }
-
-      setConnected(address, 'coinbase', parsedChainId);
-    } catch (error: unknown) {
-      if (getErrorCode(error) === 4001) {
-        throw new Error('User rejected the connection request');
-      }
-      throw error;
+    if (loadingStep === 'security') {
+      return (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Validating security...
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Running security checks to protect your wallet.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
     }
+
+    return null;
   };
+
+  // Detect installed wallets
+  const detectInstalledWallets = () => {
+    const installed = new Set<SupportedWalletId>();
+    
+    // Detect MetaMask
+    if (typeof window !== 'undefined' && window.ethereum?.isMetaMask) {
+      installed.add('metamask');
+    }
+    
+    // Detect Coinbase Wallet
+    if (typeof window !== 'undefined' && window.ethereum?.isCoinbaseWallet) {
+      installed.add('coinbase');
+    }
+    
+    // WalletConnect is typically available through deep links or QR codes
+    // We'll consider it "available" but not "installed" in the traditional sense
+    
+    return installed;
+  };
+
+  const installedWallets = detectInstalledWallets();
 
   const wallets: Array<{
     id: SupportedWalletId;
@@ -124,6 +201,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     description: string;
     icon: string;
     color: string;
+    installUrl?: string;
   }> = [
     {
       id: 'metamask',
@@ -131,85 +209,168 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       description: 'Connect to your MetaMask wallet',
       icon: '🦊',
       color: 'bg-orange-500',
-    },
-    {
-      id: 'walletconnect',
-      name: 'WalletConnect',
-      description: 'Connect with WalletConnect',
-      icon: '🔗',
-      color: 'bg-blue-500',
+      installUrl: 'https://metamask.io/download/',
     },
     {
       id: 'coinbase',
       name: 'Coinbase Wallet',
       description: 'Connect to your Coinbase wallet',
-      icon: '🔵',
+      icon: '�',
       color: 'bg-blue-600',
+      installUrl: 'https://www.coinbase.com/wallet',
     },
-  ];
+    {
+      id: 'walletconnect',
+      name: 'WalletConnect',
+      description: 'Connect with WalletConnect',
+      icon: '�',
+      color: 'bg-blue-500',
+    },
+  ].sort((a, b) => {
+    // Sort installed wallets to top
+    const aInstalled = installedWallets.has(a.id);
+    const bInstalled = installedWallets.has(b.id);
+    
+    if (aInstalled && !bInstalled) return -1;
+    if (!aInstalled && bInstalled) return 1;
+    return 0;
+  });
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      
-      <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Connect Wallet
-          </h2>
-          <button
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <motion.div 
+            className="fixed inset-0 bg-black bg-opacity-50" 
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          
+          <ModalTransition className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Connect Wallet
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
         <div className="p-6">
+          {renderLoadingStep()}
+          {renderSecurityStatus()}
+          
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    {error}
+                  </p>
+                  {error.includes('MetaMask is not installed') && (
+                    <a
+                      href="https://metamask.io/download/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                    >
+                      Click here to install MetaMask
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="space-y-3">
-            {wallets.map((wallet) => (
-              <button
-                key={wallet.id}
-                onClick={() => connectWallet(wallet.id)}
-                className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl`}>
-                  {wallet.icon}
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-gray-900 dark:text-white">
-                    {wallet.name}
+            {wallets.map((wallet) => {
+              const isInstalled = installedWallets.has(wallet.id);
+              
+              if (isInstalled) {
+                return (
+                  <button
+                    key={wallet.id}
+                    onClick={() => connectWallet(wallet.id)}
+                    disabled={isConnecting || isLoadingConnector}
+                    className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl`}>
+                      {wallet.icon}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {wallet.name}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          ✓ Installed
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {wallet.description}
+                      </div>
+                    </div>
+                    {(isConnecting || isLoadingConnector) && (
+                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                    )}
+                  </button>
+                );
+              } else {
+                return (
+                  <div
+                    key={wallet.id}
+                    className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+                  >
+                    <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl opacity-60`}>
+                      {wallet.icon}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {wallet.name}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {wallet.description}
+                      </div>
+                    </div>
+                    {wallet.installUrl && (
+                      <a
+                        href={wallet.installUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 transition-colors"
+                      >
+                        Install
+                      </a>
+                    )}
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {wallet.description}
-                  </div>
-                </div>
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            ))}
+                );
+              }
+            })}
           </div>
 
           <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
+              <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
               <div className="text-sm text-blue-800 dark:text-blue-200">
-                <p className="font-medium mb-1">New to Web3?</p>
+                <p className="font-medium mb-1">Enhanced Security Active</p>
                 <p className="text-blue-700 dark:text-blue-300">
-                  Select a wallet provider above to get started with blockchain transactions.
+                  All connections are validated with domain verification, phishing protection, and security checks.
                 </p>
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </ModalTransition>
       </div>
-    </div>
+    </AnimatePresence>
   );
 };

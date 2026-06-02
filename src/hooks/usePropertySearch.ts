@@ -126,6 +126,7 @@ export function usePropertySearch() {
     lastUpdated,
 
     // Actions
+    setFilters,
     setFilter: handleFilterChange,
     clearFilters: handleClearFilters,
     setSortBy: handleSortChange,

@@ -141,7 +141,21 @@
     "arPropertyPreview": "Vista Previa de Propiedad AR",
     "locationBasedDiscovery": "Descubrimiento Basado en Ubicación",
     "offlinePropertyCache": "Caché de Propiedades Sin Conexión",
-    "mobilePropertyViewer": "Visor de Propiedades Móvil"
+    "mobilePropertyViewer": "Visor de Propiedades Móvil",
+    "viewer": {
+      "contact": "Contactar",
+      "scheduleTour": "Programar Visita",
+      "valueLabel": "Valor",
+      "roiLabel": "ROI",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} más",
+      "shareText": "Mira esta propiedad: {{name}} en {{location}}",
+      "bed_one": "{{count}} habitación",
+      "bed_other": "{{count}} habitaciones",
+      "bath_one": "{{count}} baño",
+      "bath_other": "{{count}} baños",
+      "sqft": "{{count}} pie²"
+    }
   },
   "forms": {
     "selectYear": "Seleccionar año",
@@ -178,6 +192,16 @@
     "liquidityDescription": "Mide qué tan fácilmente puedes vender tus activos sin impacto significativo en el precio.",
     "correlationDescription": "Muestra cómo se mueve tu portafolio con las tendencias del mercado más amplio."
   },
+  "comparison": {
+    "title": "Comparar propiedades seleccionadas ({count}/{max})",
+    "copyComparisonLink": "Copiar enlace de comparación",
+    "linkCopied": "Enlace copiado",
+    "compareNow": "Comparar ahora",
+    "clear": "Limpiar",
+    "removeFromComparison": "Eliminar de la comparación",
+    "comparisonLink": "Enlace de comparación",
+    "shareComparison": "Comparte esta comparación con otros"
+  },
   "geography": {
     "northAmerica": "América del Norte",
     "europe": "Europa",
@@ -185,5 +209,18 @@
     "other": "Otro",
     "byPropertyType": "Por Tipo de Propiedad",
     "byGeography": "Por Geografía"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "Seleccionar red",
+    "switchingNetwork": "Cambiando de red..."
+  "referral": {
+    "connectWallet": "Conectar Billetera",
+    "connectWalletPrompt": "Conecta tu billetera para acceder al programa de referidos",
+    "title": "Programa de Referidos",
+    "subtitle": "Gana recompensas invitando inversores a PropChain",
+    "viewTerms": "Ver Términos",
+    "topReferrers": "Mejores Referidores",
+    "leaderboardBlurb": "Consulta tu posición entre los referidores de la comunidad PropChain.",
+    "viewLeaderboard": "Ver Clasificación"
   }
 }

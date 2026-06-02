@@ -72,6 +72,26 @@ export interface Property {
   verified?: boolean;
 }
 
+export interface SecondaryMarketListing {
+  id: string;
+  propertyId: string;
+  propertyName: string;
+  sellerAddress: string;
+  tokenCount: number;
+  pricePerToken: number;
+  currency: string;
+  listedDate: string;
+  blockchain: BlockchainNetwork;
+  propertyImage?: string;
+}
+
+export interface OrderBookEntry {
+  price: number;
+  amount: number;
+  total: number;
+  type: 'buy' | 'sell';
+}
+
 export interface SearchFilters {
   query: string;
   priceRange: [number, number];
@@ -111,6 +131,9 @@ export interface SearchState {
   error: string | null;
 }
 
+export const NOTIFICATION_FREQUENCIES = ['instant', 'daily', 'weekly'] as const;
+export type NotificationFrequency = (typeof NOTIFICATION_FREQUENCIES)[number];
+
 export interface SavedSearch {
   id: string;
   name: string;
@@ -118,6 +141,11 @@ export interface SavedSearch {
   sortBy: SortOption;
   createdAt: string;
   userId: string; // Wallet address
+  notificationFrequency: NotificationFrequency;
+  emailNotifications: boolean;
+  inAppNotifications: boolean;
+  isActive: boolean;
+  lastNotified?: string;
 }
 
 export interface PropertySearchResult {
@@ -133,6 +161,67 @@ export interface AutocompleteResult {
   label: string;
   id?: string;
 }
+
+export interface PropertyAlert {
+  id: string;
+  savedSearchId: string;
+  savedSearchName: string;
+  matchingProperties: Property[];
+  newPropertiesCount: number;
+  createdAt: string;
+  isRead: boolean;
+  userId: string;
+}
+
+export interface NotificationSettings {
+  email: string;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  defaultFrequency: NotificationFrequency;
+}
+
+// Price Alert Types
+export const PRICE_ALERT_TYPES = ['above', 'below', 'change'] as const;
+export type PriceAlertType = (typeof PRICE_ALERT_TYPES)[number];
+
+export interface PriceAlert {
+  id: string;
+  propertyId: string;
+  propertyName: string;
+  propertyImage?: string;
+  alertType: PriceAlertType;
+  targetPrice: number;
+  currentPrice: number;
+  changePercentage?: number; // For 'change' type alerts
+  createdAt: string;
+  isActive: boolean;
+  isTriggered: boolean;
+  triggeredAt?: string;
+  userId: string;
+  emailNotification: boolean;
+}
+
+export interface PriceAlertNotification {
+  id: string;
+  alertId: string;
+  propertyId: string;
+  propertyName: string;
+  propertyImage?: string;
+  alertType: PriceAlertType;
+  targetPrice: number;
+  triggeredPrice: number;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+  userId: string;
+}
+
+// Price alert labels
+export const PRICE_ALERT_TYPE_LABELS: Record<PriceAlertType, string> = {
+  above: 'Price Above',
+  below: 'Price Below',
+  change: 'Price Change',
+};
 
 // Default filter values
 export const DEFAULT_FILTERS: SearchFilters = {
@@ -175,6 +264,13 @@ export const SORT_LABELS: Record<SortOption, string> = {
   'volume-desc': 'Transaction Volume',
 };
 
+// Notification frequency labels
+export const NOTIFICATION_FREQUENCY_LABELS: Record<NotificationFrequency, string> = {
+  instant: 'Instant',
+  daily: 'Daily',
+  weekly: 'Weekly',
+};
+
 export const isPropertyType = (value: string): value is PropertyType =>
   PROPERTY_TYPES.includes(value as PropertyType);
 
@@ -186,3 +282,6 @@ export const isBlockchainNetwork = (value: string): value is BlockchainNetwork =
 
 export const isSortOption = (value: string): value is SortOption =>
   SORT_OPTIONS.includes(value as SortOption);
+
+export const isNotificationFrequency = (value: string): value is NotificationFrequency =>
+  NOTIFICATION_FREQUENCIES.includes(value as NotificationFrequency);

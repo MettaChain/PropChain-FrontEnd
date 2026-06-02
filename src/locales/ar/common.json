@@ -131,8 +131,8 @@
     "bscDescription": "رسوم منخفضة، إنتاجية عالية",
     "chainSpecificFeatures": "ميزات خاصة بالسلسلة",
     "multiChainFeatures": "ميزات متعددة السلاسل",
-    "seamlessChainSwitching": "تبديل سلس سلس",
-    "connectionSurvivesRefreshes": "الاتصال ي survive التحديثات"
+    "seamlessChainSwitching": "تبديل سلس بين السلاسل",
+    "connectionSurvivesRefreshes": "يبقى الاتصال نشطاً بعد التحديث"
   },
   "mobile": {
     "title": "العقارات المحمولة",
@@ -141,7 +141,21 @@
     "arPropertyPreview": "معاينة عقار AR",
     "locationBasedDiscovery": "اكتشاف قائم على الموقع",
     "offlinePropertyCache": "ذاكرة تخزين مؤقت للعقارات بدون اتصال",
-    "mobilePropertyViewer": "عارض العقارات المحمول"
+    "mobilePropertyViewer": "عارض العقارات المحمول",
+    "viewer": {
+      "contact": "تواصل",
+      "scheduleTour": "جدولة جولة",
+      "valueLabel": "القيمة",
+      "roiLabel": "العائد على الاستثمار",
+      "imageCounter": "{{current}} / {{total}}",
+      "moreAmenities": "+{{count}} المزيد",
+      "shareText": "اطلع على هذا العقار: {{name}} في {{location}}",
+      "bed_one": "{{count}} غرفة نوم",
+      "bed_other": "{{count}} غرف نوم",
+      "bath_one": "{{count}} حمام",
+      "bath_other": "{{count}} حمامات",
+      "sqft": "{{count}} قدم²"
+    }
   },
   "forms": {
     "selectYear": "اختر السنة",
@@ -178,6 +192,16 @@
     "liquidityDescription": "يقيس مدى سهولة بيع أصولك بدون تأثير كبير على السعر.",
     "correlationDescription": "يوضح كيف تتحرك محفظتك مع اتجاهات السوق الأوسع."
   },
+  "comparison": {
+    "title": "مقارنة العقارات المحددة ({count}/{max})",
+    "copyComparisonLink": "نسخ رابط المقارنة",
+    "linkCopied": "تم نسخ الرابط",
+    "compareNow": "قارن الآن",
+    "clear": "مسح",
+    "removeFromComparison": "إزالة من المقارنة",
+    "comparisonLink": "رابط المقارنة",
+    "shareComparison": "شارك هذه المقارنة مع الآخرين"
+  },
   "geography": {
     "northAmerica": "أمريكا الشمالية",
     "europe": "أوروبا",
@@ -185,5 +209,18 @@
     "other": "أخرى",
     "byPropertyType": "حسب نوع العقار",
     "byGeography": "حسب الجغرافيا"
+  },
+  "networkSwitcher": {
+    "selectNetwork": "اختر الشبكة",
+    "switchingNetwork": "جارٍ تبديل الشبكة..."
+  "referral": {
+    "connectWallet": "ربط المحفظة",
+    "connectWalletPrompt": "يرجى ربط محفظتك للوصول إلى برنامج الإحالة",
+    "title": "برنامج الإحالة",
+    "subtitle": "اكسب مكافآت بدعوة المستثمرين إلى PropChain",
+    "viewTerms": "عرض الشروط",
+    "topReferrers": "أفضل المحيلين",
+    "leaderboardBlurb": "تحقق من ترتيبك بين المحيلين في مجتمع PropChain.",
+    "viewLeaderboard": "عرض لوحة المتصدرين"
   }
 }

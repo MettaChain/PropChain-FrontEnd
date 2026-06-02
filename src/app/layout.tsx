@@ -34,9 +34,13 @@ export default async function RootLayout({
   const isRTL = ["ar", "he"].includes(preferredLang);
 
   return (
-    <html lang={preferredLang} dir={isRTL ? "rtl" : "ltr"}>
+    <html
+      lang={preferredLang}
+      dir={isRTL ? "rtl" : "ltr"}
+      suppressHydrationWarning
+    >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} bg-background font-sans text-foreground antialiased`}
       >
         <ClientProviders>{children}</ClientProviders>
       </body>
