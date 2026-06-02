@@ -81,6 +81,22 @@ export function ClientProviders({ children }: ClientProvidersProps) {
               <MobileBottomNavigation />
               <OnboardingTour />
             </ToastProvider>
+            {/* aria-live region: announces loading, offline, and notification changes to screen readers */}
+            <div aria-live="polite" aria-atomic="false" className="sr-only" id="app-status-announcer" />
+            <LoadingProgressBar />
+            <PerformanceMonitor />
+            <ServiceWorkerRegistration />
+            {/* role="status" on OfflineIndicator is handled within the component; wrapper ensures it is in the a11y tree */}
+            <OfflineIndicator />
+            <DomainWarningBanner />
+            {children}
+            <GlobalThemeToggle />
+            <TransactionMonitor />
+            <NotificationSystem />
+            <Toaster />
+            <FloatingComparisonBar />
+            <MobileBottomNavigation />
+            <OnboardingTour />
           </ChainAwareProvider>
         </QueryProvider>
       </WagmiProvider>
