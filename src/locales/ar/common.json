@@ -156,6 +156,16 @@
     "downloadReceipt": "تحميل الإيصال",
     "viewExplorer": "عرض في المستكشف"
   },
+  "transactionProgress": {
+    "title": "المعاملة قيد التقدم",
+    "overallProgress": "التقدم العام",
+    "blockConfirmations": "تأكيدات الكتلة",
+    "securedByBlockchain": "مؤمن بتقنية سلسلة الكتل",
+    "close": "إغلاق",
+    "closeAria": "إغلاق شريط تقدم المعاملة",
+    "processing": "جاري المعالجة...",
+    "_direction": "rtl"
+  },
   "chains": {
     "ethereum": "Ethereum الرئيسية",
     "polygon": "Polygon",

@@ -156,6 +156,16 @@
     "downloadReceipt": "Télécharger Reçu",
     "viewExplorer": "Voir dans Explorer"
   },
+  "transactionProgress": {
+    "title": "Transaction en cours",
+    "overallProgress": "Progression globale",
+    "blockConfirmations": "Confirmations de bloc",
+    "securedByBlockchain": "Sécurisé par blockchain",
+    "close": "Fermer",
+    "closeAria": "Fermer la progression de transaction",
+    "processing": "Traitement en cours...",
+    "_direction": "ltr"
+  },
   "chains": {
     "ethereum": "Ethereum Mainnet",
     "polygon": "Polygon",
