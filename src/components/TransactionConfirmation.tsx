@@ -370,7 +370,7 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                       </h4>
                       <div className="space-y-1">
                         {validation.warnings.map((warning: string, index: number) => (
-                          <p key={index} className="text-sm text-yellow-700 dark:text-yellow-300">
+                          <p key={`${warning}-${index}`} className="text-sm text-yellow-700 dark:text-yellow-300">
                             • {warning}
                           </p>
                         ))}
@@ -390,7 +390,7 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                       </h4>
                       <div className="space-y-1">
                         {validation.blocks.map((block: string, index: number) => (
-                          <p key={index} className="text-sm text-red-700 dark:text-red-300">
+                          <p key={`${block}-${index}`} className="text-sm text-red-700 dark:text-red-300">
                             • {block}
                           </p>
                         ))}
