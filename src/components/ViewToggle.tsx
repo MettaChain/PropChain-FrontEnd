@@ -95,16 +95,18 @@ export function ViewToggle({ mode, onChange }: ViewToggleProps) {
         onClick={() => safeChange("grid")}
         className={`px-3 py-1.5 flex items-center gap-1 ${mode === "grid" ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}
         aria-pressed={mode === "grid"}
+        aria-label="Grid view"
       >
-        <GridIcon /> Grid
+        <GridIcon /> <span>Grid</span>
       </button>
       <button
         type="button"
         onClick={() => safeChange("list")}
         className={`px-3 py-1.5 flex items-center gap-1 ${mode === "list" ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}
         aria-pressed={mode === "list"}
+        aria-label="List view"
       >
-        <ListIcon /> List
+        <ListIcon /> <span>List</span>
       </button>
     </div>
   );
