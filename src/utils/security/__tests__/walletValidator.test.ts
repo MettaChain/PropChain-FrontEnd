@@ -1,4 +1,4 @@
-import { WalletValidator } from '../walletValidator';
+import { WalletValidator, AddressValidationResult } from '../walletValidator';
 
 // Mock viem functions
 jest.mock('viem', () => ({
@@ -8,6 +8,19 @@ jest.mock('viem', () => ({
   parseEther: jest.fn(),
   isHex: jest.fn(),
   Hex: {} as any
+}));
+
+// Mock viem/ens
+jest.mock('viem/ens', () => ({
+  normalize: jest.fn()
+}));
+
+// Mock public client
+jest.mock('@/lib/viem-client', () => ({
+  publicClient: {
+    getEnsAddress: jest.fn(),
+    getBalance: jest.fn()
+  }
 }));
 
 describe('WalletValidator', () => {
@@ -21,6 +34,246 @@ describe('WalletValidator', () => {
         protocol: 'http:'
       },
       writable: true
+    });
+  });
+
+  describe('validateWalletAddressInput', () => {
+    const mockPublicClient = require('@/lib/viem-client').publicClient;
+    const { isAddress, getAddress } = require('viem');
+    const { normalize } = require('viem/ens');
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should validate a correct Ethereum address', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('1000000000000000000'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45'
+      );
+
+      expect(result.isValid).toBe(true);
+      expect(result.address).toBe('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      expect(result.errors).toHaveLength(0);
+      expect(result.isChecksumValid).toBe(true);
+      expect(result.isBlacklisted).toBe(false);
+      expect(result.isVerified).toBe(true);
+      expect(result.riskScore).toBeLessThan(30);
+    });
+
+    it('should reject invalid address format', async () => {
+      const result = await WalletValidator.validateWalletAddressInput(
+        'invalid-address'
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Invalid Ethereum address format');
+      expect(result.riskScore).toBe(100);
+    });
+
+    it('should reject empty input', async () => {
+      const result = await WalletValidator.validateWalletAddressInput('');
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Address input cannot be empty');
+      expect(result.riskScore).toBe(100);
+    });
+
+    it('should handle checksum validation failure', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('1000000000000000000'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x742d35cc6634c0532925a3b8d4c9db96c4b4db45', // lowercase
+        { requireChecksum: true }
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Invalid address checksum (EIP-55)');
+      expect(result.riskScore).toBeGreaterThanOrEqual(20);
+    });
+
+    it('should warn about checksum validation when not required', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('1000000000000000000'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x742d35cc6634c0532925a3b8d4c9db96c4b4db45', // lowercase
+        { requireChecksum: false }
+      );
+
+      expect(result.isValid).toBe(true);
+      expect(result.warnings).toContain('Address checksum validation failed (EIP-55)');
+      expect(result.riskScore).toBeGreaterThanOrEqual(10);
+    });
+
+    it('should resolve ENS names successfully', async () => {
+      normalize.mockReturnValue('vitalik.eth');
+      mockPublicClient.getEnsAddress.mockResolvedValue('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('1000000000000000000'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        'vitalik.eth',
+        { allowENS: true }
+      );
+
+      expect(result.isValid).toBe(true);
+      expect(result.address).toBe('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      expect(result.ensName).toBe('vitalik.eth');
+      expect(result.warnings).toContain('ENS name resolved: vitalik.eth');
+    });
+
+    it('should reject ENS names when ENS is disabled', async () => {
+      const result = await WalletValidator.validateWalletAddressInput(
+        'vitalik.eth',
+        { allowENS: false }
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Invalid Ethereum address format');
+    });
+
+    it('should handle ENS resolution failure', async () => {
+      normalize.mockReturnValue('nonexistent.eth');
+      mockPublicClient.getEnsAddress.mockResolvedValue(null);
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        'nonexistent.eth',
+        { allowENS: true }
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('ENS name could not be resolved: nonexistent.eth');
+      expect(result.riskScore).toBe(80);
+    });
+
+    it('should detect blacklisted addresses', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x0000000000000000000000000000000000000000');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('0'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x0000000000000000000000000000000000000000',
+        { checkBlacklist: true }
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.isBlacklisted).toBe(true);
+      expect(result.errors).toContain('Address is flagged as known scam or compromised');
+      expect(result.riskScore).toBeGreaterThanOrEqual(50);
+    });
+
+    it('should skip blacklist check when disabled', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x0000000000000000000000000000000000000000');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('0'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x0000000000000000000000000000000000000000',
+        { checkBlacklist: false }
+      );
+
+      expect(result.isBlacklisted).toBe(false);
+      expect(result.errors).not.toContain('Address is flagged as known scam or compromised');
+    });
+
+    it('should warn about unverified addresses', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('0')); // Zero balance = unverified
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45'
+      );
+
+      expect(result.isVerified).toBe(false);
+      expect(result.warnings).toContain('Address is not verified - exercise caution');
+      expect(result.riskScore).toBeGreaterThanOrEqual(15);
+    });
+
+    it('should detect addresses with repeated character patterns', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x7777777777777777777777777777777777777777');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('1000000000000000000'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x7777777777777777777777777777777777777777'
+      );
+
+      expect(result.warnings).toContain('Address contains repeated character patterns - verify carefully');
+      expect(result.riskScore).toBeGreaterThanOrEqual(5);
+    });
+
+    it('should handle addresses similar to known addresses', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('1000000000000000000'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db46' // Very similar to known address
+      );
+
+      expect(result.warnings).toContain('Address is very similar to a known address - verify carefully');
+      expect(result.riskScore).toBeGreaterThanOrEqual(10);
+    });
+
+    it('should handle newly created address patterns', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x0012345678901234567890123456789012345678');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('1000000000000000000'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x0012345678901234567890123456789012345678'
+      );
+
+      expect(result.warnings).toContain('Address pattern suggests it might be newly created');
+      expect(result.riskScore).toBeGreaterThanOrEqual(3);
+    });
+
+    it('should handle viem validation failure', async () => {
+      isAddress.mockReturnValue(false); // viem says invalid
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45'
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Invalid wallet address');
+      expect(result.riskScore).toBe(100);
+    });
+
+    it('should trim and sanitize input', async () => {
+      isAddress.mockReturnValue(true);
+      getAddress.mockReturnValue('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+      mockPublicClient.getBalance.mockResolvedValue(BigInt('1000000000000000000'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        '  0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45  '
+      );
+
+      expect(result.isValid).toBe(true);
+      expect(result.address).toBe('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
+    });
+
+    it('should handle ENS resolution errors gracefully', async () => {
+      normalize.mockReturnValue('error.eth');
+      mockPublicClient.getEnsAddress.mockRejectedValue(new Error('Network error'));
+
+      const result = await WalletValidator.validateWalletAddressInput(
+        'error.eth',
+        { allowENS: true }
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Failed to resolve ENS name: error.eth');
+      expect(result.riskScore).toBe(80);
     });
   });
 

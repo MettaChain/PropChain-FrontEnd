@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
@@ -97,11 +98,15 @@ export const SetPriceAlertModal: React.FC<SetPriceAlertModalProps> = ({
           <CardContent className="pt-4">
             <div className="flex items-center gap-4">
               {property.images[0] && (
-                <img
-                  src={property.images[0]}
-                  alt={property.name}
-                  className="w-16 h-16 rounded-lg object-cover"
-                />
+                <div className="relative w-16 h-16 flex-shrink-0">
+                  <Image
+                    src={property.images[0]}
+                    alt={property.name}
+                    width={64}
+                    height={64}
+                    className="rounded-lg object-cover"
+                  />
+                </div>
               )}
               <div>
                 <p className="font-medium text-sm">{property.name}</p>

@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
   Navigation,
-  Filter,
   Search,
   Loader2,
   AlertCircle,
@@ -23,7 +22,91 @@ interface LocationData {
   accuracy: number;
 }
 
-const mockProperties: MobileProperty[] = [
+type SortKey = "distance" | "price" | "roi";
+
+// --- Pure helpers (no component coupling, easy to unit-test) ---
+
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 3959; // Earth's radius in miles
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getGeolocationErrorMessage(error: GeolocationPositionError): string {
+  switch (error.code) {
+    case error.PERMISSION_DENIED:
+      return "Location access denied by user";
+    case error.POSITION_UNAVAILABLE:
+      return "Location information unavailable";
+    case error.TIMEOUT:
+      return "Location request timed out";
+    default:
+      return "Unable to retrieve location";
+  }
+}
+
+function applyDistances(
+  properties: MobileProperty[],
+  location: LocationData,
+): MobileProperty[] {
+  return properties.map((p) => ({
+    ...p,
+    distance: calculateDistance(
+      location.latitude,
+      location.longitude,
+      p.coordinates?.lat ?? 0,
+      p.coordinates?.lng ?? 0,
+    ),
+  }));
+}
+
+function filterProperties(
+  properties: MobileProperty[],
+  searchQuery: string,
+  selectedFilters: string[],
+): MobileProperty[] {
+  const query = searchQuery.toLowerCase();
+  return properties.filter((p) => {
+    const matchesSearch =
+      p.name.toLowerCase().includes(query) ||
+      p.location.toLowerCase().includes(query);
+    const matchesFilter =
+      selectedFilters.length === 0 || selectedFilters.includes(p.type);
+    return matchesSearch && matchesFilter;
+  });
+}
+
+function sortProperties(
+  properties: MobileProperty[],
+  sortBy: SortKey,
+): MobileProperty[] {
+  return [...properties].sort((a, b) => {
+    switch (sortBy) {
+      case "distance":
+        return (a.distance ?? 0) - (b.distance ?? 0);
+      case "price":
+        return a.value - b.value;
+      case "roi":
+        return b.roi - a.roi;
+    }
+  });
+}
+
+// --- Data ---
+
+const MOCK_PROPERTIES: MobileProperty[] = [
   {
     id: "1",
     name: "Manhattan Tower Suite",
@@ -99,70 +182,22 @@ const mockProperties: MobileProperty[] = [
   },
 ];
 
-export const LocationBasedDiscovery = () => {
+const FILTER_OPTIONS = ["Residential", "Commercial", "Industrial", "Mixed-Use"] as const;
+
+const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
+  { key: "distance", label: "Distance" },
+  { key: "price", label: "Price" },
+  { key: "roi", label: "ROI" },
+];
+
+// --- Custom hooks ---
+
+function useLocationDiscovery() {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [properties, setProperties] = useState<MobileProperty[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<"distance" | "price" | "roi">("distance");
 
-  const sortOptions: Array<{ key: "distance" | "price" | "roi"; label: string }> = [
-    { key: "distance", label: "Distance" },
-    { key: "price", label: "Price" },
-    { key: "roi", label: "ROI" },
-  ];
-
-  const filterOptions = [
-    "Residential",
-    "Commercial",
-    "Industrial",
-    "Mixed-Use",
-  ];
-
-  useEffect(() => {
-    // Auto-request location on component mount
-    requestLocation();
-  }, []);
-
-  useEffect(() => {
-    if (location) {
-      // Simulate fetching nearby properties based on location
-      const propertiesWithDistance = mockProperties.map((property) => ({
-        ...property,
-        distance: calculateDistance(
-          location.latitude,
-          location.longitude,
-          property.coordinates?.lat || 0,
-          property.coordinates?.lng || 0,
-        ),
-      }));
-
-      setProperties(propertiesWithDistance);
-    }
-  }, [location]);
-
-  const calculateDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number,
-  ): number => {
-    const R = 3959; // Earth's radius in miles
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const requestLocation = () => {
+  const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setLocationError("Geolocation is not supported by this browser");
       return;
@@ -181,60 +216,59 @@ export const LocationBasedDiscovery = () => {
         setIsLoadingLocation(false);
       },
       (error) => {
-        let errorMessage = "Unable to retrieve location";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Location access denied by user";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information unavailable";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out";
-            break;
-        }
-        setLocationError(errorMessage);
+        setLocationError(getGeolocationErrorMessage(error));
         setIsLoadingLocation(false);
-        // Load properties without location data
-        setProperties(mockProperties);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000, // 5 minutes
-      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
     );
-  };
+  }, []);
 
-  const filteredProperties = properties
-    .filter((property) => {
-      const matchesSearch =
-        property.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        property.location.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter =
-        selectedFilters.length === 0 || selectedFilters.includes(property.type);
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "distance":
-          return (a.distance || 0) - (b.distance || 0);
-        case "price":
-          return a.value - b.value;
-        case "roi":
-          return b.roi - a.roi;
-        default:
-          return 0;
-      }
-    });
+  useEffect(() => {
+    requestLocation();
+  }, [requestLocation]);
 
-  const toggleFilter = (filter: string) => {
+  return { location, locationError, isLoadingLocation, requestLocation };
+}
+
+function useFilteredProperties(
+  baseProperties: MobileProperty[],
+  location: LocationData | null,
+  searchQuery: string,
+  selectedFilters: string[],
+  sortBy: SortKey,
+): MobileProperty[] {
+  return useMemo(() => {
+    const withDistances = location
+      ? applyDistances(baseProperties, location)
+      : baseProperties;
+    const filtered = filterProperties(withDistances, searchQuery, selectedFilters);
+    return sortProperties(filtered, sortBy);
+  }, [baseProperties, location, searchQuery, selectedFilters, sortBy]);
+}
+
+// --- Component ---
+
+export const LocationBasedDiscovery = () => {
+  const { location, locationError, isLoadingLocation, requestLocation } =
+    useLocationDiscovery();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<SortKey>("distance");
+
+  const properties = useFilteredProperties(
+    MOCK_PROPERTIES,
+    location,
+    searchQuery,
+    selectedFilters,
+    sortBy,
+  );
+
+  const toggleFilter = useCallback((filter: string) => {
     setSelectedFilters((prev) =>
-      prev.includes(filter)
-        ? prev.filter((f) => f !== filter)
-        : [...prev, filter],
+      prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter],
     );
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -301,12 +335,10 @@ export const LocationBasedDiscovery = () => {
           {/* Filters */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {filterOptions.map((filter) => (
+              {FILTER_OPTIONS.map((filter) => (
                 <Badge
                   key={filter}
-                  variant={
-                    selectedFilters.includes(filter) ? "default" : "outline"
-                  }
+                  variant={selectedFilters.includes(filter) ? "default" : "outline"}
                   className="cursor-pointer whitespace-nowrap"
                   onClick={() => toggleFilter(filter)}
                 >
@@ -321,7 +353,7 @@ export const LocationBasedDiscovery = () => {
                 Sort by:
               </span>
               <div className="flex gap-1">
-                {sortOptions.map(({ key, label }) => (
+                {SORT_OPTIONS.map(({ key, label }) => (
                   <Button
                     key={key}
                     variant={sortBy === key ? "default" : "ghost"}
@@ -340,7 +372,7 @@ export const LocationBasedDiscovery = () => {
 
       {/* Properties List */}
       <div className="p-4">
-        {filteredProperties.length === 0 ? (
+        {properties.length === 0 ? (
           <div className="text-center py-12">
             <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -353,12 +385,12 @@ export const LocationBasedDiscovery = () => {
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Found {filteredProperties.length} properties
+              Found {properties.length} properties
               {location && " nearby"}
             </p>
 
             <div className="grid grid-cols-1 gap-4">
-              {filteredProperties.map((property, index) => (
+              {properties.map((property, index) => (
                 <div key={property.id} className="relative">
                   <MobilePropertyCard property={property} index={index} />
 

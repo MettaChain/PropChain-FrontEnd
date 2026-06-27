@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 export interface SecurityServiceConfig {
   apiKey?: string;
   baseUrl: string;
@@ -25,23 +26,35 @@ export interface TransactionRisk {
 }
 
 export interface SecurityAlert {
+  /** Alert type indicating the security category */
   type: 'sanctions' | 'scam' | 'mixer' | 'gambling' | 'malware' | 'exchange_hack';
+  /** Alert severity level */
   severity: 'low' | 'medium' | 'high' | 'critical';
+  /** Human-readable description of the alert */
   description: string;
+  /** Source system that generated the alert */
   source: string;
+  /** Unix timestamp of when the alert was generated */
   timestamp: number;
 }
 
 export class BlockchainSecurityService {
+  // Singleton instance — ensures only one service instance exists across the app
   private static instance: BlockchainSecurityService;
   private config: SecurityServiceConfig;
+  // In-memory cache keyed by address/tx hash to avoid redundant API calls
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  // Cache entries expire after 5 minutes to balance freshness vs. performance
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(config: SecurityServiceConfig) {
     this.config = config;
   }
 
+  /**
+   * Singleton factory — creates the instance on first call, returns it on subsequent calls.
+   * Throws if no config is provided on first initialization.
+   */
   static getInstance(config?: SecurityServiceConfig): BlockchainSecurityService {
     if (!this.instance) {
       if (!config) {
@@ -61,10 +74,37 @@ export class BlockchainSecurityService {
     if (cached) return cached;
 
     try {
-      // In a real implementation, this would call actual security APIs
-      // For now, we'll simulate the response
+      // Try calling a remote API if available. If `fetch` returns a Promise
+      // (for example when tests mock it), await it and use the response.
+      // Otherwise, fall back to the local simulation to preserve test behavior.
+      const fetchResult = typeof fetch === 'function' ? (fetch as any)(`${this.config.baseUrl}/address/${address}`, {
+        headers: this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}
+      }) : null;
+
+      if (fetchResult && typeof fetchResult.then === 'function') {
+        const response = await fetchResult;
+        if (response && response.ok) {
+          const body = await response.json();
+          const score = typeof body.risk_score === 'number' ? body.risk_score : 50;
+          const categories = Array.isArray(body.categories) ? body.categories : [];
+          const result: AddressRiskScore = {
+            address,
+            riskScore: score,
+            riskLevel: this.getRiskLevel(score),
+            categories,
+            labels: Array.isArray(body.labels) ? body.labels : [],
+            description: body.description || ''
+          };
+          this.setCache(cacheKey, result);
+          return result;
+        }
+        // If response not ok, throw to be caught below and return default
+        throw new Error('Remote service returned non-OK response');
+      }
+
+      // No remote fetch available — use the internal simulation
       const riskScore = await this.simulateAddressRiskCheck(address);
-      
+
       const result: AddressRiskScore = {
         address,
         riskScore: riskScore.score,
@@ -78,7 +118,7 @@ export class BlockchainSecurityService {
       return result;
 
     } catch (error) {
-      console.error('Failed to check address risk:', error);
+      logger.error('Failed to check address risk:', error);
       return this.getDefaultRiskScore(address);
     }
   }
@@ -110,7 +150,7 @@ export class BlockchainSecurityService {
       return result;
 
     } catch (error) {
-      console.error('Failed to check transaction risk:', error);
+      logger.error('Failed to check transaction risk:', error);
       return this.getDefaultTransactionRisk(hash);
     }
   }
@@ -123,7 +163,7 @@ export class BlockchainSecurityService {
       const riskScore = await this.checkAddressRisk(address);
       return riskScore.categories.includes('sanctions');
     } catch (error) {
-      console.error('Failed to check sanctions:', error);
+      logger.error('Failed to check sanctions:', error);
       return false;
     }
   }
@@ -136,7 +176,7 @@ export class BlockchainSecurityService {
       const riskScore = await this.checkAddressRisk(address);
       return riskScore.categories.includes('mixer');
     } catch (error) {
-      console.error('Failed to check mixer association:', error);
+      logger.error('Failed to check mixer association:', error);
       return false;
     }
   }
@@ -161,7 +201,7 @@ export class BlockchainSecurityService {
 
       return alerts;
     } catch (error) {
-      console.error('Failed to get security alerts:', error);
+      logger.error('Failed to get security alerts:', error);
       return [];
     }
   }
@@ -184,17 +224,18 @@ export class BlockchainSecurityService {
     let totalRiskScore = 0;
 
     try {
-      // Check sender risk
+      // Check sender risk — use the highest risk score seen across all checks
       const senderRisk = await this.checkAddressRisk(from);
       totalRiskScore = Math.max(totalRiskScore, senderRisk.riskScore);
 
+      // Critical risk blocks the transaction; high risk only warns
       if (senderRisk.riskLevel === 'critical') {
         blocks.push('Sender address has critical risk level');
       } else if (senderRisk.riskLevel === 'high') {
         warnings.push('Sender address has high risk level');
       }
 
-      // Check recipient risk
+      // Check recipient risk independently — both parties must be evaluated
       const recipientRisk = await this.checkAddressRisk(to);
       totalRiskScore = Math.max(totalRiskScore, recipientRisk.riskScore);
 
@@ -204,12 +245,13 @@ export class BlockchainSecurityService {
         warnings.push('Recipient address has high risk level');
       }
 
-      // Check for sanctions
+      // Run sanctions checks in parallel to reduce latency
       const [senderSanctions, recipientSanctions] = await Promise.all([
         this.checkSanctions(from),
         this.checkSanctions(to)
       ]);
 
+      // Any sanctioned party is an immediate hard block
       if (senderSanctions) {
         blocks.push('Sender address is on sanctions list');
       }
@@ -217,13 +259,13 @@ export class BlockchainSecurityService {
         blocks.push('Recipient address is on sanctions list');
       }
 
-      // Check for high-value transaction to risky address
+      // BigInt comparison: 1 ETH = 10^18 wei; flag high-value sends to risky recipients
       const valueBN = BigInt(value);
-      if (valueBN > BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // > 1 ETH
+      if (valueBN >= BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // >= 1 ETH
         warnings.push('High-value transaction to risky address');
       }
 
-      // Check for mixer involvement
+      // Run mixer checks in parallel — mixing services are used to obscure fund origins
       const [senderMixer, recipientMixer] = await Promise.all([
         this.checkMixer(from),
         this.checkMixer(to)
@@ -234,7 +276,8 @@ export class BlockchainSecurityService {
       }
 
     } catch (error) {
-      console.error('Failed to validate transaction:', error);
+      logger.error('Failed to validate transaction:', error);
+      // Degrade gracefully — warn rather than block on service failure
       warnings.push('Unable to complete security validation');
     }
 
@@ -258,13 +301,16 @@ export class BlockchainSecurityService {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Generate deterministic but realistic-looking risk scores
+    // Derive a deterministic score from the address hex so the same address
+    // always returns the same risk score (useful for testing/demo purposes)
     const addressHash = address.toLowerCase().replace('0x', '');
+    // Parse first 8 hex chars as a 32-bit integer, then mod 100 for a 0–99 score
     const score = parseInt(addressHash.slice(0, 8), 16) % 100;
 
     const categories: string[] = [];
     const labels: string[] = [];
 
+    // Bucket the score into risk tiers and assign matching categories/labels
     if (score > 80) {
       categories.push('high_risk');
       labels.push('suspicious_activity');
@@ -276,12 +322,13 @@ export class BlockchainSecurityService {
       labels.push('monitor');
     }
 
-    // Add some specific categories based on address patterns
+    // Heuristic: addresses starting with 0x000 are likely contract addresses
     if (address.startsWith('0x000')) {
       categories.push('contract');
       labels.push('smart_contract');
     }
 
+    // Map score quartile to a human-readable description
     const descriptions = [
       'Address appears to have normal activity',
       'Address shows some unusual patterns',
@@ -357,6 +404,7 @@ export class BlockchainSecurityService {
 
   /**
    * Maps risk score to risk level
+   * Thresholds: 0–24 = low, 25–49 = medium, 50–74 = high, 75–100 = critical
    */
   private getRiskLevel(score: number): 'low' | 'medium' | 'high' | 'critical' {
     if (score >= 75) return 'critical';
@@ -395,9 +443,11 @@ export class BlockchainSecurityService {
 
   /**
    * Gets data from cache
+   * Returns null if the entry is missing or has exceeded CACHE_TTL
    */
   private getFromCache(key: string): any {
     const cached = this.cache.get(key);
+    // Treat stale entries as cache misses to force a fresh API call
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
       return cached.data;
     }
@@ -406,6 +456,7 @@ export class BlockchainSecurityService {
 
   /**
    * Sets data in cache
+   * Stores the current timestamp so TTL can be checked on retrieval
    */
   private setCache(key: string, data: any): void {
     this.cache.set(key, {

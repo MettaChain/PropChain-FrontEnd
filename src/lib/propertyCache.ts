@@ -54,11 +54,17 @@ let cacheStats: CacheStats = {
   missRate: 0,
   oldestEntry: null,
   newestEntry: null,
+  evictionCount: 0,
+  invalidationCount: 0,
+  entitiesByType: {},
+  sizeByType: {},
 };
 
 // Request counters for hit/miss rate
 let cacheHits = 0;
 let cacheMisses = 0;
+let evictionCount = 0;
+let invalidationCount = 0;
 
 /**
  * Emit a cache event
@@ -89,17 +95,22 @@ export const addCacheEventListener = (listener: CacheEventListener): (() => void
 const createCacheMetadata = (
   key: string,
   size: number,
+  dataType: string = 'default',
   config: CacheConfig = DEFAULT_CACHE_CONFIG
 ): CacheMetadata => {
   const now = Date.now();
+  // Get TTL for this data type, fallback to default TTL
+  const ttl = config.dataTypeTtls?.[dataType] ?? config.ttl;
+  
   return {
     key,
     cachedAt: now,
-    expiresAt: now + config.ttl,
+    expiresAt: now + ttl,
     lastAccessed: now,
     accessCount: 0,
     size,
     version: config.version,
+    dataType,
   };
 };
 
@@ -141,6 +152,78 @@ export const isCacheAvailable = (): boolean => {
 };
 
 /**
+ * Perform LRU eviction when cache limits are exceeded
+ */
+const performLRUEviction = async (config: CacheConfig): Promise<void> => {
+  if (!config.enableLRU) return;
+
+  try {
+    const properties = await getAllCachedProperties();
+    const mobileProperties = await getAllCachedMobileProperties();
+    const allEntries = [
+      ...properties.map(p => ({ ...p, type: 'property' as const })),
+      ...mobileProperties.map(p => ({ ...p, type: 'mobile-property' as const }))
+    ];
+
+    // Check if we exceed max entries
+    if (allEntries.length > config.maxEntries) {
+      // Sort by last accessed (ascending) - least recently used first
+      const sorted = [...allEntries].sort(
+        (a, b) => a.metadata.lastAccessed - b.metadata.lastAccessed
+      );
+
+      // Remove least recently used entries until we're under the limit
+      const toRemove = sorted.length - config.maxEntries;
+      for (let i = 0; i < toRemove; i++) {
+        const entry = sorted[i];
+        if (entry.type === 'property') {
+          await deleteCachedProperty(entry.data.id);
+        } else {
+          await deleteCachedMobileProperty(entry.data.id);
+        }
+        evictionCount++;
+        emitEvent({
+          type: 'evict',
+          key: entry.metadata.key,
+          timestamp: Date.now(),
+          reason: 'LRU eviction - max entries exceeded',
+        });
+      }
+    }
+
+    // Check if we exceed max size
+    const totalSize = allEntries.reduce((sum, e) => sum + e.metadata.size, 0);
+    if (totalSize > config.maxSize) {
+      const sorted = [...allEntries].sort(
+        (a, b) => a.metadata.lastAccessed - b.metadata.lastAccessed
+      );
+
+      // Remove least recently used entries until we're under the size limit
+      let currentSize = totalSize;
+      for (const entry of sorted) {
+        if (currentSize <= config.maxSize * 0.9) break; // Stop at 90% of max
+
+        if (entry.type === 'property') {
+          await deleteCachedProperty(entry.data.id);
+        } else {
+          await deleteCachedMobileProperty(entry.data.id);
+        }
+        currentSize -= entry.metadata.size;
+        evictionCount++;
+        emitEvent({
+          type: 'evict',
+          key: entry.metadata.key,
+          timestamp: Date.now(),
+          reason: 'LRU eviction - size limit exceeded',
+        });
+      }
+    }
+  } catch (error) {
+    logger.error('Error performing LRU eviction:', error);
+  }
+};
+
+/**
  * Get a property from cache
  */
 export const getCachedProperty = async (
@@ -156,7 +239,7 @@ export const getCachedProperty = async (
 
     if (!entry) {
       cacheMisses++;
-      emitEvent({ type: 'miss', key, timestamp: Date.now() });
+      emitEvent({ type: 'miss', key, timestamp: Date.now(), dataType: 'property' });
       return { data: null, source: 'none', stale: false };
     }
 
@@ -165,7 +248,13 @@ export const getCachedProperty = async (
     if (status === 'expired') {
       cacheMisses++;
       await deleteCachedProperty(propertyId);
-      emitEvent({ type: 'expire', key, timestamp: Date.now(), metadata: entry.metadata });
+      emitEvent({ 
+        type: 'expire', 
+        key, 
+        timestamp: Date.now(), 
+        metadata: entry.metadata,
+        dataType: 'property' 
+      });
       return { data: null, source: 'none', stale: false };
     }
 
@@ -177,7 +266,13 @@ export const getCachedProperty = async (
     await dbSet(CACHE_STORE_NAMES.PROPERTIES, key, updatedEntry);
 
     cacheHits++;
-    emitEvent({ type: 'hit', key, timestamp: Date.now(), metadata: entry.metadata });
+    emitEvent({ 
+      type: 'hit', 
+      key, 
+      timestamp: Date.now(), 
+      metadata: entry.metadata,
+      dataType: 'property' 
+    });
     
     return {
       data: entry.data,
@@ -186,7 +281,13 @@ export const getCachedProperty = async (
     };
   } catch (error) {
     logger.error('Error getting cached property:', error);
-    emitEvent({ type: 'error', key, timestamp: Date.now(), error: error as Error });
+    emitEvent({ 
+      type: 'error', 
+      key, 
+      timestamp: Date.now(), 
+      error: error as Error,
+      dataType: 'property' 
+    });
     return { data: null, source: 'none', stale: false, error: error as Error };
   }
 };
@@ -204,23 +305,38 @@ export const setCachedProperty = async (
     // Calculate approximate size
     const tempEntry: CacheEntry<Property> = {
       data: property,
-      metadata: createCacheMetadata(key, 0, config),
+      metadata: createCacheMetadata(key, 0, 'property', config),
     };
     const size = calculateEntrySize(tempEntry);
 
     const entry: PropertyCacheEntry = {
       data: property,
-      metadata: createCacheMetadata(key, size, config),
+      metadata: createCacheMetadata(key, size, 'property', config),
     };
 
     await dbSet(CACHE_STORE_NAMES.PROPERTIES, key, entry);
-    emitEvent({ type: 'set', key, timestamp: Date.now(), metadata: entry.metadata });
+    emitEvent({ 
+      type: 'set', 
+      key, 
+      timestamp: Date.now(), 
+      metadata: entry.metadata,
+      dataType: 'property'
+    });
+    
+    // Perform LRU eviction if needed
+    await performLRUEviction(config);
     
     // Update stats
     await updateCacheStats();
   } catch (error) {
     logger.error('Error caching property:', error);
-    emitEvent({ type: 'error', key, timestamp: Date.now(), error: error as Error });
+    emitEvent({ 
+      type: 'error', 
+      key, 
+      timestamp: Date.now(), 
+      error: error as Error,
+      dataType: 'property'
+    });
     throw error;
   }
 };
@@ -304,21 +420,37 @@ export const setCachedMobileProperty = async (
   try {
     const tempEntry: CacheEntry<MobileProperty> = {
       data: property,
-      metadata: createCacheMetadata(key, 0, config),
+      metadata: createCacheMetadata(key, 0, 'mobile-property', config),
     };
     const size = calculateEntrySize(tempEntry);
 
     const entry: MobilePropertyCacheEntry = {
       data: property,
-      metadata: createCacheMetadata(key, size, config),
+      metadata: createCacheMetadata(key, size, 'mobile-property', config),
     };
 
     await dbSet(CACHE_STORE_NAMES.MOBILE_PROPERTIES, key, entry);
-    emitEvent({ type: 'set', key, timestamp: Date.now(), metadata: entry.metadata });
+    emitEvent({ 
+      type: 'set', 
+      key, 
+      timestamp: Date.now(), 
+      metadata: entry.metadata,
+      dataType: 'mobile-property'
+    });
+    
+    // Perform LRU eviction if needed
+    await performLRUEviction(config);
+    
     await updateCacheStats();
   } catch (error) {
     logger.error('Error caching mobile property:', error);
-    emitEvent({ type: 'error', key, timestamp: Date.now(), error: error as Error });
+    emitEvent({ 
+      type: 'error', 
+      key, 
+      timestamp: Date.now(), 
+      error: error as Error,
+      dataType: 'mobile-property'
+    });
     throw error;
   }
 };
@@ -529,6 +661,22 @@ export const updateCacheStats = async (): Promise<CacheStats> => {
       ...mobileProperties.map((p) => p.metadata.cachedAt),
     ];
 
+    // Calculate metrics by data type
+    const entitiesByType: Record<string, number> = {};
+    const sizeByType: Record<string, number> = {};
+
+    properties.forEach(p => {
+      const dt = p.metadata.dataType;
+      entitiesByType[dt] = (entitiesByType[dt] || 0) + 1;
+      sizeByType[dt] = (sizeByType[dt] || 0) + p.metadata.size;
+    });
+
+    mobileProperties.forEach(p => {
+      const dt = p.metadata.dataType;
+      entitiesByType[dt] = (entitiesByType[dt] || 0) + 1;
+      sizeByType[dt] = (sizeByType[dt] || 0) + p.metadata.size;
+    });
+
     const totalRequests = cacheHits + cacheMisses;
     const hitRate = totalRequests > 0 ? cacheHits / totalRequests : 0;
     const missRate = totalRequests > 0 ? cacheMisses / totalRequests : 0;
@@ -551,6 +699,10 @@ export const updateCacheStats = async (): Promise<CacheStats> => {
       missRate,
       oldestEntry: allTimestamps.length > 0 ? Math.min(...allTimestamps) : null,
       newestEntry: allTimestamps.length > 0 ? Math.max(...allTimestamps) : null,
+      evictionCount,
+      invalidationCount,
+      entitiesByType,
+      sizeByType,
     };
 
     // Persist stats
@@ -589,6 +741,13 @@ export const cleanupExpiredEntries = async (): Promise<number> => {
       if (now > entry.metadata.expiresAt) {
         await deleteCachedProperty(entry.data.id);
         cleanedCount++;
+        emitEvent({
+          type: 'cleanup',
+          key: entry.metadata.key,
+          timestamp: Date.now(),
+          dataType: entry.metadata.dataType,
+          reason: 'TTL expired',
+        });
       }
     }
 
@@ -597,6 +756,13 @@ export const cleanupExpiredEntries = async (): Promise<number> => {
       if (now > entry.metadata.expiresAt) {
         await deleteCachedMobileProperty(entry.data.id);
         cleanedCount++;
+        emitEvent({
+          type: 'cleanup',
+          key: entry.metadata.key,
+          timestamp: Date.now(),
+          dataType: entry.metadata.dataType,
+          reason: 'TTL expired',
+        });
       }
     }
 
@@ -609,9 +775,18 @@ export const cleanupExpiredEntries = async (): Promise<number> => {
       
       for (const [key, value] of Object.entries(searches)) {
         const searchCache = value as { cachedAt: number };
-        if (now - searchCache.cachedAt > config.ttl) {
+        const searchTTL = config.dataTypeTtls?.['search'] ?? config.ttl;
+        if (now - searchCache.cachedAt > searchTTL) {
           delete searches[key];
           modified = true;
+          cleanedCount++;
+          emitEvent({
+            type: 'cleanup',
+            key,
+            timestamp: Date.now(),
+            dataType: 'search',
+            reason: 'TTL expired',
+          });
         }
       }
       
@@ -623,8 +798,9 @@ export const cleanupExpiredEntries = async (): Promise<number> => {
     if (cleanedCount > 0) {
       emitEvent({
         type: 'cleanup',
-        key: 'expired',
+        key: 'batch',
         timestamp: Date.now(),
+        reason: `${cleanedCount} entries cleaned`,
       });
       await updateCacheStats();
     }

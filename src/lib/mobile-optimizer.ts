@@ -1,4 +1,5 @@
 "use client";
+import { logger } from '@/utils/logger';
 
 /**
  * Mobile Optimizer Module
@@ -104,7 +105,7 @@ function getConnectionSpeed(): 'slow-2g' | '2g' | '3g' | '4g' | 'unknown' {
 
     return 'unknown';
   } catch (error) {
-    console.warn('Failed to detect connection speed:', error);
+    logger.warn('Failed to detect connection speed:', error);
     return 'unknown';
   }
 }
@@ -182,43 +183,40 @@ export function getOptimizedImageSrc(
   try {
     // Handle empty or invalid sources
     if (!src || typeof src !== 'string') {
-      console.warn('Invalid image source provided:', src);
+      logger.warn('Invalid image source provided:', src);
       return src || '';
     }
 
-    // Handle data URLs and external URLs
+    // External and data URLs cannot be rewritten — return as-is and let
+    // Next.js Image component handle remote optimization if applicable
     if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) {
-      // For external URLs, we can't optimize them directly
-      // Return as-is (Next.js Image component will handle optimization)
       return src;
     }
 
     const { devicePixelRatio, viewportWidth, connectionSpeed } = config;
 
-    // Calculate optimal image width based on viewport and DPR
-    // Cap at 2x for performance (diminishing returns beyond 2x)
+    // Cap DPR at 2x: beyond 2x the visual improvement is imperceptible
+    // but bandwidth cost doubles, so it's not worth it on slow connections
     const effectiveDPR = Math.min(devicePixelRatio, 2);
+    // Round up to avoid serving images that are even 1px too small
     const targetWidth = Math.ceil(viewportWidth * effectiveDPR);
 
-    // Calculate optimal quality based on connection speed
+    // Lower quality on slow connections to reduce payload size
     const quality = getOptimalQuality(connectionSpeed);
 
-    // Build optimized URL parameters
-    // This assumes Next.js Image optimization API or similar
+    // Append width and quality as query params compatible with Next.js Image API
     const params = new URLSearchParams({
       w: targetWidth.toString(),
       q: quality.toString(),
     });
 
-    // Determine if we should add format parameter
-    // Note: Format detection is async, so we'll handle this in a separate function
-    // For now, we'll return the URL with width and quality parameters
+    // Preserve existing query params by using the correct separator
     const separator = src.includes('?') ? '&' : '?';
     const optimizedSrc = `${src}${separator}${params.toString()}`;
 
     return optimizedSrc;
   } catch (error) {
-    console.error('Failed to optimize image source:', error);
+    logger.error('Failed to optimize image source:', error);
     return src; // Return original source on error
   }
 }
@@ -251,7 +249,7 @@ export function preloadCriticalResources(urls: string[]): void {
       document.head.appendChild(link);
     });
   } catch (error) {
-    console.error('Failed to preload critical resources:', error);
+    logger.error('Failed to preload critical resources:', error);
   }
 }
 
@@ -270,7 +268,7 @@ export function setupLazyLoading(container: HTMLElement): void {
   try {
     // SSR safe
     if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
-      console.warn('Intersection Observer not available, lazy loading disabled');
+      logger.warn('Intersection Observer not available, lazy loading disabled');
       return;
     }
 
@@ -311,7 +309,7 @@ export function setupLazyLoading(container: HTMLElement): void {
                 // Handle error
                 img.classList.remove('lazy-loading');
                 img.classList.add('lazy-error');
-                console.error('Failed to load lazy image:', src);
+                logger.error('Failed to load lazy image:', src);
               };
 
               // Start loading
@@ -344,7 +342,7 @@ export function setupLazyLoading(container: HTMLElement): void {
     // Store observer on container for cleanup
     (container as any).__lazyLoadObserver = observer;
   } catch (error) {
-    console.error('Failed to setup lazy loading:', error);
+    logger.error('Failed to setup lazy loading:', error);
   }
 }
 
@@ -359,7 +357,7 @@ export function cleanupLazyLoading(container: HTMLElement): void {
       delete (container as any).__lazyLoadObserver;
     }
   } catch (error) {
-    console.error('Failed to cleanup lazy loading:', error);
+    logger.error('Failed to cleanup lazy loading:', error);
   }
 }
 
@@ -412,14 +410,16 @@ function calculateTTI(): number {
     // More accurate TTI requires long task monitoring
     return navigation.domInteractive || 0;
   } catch (error) {
-    console.warn('Failed to calculate TTI:', error);
+    logger.warn('Failed to calculate TTI:', error);
     return 0;
   }
 }
 
 /**
  * Calculates Total Blocking Time (TBT)
- * TBT is the sum of blocking time for all long tasks between FCP and TTI
+ * TBT is the sum of blocking time for all long tasks between FCP and TTI.
+ * A "long task" is any main-thread task that takes more than 50ms.
+ * The blocking portion is the time beyond the 50ms threshold.
  */
 function calculateTBT(): number {
   try {
@@ -427,10 +427,11 @@ function calculateTBT(): number {
       return 0;
     }
 
-    // Get all long tasks (tasks > 50ms)
+    // Long Task API entries — each represents a task that blocked the main thread > 50ms
     const longTasks = performance.getEntriesByType('longtask') as any[];
     
-    // Sum blocking time (time beyond 50ms threshold)
+    // Sum only the blocking portion (time beyond the 50ms "acceptable" threshold)
+    // e.g. a 120ms task contributes 70ms of blocking time
     const tbt = longTasks.reduce((sum, task) => {
       const blockingTime = Math.max(0, task.duration - 50);
       return sum + blockingTime;
@@ -438,8 +439,8 @@ function calculateTBT(): number {
 
     return tbt;
   } catch (error) {
-    // longtask API may not be available
-    console.warn('Failed to calculate TBT:', error);
+    // longtask API may not be available in all browsers
+    logger.warn('Failed to calculate TBT:', error);
     return 0;
   }
 }
@@ -481,7 +482,7 @@ function getResourceMetrics(): {
 
     return { jsSize, cssSize, imageSize, totalSize };
   } catch (error) {
-    console.warn('Failed to collect resource metrics:', error);
+    logger.warn('Failed to collect resource metrics:', error);
     return { jsSize: 0, cssSize: 0, imageSize: 0, totalSize: 0 };
   }
 }
@@ -515,7 +516,7 @@ function getNetworkMetrics(): {
       rtt: connection.rtt || 0,
     };
   } catch (error) {
-    console.warn('Failed to collect network metrics:', error);
+    logger.warn('Failed to collect network metrics:', error);
     return { connectionType: 'unknown', effectiveType: 'unknown', downlink: 0, rtt: 0 };
   }
 }
@@ -621,7 +622,7 @@ export function getPerformanceMetrics(): PerformanceMetrics {
 
     return metrics;
   } catch (error) {
-    console.error('Failed to collect performance metrics:', error);
+    logger.error('Failed to collect performance metrics:', error);
     return {
       fcp: 0,
       lcp: 0,
@@ -651,7 +652,7 @@ export function setupPerformanceMonitoring(
   try {
     // SSR safe
     if (typeof window === 'undefined' || !('PerformanceObserver' in window)) {
-      console.warn('PerformanceObserver not available');
+      logger.warn('PerformanceObserver not available');
       return () => {};
     }
 
@@ -743,7 +744,7 @@ export function setupPerformanceMonitoring(
       fidObserver.disconnect();
     };
   } catch (error) {
-    console.error('Failed to setup performance monitoring:', error);
+    logger.error('Failed to setup performance monitoring:', error);
     return () => {};
   }
 }

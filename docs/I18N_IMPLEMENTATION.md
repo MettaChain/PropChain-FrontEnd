@@ -78,6 +78,16 @@ Translations are organized in logical groups:
     "polygon": "Polygon",
     "bsc": "BSC"
   },
+  "mortgageCalculator": {
+    "title": "Investment Calculator",
+    "holdingPeriodValue_one": "{{count}} Year",
+    "holdingPeriodValue_other": "{{count}} Years",
+    "breakEvenMonths_one": "{{count}} mo",
+    "breakEvenMonths_other": "{{count}} mo"
+  },
+  "qrCode": {
+    "invalidUrl": "Unable to generate QR code for this URL"
+  },
   "mobile": {
     "title": "Mobile Properties",
     "mobileFirstPropertyExperience": "Mobile-First Property Experience"

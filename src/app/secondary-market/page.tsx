@@ -6,7 +6,9 @@ import { SecondaryMarketListing } from '@/types/property';
 import { WalletConnector } from '@/components/WalletConnector';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { CardSkeleton } from '@/components/ui/LoadingSkeletons';
 import Link from 'next/link';
+import Image from 'next/image';
 import { toast } from 'sonner';
 
 export default function SecondaryMarketPage() {
@@ -71,10 +73,7 @@ export default function SecondaryMarketPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <LoadingSpinner size="lg" />
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading market listings...</p>
-          </div>
+          <CardSkeleton count={6} />
         ) : listings.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center shadow-sm">
             <p className="text-gray-600 dark:text-gray-400">No active listings in the secondary market yet.</p>
@@ -84,10 +83,12 @@ export default function SecondaryMarketPage() {
             {listings.map((listing) => (
               <div key={listing.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 transition-transform hover:scale-[1.02]">
                 <div className="relative h-48">
-                  <img 
+                  <Image 
                     src={listing.propertyImage} 
                     alt={listing.propertyName}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover"
                   />
                   <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur px-3 py-1 rounded-full text-sm font-semibold text-blue-600 dark:text-blue-400 shadow-sm">
                     {listing.blockchain.toUpperCase()}

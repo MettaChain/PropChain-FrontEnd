@@ -21,7 +21,6 @@ import {
 import { logger } from "@/utils/logger";
 import { ErrorFactory } from "@/utils/errorFactory";
 import { errorReporting } from "@/utils/errorReporting";
-import { useTranslation } from "react-i18next";
 
 interface Props {
   children: ReactNode;
@@ -139,9 +138,14 @@ export class NetworkErrorBoundary extends Component<Props, State> {
         this.setState({ isOnline: true, lastSuccessfulFetch: new Date() });
       } else {
         this.setState({ isOnline: false });
+        logger.debug('Network health check returned non-ok response', {
+          status: response.status,
+          statusText: response.statusText,
+        });
       }
     } catch (error) {
       this.setState({ isOnline: false });
+      logger.debug('Network health check failed', error);
     }
   };
 

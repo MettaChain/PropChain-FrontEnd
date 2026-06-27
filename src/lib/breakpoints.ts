@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 /**
  * Breakpoint Manager
  * 
@@ -142,7 +143,7 @@ export function subscribe(
         try {
           callback(newCategory);
         } catch (error) {
-          console.error('Error in breakpoint change callback:', error);
+          logger.error('Error in breakpoint change callback:', error);
         }
       }
     }, 16); // 16ms debounce (~60fps)

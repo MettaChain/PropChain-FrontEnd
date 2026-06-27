@@ -14,11 +14,11 @@ interface PropertySearchProps {
   placeholder?: string;
 }
 
-export const PropertySearch: React.FC<PropertySearchProps> = ({
+export const PropertySearch = ({
   value,
   onChange,
   placeholder = 'Search properties, locations...',
-}) => {
+}: PropertySearchProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [showHistory, setShowHistory] = useState(false);
@@ -83,14 +83,14 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex((prev: number) => 
           prev < suggestions.length - 1 ? prev + 1 : prev
         );
         break;
       
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => (prev > 0 ? prev - 1 : -1));
+        setSelectedIndex((prev: number) => (prev > 0 ? prev - 1 : -1));
         break;
       
       case 'Enter':
@@ -141,6 +141,7 @@ export const PropertySearch: React.FC<PropertySearchProps> = ({
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          data-tour="browse-properties"
           className="w-full pl-12 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
         />
 

@@ -1,4 +1,5 @@
 "use client";
+import { logger } from '@/utils/logger';
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -26,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Search, Filter, Settings, Bell, Mail, Bookmark } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CardSkeleton } from "@/components/ui/LoadingSkeletons";
 
 function SavedSearchesContent() {
   const { address } = useWalletStore();
@@ -79,7 +81,7 @@ function SavedSearchesContent() {
       toast.success("Search deleted successfully");
     } catch (error) {
       toast.error("Failed to delete search");
-      console.error("Delete search error:", error);
+      logger.error("Delete search error:", error);
     }
   };
 
@@ -273,24 +275,7 @@ function SavedSearchesContent() {
         )}
 
         {/* Loading State */}
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i}>
-                <CardHeader className="space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </CardHeader>
-
-                <CardContent className="space-y-2">
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-5/6" />
-                  <Skeleton className="h-3 w-4/6" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        {isLoading && <CardSkeleton count={6} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" />}
 
         {!isLoading && filteredAndSortedSearches.length === 0 && (
           <Card>

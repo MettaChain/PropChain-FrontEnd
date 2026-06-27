@@ -8,11 +8,13 @@ import {
   Building2,
   DollarSign,
   Percent,
+  Briefcase,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useI18nFormatting } from "@/utils/i18nFormatting";
 import { useWalletStore } from "@/store/walletStore";
 import { usePortfolioOverview } from "@/hooks/usePortfolioQuery";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface MetricCardProps {
   title: string;
@@ -175,6 +177,27 @@ export const PortfolioOverview = () => {
   };
 
   const metrics = calculateMetrics();
+
+  // If there's no portfolio or no properties, show an empty state for the whole overview
+  const totalProperties = portfolio?.chains.reduce(
+    (total, chain) => total + chain.holdings.length, 
+    0
+  ) || 0;
+
+  if (!portfolio || totalProperties === 0) {
+    return (
+      <EmptyState
+        title={t("dashboard.noInvestmentsTitle", "No investments yet")}
+        description={t("dashboard.noInvestmentsDesc", "Connect your wallet and start investing in real estate tokens to see your portfolio overview here.")}
+        icon={Briefcase}
+        action={{
+          label: t("dashboard.exploreProperties", "Explore Properties"),
+          href: "/properties"
+        }}
+        className="glass-card rounded-2xl border-dashed py-12"
+      />
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">

@@ -1,8 +1,9 @@
 'use client';
+import { logger } from '@/utils/logger';
 
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Circle, Loader2, AlertCircle, XCircle, Wallet, Broadcast, Clock, Shield } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, AlertCircle, XCircle, Wallet, Broadcast, Clock, Shield, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,40 +39,94 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
   onComplete,
   onError,
 }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
   const [steps, setSteps] = useState<TransactionStep[]>([
     {
       id: 'sign',
       label: 'Signing Transaction',
       description: 'Please sign the transaction in your wallet',
       status: 'pending',
-      icon: <Wallet className="w-4 h-4" />,
+      icon: <Wallet className="w-4 h-4" aria-hidden="true" />,
     },
     {
       id: 'broadcast',
       label: 'Broadcasting to Network',
       description: 'Transaction is being sent to the blockchain',
       status: 'pending',
-      icon: <Broadcast className="w-4 h-4" />,
+      icon: <Broadcast className="w-4 h-4" aria-hidden="true" />,
     },
     {
       id: 'confirm',
       label: 'Waiting for Confirmation',
       description: 'Transaction is being confirmed by the network',
       status: 'pending',
-      icon: <Clock className="w-4 h-4" />,
+      icon: <Clock className="w-4 h-4" aria-hidden="true" />,
     },
     {
       id: 'complete',
       label: 'Transaction Confirmed',
       description: 'Transaction has been successfully completed',
       status: 'pending',
-      icon: <CheckCircle2 className="w-4 h-4" />,
+      icon: <CheckCircle2 className="w-4 h-4" aria-hidden="true" />,
     },
   ]);
 
   const [confirmations, setConfirmations] = useState(0);
   const [requiredConfirmations] = useState(12);
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
+  // Focus trap and initial focus
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Focus close button when modal opens
+    if (closeButtonRef.current) {
+      closeButtonRef.current.focus();
+    }
+
+    // Trap focus within modal
+    const focusableElements = modalRef.current?.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    ) || [];
+    
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+    const handleTab = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+
+      if (event.shiftKey) {
+        if (document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleTab);
+    return () => document.removeEventListener('keydown', handleTab);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -113,7 +168,7 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
     };
 
     simulateProgress().catch(error => {
-      console.error('Transaction simulation error:', error);
+      logger.error('Transaction simulation error:', error);
       if (onError) {
         onError('Transaction failed. Please try again.');
       }
@@ -131,13 +186,13 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
   const getStepIcon = (step: TransactionStep) => {
     switch (step.status) {
       case 'completed':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+        return <CheckCircle2 className="w-5 h-5 text-green-500" aria-hidden="true" />;
       case 'in-progress':
-        return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
+        return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" aria-hidden="true" />;
       case 'error':
-        return <XCircle className="w-5 h-5 text-red-500" />;
+        return <XCircle className="w-5 h-5 text-red-500" aria-hidden="true" />;
       default:
-        return <Circle className="w-5 h-5 text-gray-400" />;
+        return <Circle className="w-5 h-5 text-gray-400" aria-hidden="true" />;
     }
   };
 
@@ -180,15 +235,30 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
               <div className="mb-6">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-600 dark:text-gray-400">Overall Progress</span>
-                  <span className="text-gray-900 dark:text-white font-medium">
+                  <span 
+                    className="text-gray-900 dark:text-white font-medium"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
                     {Math.round(getProgressPercentage())}%
                   </span>
                 </div>
-                <Progress value={getProgressPercentage()} className="h-2" />
+                <Progress 
+                  value={getProgressPercentage()} 
+                  className="h-2"
+                  aria-label="Overall transaction progress"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(getProgressPercentage())}
+                />
               </div>
 
               {/* Steps */}
-              <div className="space-y-4 mb-6">
+              <div 
+                className="space-y-4 mb-6"
+                role="list"
+                aria-label="Transaction steps"
+              >
                 {steps.map((step, index) => (
                   <motion.div
                     key={step.id}
@@ -202,6 +272,8 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
                         ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
                         : 'bg-gray-50 dark:bg-gray-800'
                     }`}
+                    role="listitem"
+                    aria-current={step.status === 'in-progress' ? 'step' : undefined}
                   >
                     <div className="flex-shrink-0 mt-0.5">
                       {getStepIcon(step)}
@@ -213,6 +285,13 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                         {step.description}
                       </p>
+                      <span 
+                        className="sr-only"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
+                        Status: {step.status.replace('-', ' ')}
+                      </span>
                       
                       {/* Confirmation Progress */}
                       {step.id === 'confirm' && step.status === 'in-progress' && (
@@ -221,16 +300,30 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
                             <span className="text-gray-500">
                               <Web3Tooltip term="block confirmation">Block Confirmations</Web3Tooltip>
                             </span>
-                            <span className="text-gray-700 dark:text-gray-300 font-medium">
-                              {confirmations}/{requiredConfirmations}
+                            <span 
+                              className="text-gray-700 dark:text-gray-300 font-medium"
+                              aria-live="polite"
+                            >
+                              {confirmations} of {requiredConfirmations} confirmations
                             </span>
                           </div>
-                          <Progress value={getConfirmationProgress()} className="h-1" />
+                          <Progress 
+                            value={getConfirmationProgress()} 
+                            className="h-1"
+                            aria-label="Block confirmations progress"
+                            aria-valuemin={0}
+                            aria-valuemax={requiredConfirmations}
+                            aria-valuenow={confirmations}
+                          />
                         </div>
                       )}
                       
                       {step.error && (
-                        <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+                        <div 
+                          className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400"
+                          role="alert"
+                          aria-live="assertive"
+                        >
                           {step.error}
                         </div>
                       )}
@@ -242,7 +335,7 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
               {/* Footer */}
               <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                  <Shield className="w-3 h-3" />
+                  <Shield className="w-3 h-3" aria-hidden="true" />
                   <span>Secured by blockchain</span>
                 </div>
                 <Button
@@ -250,6 +343,7 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
                   size="sm"
                   onClick={onClose}
                   disabled={steps[steps.length - 1].status !== 'completed'}
+                  aria-label={steps[steps.length - 1].status === 'completed' ? 'Close transaction progress' : 'Transaction in progress, please wait'}
                 >
                   {steps[steps.length - 1].status === 'completed' ? 'Close' : 'Processing...'}
                 </Button>

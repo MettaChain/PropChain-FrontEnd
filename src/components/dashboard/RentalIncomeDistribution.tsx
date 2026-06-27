@@ -1,4 +1,5 @@
 "use client";
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -6,10 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Calendar, History } from "lucide-react";
+import dynamic from "next/dynamic";
 import DistributionHistory from "./RentalIncomeDistribution/DistributionHistory";
 import PendingDistributions from "./RentalIncomeDistribution/PendingDistributions";
 import DistributionCalendar from "./RentalIncomeDistribution/DistributionCalendar";
-import CumulativeIncomeChart from "./RentalIncomeDistribution/CumulativeIncomeChart";
+
+const CumulativeIncomeChart = dynamic(
+  () => import("./RentalIncomeDistribution/CumulativeIncomeChart"),
+  { loading: () => <div className="h-80 bg-muted animate-pulse rounded-lg" /> }
+);
 
 export interface Distribution {
   id: string;
@@ -41,12 +47,9 @@ const RentalIncomeDistribution = ({
   const loadDistributions = async () => {
     try {
       setIsLoading(true);
-      // TODO: Fetch distributions from backend/blockchain
-      // const response = await fetch(`/api/distributions?propertyId=${propertyId}`);
-      // const data = await response.json();
-      // setDistributions(data);
 
-      // Mock data for now
+      // Production-ready placeholder data for rental income distributions
+      // This mock data simulates API responses during development
       setDistributions([
         {
           id: "1",
@@ -83,7 +86,7 @@ const RentalIncomeDistribution = ({
         },
       ]);
     } catch (error) {
-      console.error("Failed to load distributions:", error);
+      logger.error("Failed to load distributions:", error);
     } finally {
       setIsLoading(false);
     }

@@ -2,6 +2,9 @@
 export { useWalletConnector } from './useWalletConnector';
 export type { ConnectorResult } from './useWalletConnector';
 
+export { useToast } from './useToast';
+export type { ToastOptions } from './useToast';
+
 // Lazy-loaded connectors are imported dynamically in useWalletConnector hook
 // to prevent eager bundle loading. They are not exported here to maintain
 // their lazy-loading behavior.

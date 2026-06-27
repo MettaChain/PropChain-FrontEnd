@@ -198,3 +198,13 @@ setupConsoleOverride()
 ```
 
 The system is designed to be **bulletproof** against extension errors while maintaining full functionality for legitimate wallet operations.
+
+
+Summary
+Only a few components have Storybook stories. Add stories for all components.
+
+Acceptance Criteria
+ Story for every component variant
+ Interactive controls for all props
+ Accessibility addon checks passing
+ Visual regression tests via Chromatic

@@ -11,6 +11,7 @@ import type {
   NotificationFrequency,
 } from '@/types/property';
 import { MOCK_PROPERTIES, getUniqueLocations } from './mockData';
+import { logger } from '@/utils/logger';
 import {
   isBlockchainNetwork,
   isPropertyStatus,
@@ -48,25 +49,48 @@ class PropertyService {
     const { useCache = true, strategy = 'stale-while-revalidate' } = options;
     const cacheKey = { filters, sortBy, page, resultsPerPage };
 
-    // Try to get from cache first if enabled
+    // Try Redis cache first if enabled
     if (useCache) {
-      const cached = await getCachedSearchResult(filters, sortBy);
+      try {
+        const redisCached = await redisCacheService.getPropertyListings(filters, sortBy, page);
+        if (redisCached) {
+          // For cache-first, return immediately
+          if (strategy === 'cache-first') {
+            return redisCached;
+          }
+          
+          // For stale-while-revalidate, return cache but refresh in background
+          if (strategy === 'stale-while-revalidate' && isNetworkOnline()) {
+            this.fetchAndCacheSearch(filters, sortBy, page, resultsPerPage).catch((error) => {
+              // Silent fail for background refresh
+              logger.warn('Background refresh failed:', error);
+            });
+          }
+          
+          return redisCached;
+        }
+      } catch (redisError) {
+        logger.warn('Redis cache error, falling back to local cache:', redisError);
+      }
+
+      // Fallback to local cache if Redis fails
+      const localCached = await getCachedSearchResult(filters, sortBy);
       
-      if (cached) {
+      if (localCached) {
         // For cache-first, return immediately
         if (strategy === 'cache-first') {
-          return cached;
+          return localCached;
         }
         
         // For stale-while-revalidate, return cache but refresh in background
         if (strategy === 'stale-while-revalidate' && isNetworkOnline()) {
           this.fetchAndCacheSearch(filters, sortBy, page, resultsPerPage).catch((error) => {
             // Silent fail for background refresh
-            console.warn('Background refresh failed:', error);
+            logger.warn('Background refresh failed:', error);
           });
         }
         
-        return cached;
+        return localCached;
       }
     }
 
@@ -81,6 +105,7 @@ class PropertyService {
 
   /**
    * Fetch search results from network and cache them
+   * Implements server-side pagination: only returns the requested page
    */
   private async fetchAndCacheSearch(
     filters: SearchFilters,
@@ -91,34 +116,41 @@ class PropertyService {
     // Simulate API delay
     await this.delay(300);
 
-    let results = [...MOCK_PROPERTIES];
+    // Apply filters to all data (in a real DB, this would be WHERE clause)
+    let results = this.applyFilters([...MOCK_PROPERTIES], filters);
 
-    // Apply filters
-    results = this.applyFilters(results, filters);
-
-    // Apply sorting
+    // Apply sorting (in a real DB, this would be ORDER BY)
     results = this.applySorting(results, sortBy);
 
-    // Calculate pagination
+    // Server-side pagination: calculate total and slice before returning
     const total = results.length;
     const totalPages = Math.ceil(total / resultsPerPage);
-    const startIndex = (page - 1) * resultsPerPage;
+    
+    // Validate page number
+    const validPage = Math.max(1, Math.min(page, totalPages || 1));
+    const startIndex = (validPage - 1) * resultsPerPage;
     const endIndex = startIndex + resultsPerPage;
+    
+    // Only return the requested page of data (server-side pagination)
     const paginatedResults = results.slice(startIndex, endIndex);
 
     const result: PropertySearchResult = {
       properties: paginatedResults,
       total,
-      page,
+      page: validPage,
       totalPages,
     };
 
-    // Cache the result
+    // Cache the result in both Redis and local cache
     try {
+      // Cache in Redis first (primary cache)
+      await redisCacheService.setPropertyListings(filters, sortBy, validPage, result);
+      
+      // Also cache in local cache as fallback
       await cacheSearchResult(filters, sortBy, result);
     } catch (error) {
       // Non-critical: log but don't fail
-      console.warn('Failed to cache search result:', error);
+      logger.warn('Failed to cache search result:', error);
     }
 
     return result;
@@ -134,14 +166,36 @@ class PropertyService {
   ): Promise<Property | null> {
     const { useCache = true, strategy = 'cache-first' } = options;
 
-    // Try cache first if enabled
+    // Try Redis cache first if enabled
     if (useCache) {
-      const cached = await getCachedProperty(id);
+      try {
+        const redisCached = await redisCacheService.getProperty(id);
+        if (redisCached) {
+          // Return fresh cache immediately
+          if (strategy === 'cache-first') {
+            return redisCached;
+          }
+          
+          // For stale-while-revalidate, return cache but refresh in background
+          if (strategy === 'stale-while-revalidate' && isNetworkOnline()) {
+            this.fetchAndCacheProperty(id).catch(() => {
+              // Silent fail for background refresh
+            });
+          }
+          
+          return redisCached;
+        }
+      } catch (redisError) {
+        logger.warn('Redis cache error, falling back to local cache:', redisError);
+      }
+
+      // Fallback to local cache if Redis fails
+      const localCached = await getCachedProperty(id);
       
-      if (cached.data) {
+      if (localCached.data) {
         // Return fresh cache immediately
-        if (!cached.stale || strategy === 'cache-first') {
-          return cached.data;
+        if (!localCached.stale || strategy === 'cache-first') {
+          return localCached.data;
         }
         
         // For stale-while-revalidate, return stale but refresh in background
@@ -151,7 +205,7 @@ class PropertyService {
           });
         }
         
-        return cached.data;
+        return localCached.data;
       }
     }
 
@@ -173,10 +227,14 @@ class PropertyService {
     
     if (property) {
       try {
+        // Cache in Redis first (primary cache)
+        await redisCacheService.setProperty(property);
+        
+        // Also cache in local cache as fallback
         await setCachedProperty(property);
       } catch (error) {
         // Non-critical: log but don't fail
-        console.warn('Failed to cache property:', error);
+        logger.warn('Failed to cache property:', error);
       }
     }
     

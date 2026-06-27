@@ -43,6 +43,21 @@ Before you start contributing, make sure you have:
    # Edit .env with your configuration
    ```
 
+   Key variables to configure:
+
+   | Variable | Description | Example |
+   |---|---|---|
+   | `NEXT_PUBLIC_API_URL` | Backend REST API base URL | `http://localhost:3001` |
+   | `NEXT_PUBLIC_WS_URL` | WebSocket server URL | `ws://localhost:3001` |
+   | `NEXT_PUBLIC_BLOCKCHAIN_NETWORK` | Target network name | `sepolia` |
+   | `NEXT_PUBLIC_RPC_URL` | Ethereum JSON-RPC endpoint | `https://sepolia.infura.io/v3/YOUR_KEY` |
+   | `NEXT_PUBLIC_CHAIN_ID` | EVM chain ID (decimal) | `11155111` |
+   | `NEXT_PUBLIC_ENABLE_TESTNET` | Enable testnet features | `true` |
+   | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | GA4 measurement ID | `G-XXXXXXXXXX` |
+   | `NEXT_PUBLIC_SENTRY_DSN` | Sentry error tracking DSN | `https://...@sentry.io/...` |
+
+   > **Never commit `.env` to version control.** It is already listed in `.gitignore`.
+
 5. **Start Development Server**
    ```bash
    npm run dev
@@ -152,6 +167,29 @@ We use the following tools to maintain code quality:
 - **TypeScript**: Type safety
 - **Husky**: Git hooks for pre-commit checks
 
+**Auto-format before committing**:
+```bash
+npm run lint -- --fix   # auto-fix ESLint issues
+```
+
+**Prettier config** (`.prettierrc` or `prettier.config.js`):
+- Single quotes for strings
+- 2-space indentation
+- Trailing commas in multi-line structures
+- 100-character line length limit
+
+**TypeScript rules**:
+- Prefer `interface` over `type` for object shapes
+- Always type function return values explicitly for exported functions
+- Avoid `any` — use `unknown` and narrow with type guards instead
+- Use `const` assertions (`as const`) for literal tuples and objects
+
+**React-specific rules**:
+- One component per file
+- Prefer named exports over default exports for components
+- Use `React.FC<Props>` or explicit return type annotations
+- Extract complex logic into custom hooks rather than inline in components
+
 ### Naming Conventions
 
 - **Components**: PascalCase (`PropertyCard.tsx`)
@@ -250,6 +288,41 @@ npm run test:coverage
 
 # Run E2E tests
 npm run test:e2e
+```
+
+### Running Tests Locally
+
+Before opening a PR, run the full test suite locally to catch issues early:
+
+```bash
+# 1. Unit and integration tests (Jest)
+npm test
+
+# 2. Type checking (no emitted output)
+npm run type-check
+
+# 3. Linting
+npm run lint
+
+# 4. End-to-end tests (Playwright) — requires a running dev server
+npm run dev &          # start dev server in background
+npm run test:e2e       # run Playwright tests
+kill %1                # stop dev server
+
+# 5. Build check — ensures the production bundle compiles cleanly
+npm run build
+```
+
+**Coverage requirements**: PRs must not decrease overall coverage below the current threshold. Check the current threshold in `jest.config.js` under `coverageThreshold`.
+
+**Running a single test file**:
+```bash
+npx jest src/hooks/useTransaction.test.ts
+```
+
+**Debugging a failing test**:
+```bash
+npx jest --verbose --no-coverage src/path/to/test.ts
 ```
 
 ## 🎨 Design System
@@ -370,6 +443,26 @@ All PRs go through the following review process:
 4. **Testing Review**: Test coverage and quality check
 5. **Documentation Review**: Documentation updates
 
+### PR Review Checklist
+
+When reviewing a PR, maintainers check:
+
+- [ ] Code follows the project's style guide and naming conventions
+- [ ] New logic is covered by unit or integration tests
+- [ ] No `console.log` or debug statements left in production code
+- [ ] Accessibility requirements are met (WCAG 2.1 AA)
+- [ ] No new `any` types introduced without justification
+- [ ] Breaking changes are documented and versioned appropriately
+- [ ] Environment variables are documented in `.env.example`
+- [ ] PR description links to the relevant issue(s)
+
+### Responding to Review Feedback
+
+- Address each comment with either a code change or a reply explaining why no change is needed
+- Mark resolved threads as resolved after addressing them
+- Request a re-review once all feedback has been addressed
+- Avoid force-pushing after a review has started — use new commits instead
+
 ### Merge Requirements
 
 - All tests must pass
@@ -377,6 +470,41 @@ All PRs go through the following review process:
 - No breaking changes without proper version bump
 - Documentation must be updated
 - At least one maintainer approval
+
+## 🚀 Release Process
+
+PropChain Frontend uses [Release Please](https://github.com/googleapis/release-please) for automated releases based on Conventional Commits.
+
+### How Releases Work
+
+1. Commits to `main` following the Conventional Commits spec are automatically parsed
+2. Release Please opens a release PR that bumps the version and updates `CHANGELOG.md`
+3. Merging the release PR triggers a GitHub Actions workflow that:
+   - Creates a Git tag (e.g. `v1.2.0`)
+   - Publishes a GitHub Release with auto-generated release notes
+   - Deploys to the production environment
+
+### Version Bumping Rules
+
+| Commit type | Version bump |
+|---|---|
+| `fix:` | Patch (`1.0.x`) |
+| `feat:` | Minor (`1.x.0`) |
+| `feat!:` or `BREAKING CHANGE:` footer | Major (`x.0.0`) |
+
+### Hotfix Process
+
+For urgent production fixes:
+
+```bash
+# 1. Branch from the latest release tag
+git checkout -b hotfix/v1.2.1 v1.2.0
+
+# 2. Apply the fix and commit with conventional format
+git commit -m "fix: resolve critical wallet connection crash"
+
+# 3. Open a PR targeting main (and cherry-pick to release branch if needed)
+```
 
 ## 🎉 Recognition & Rewards
 
