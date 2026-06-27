@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Plus, CheckSquare, Square, Heart } from 'lucide-react';
@@ -19,7 +19,7 @@ interface PropertyCardProps {
   viewMode?: 'grid' | 'list';
 }
 
-export const PropertyCard: React.FC<PropertyCardProps> = ({ 
+const PropertyCardInner: React.FC<PropertyCardProps> = ({ 
   property, 
   viewMode = 'grid' 
 }) => {
@@ -35,27 +35,27 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const compareLimitReached = selectedIds.length >= 3 && !isCompared;
   const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addItem(property, 1);
-  };
+  }, [addItem, property]);
 
-  const handleComparisonToggle = (e: React.MouseEvent) => {
+  const handleComparisonToggle = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleProperty(property);
-  };
+  }, [toggleProperty, property]);
 
-  const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
+  const handleCompareToggle = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (!compareLimitReached) {
       togglePropertyId(property.id);
     }
-  };
+  }, [compareLimitReached, togglePropertyId, property.id]);
 
-  const handleToggleFavorite = (e: React.MouseEvent) => {
+  const handleToggleFavorite = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (isFavorite(property.id)) {
@@ -63,7 +63,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     } else {
       addFavorite(property);
     }
-  };
+  }, [isFavorite, removeFavorite, addFavorite, property]);
 
   return (
     <Link
@@ -289,3 +289,5 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     </Link>
   );
 };
+
+export const PropertyCard = React.memo(PropertyCardInner);
