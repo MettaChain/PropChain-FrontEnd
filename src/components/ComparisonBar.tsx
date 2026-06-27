@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Copy, ArrowRight, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCompareStore } from '@/store/compareStore';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 
 const MAX_COMPARE = 3;
 
@@ -15,6 +16,7 @@ export const ComparisonBar = () => {
   const clearCompare = useCompareStore((state) => state.clearCompare);
   const [shareUrl, setShareUrl] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -28,7 +30,7 @@ export const ComparisonBar = () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopySuccess(true);
-      window.setTimeout(() => setCopySuccess(false), 2000);
+      setTimeoutSafe(() => setCopySuccess(false), 2000);
     } catch {
       setCopySuccess(false);
     }

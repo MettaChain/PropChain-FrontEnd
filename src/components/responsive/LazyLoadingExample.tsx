@@ -3,6 +3,7 @@
 import React from 'react';
 import { ImagePlaceholder, SkeletonImage, Skeleton } from './ImagePlaceholder';
 import { setupLazyLoading, preloadCriticalResources } from '@/lib/mobile-optimizer';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 
 /**
  * Lazy Loading System Examples
@@ -169,10 +170,11 @@ export const CustomPlaceholderExample: React.FC = () => {
  */
 export const ContentSkeletonExample: React.FC = () => {
   const [isLoading, setIsLoading] = React.useState(true);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   React.useEffect(() => {
     // Simulate data loading
-    setTimeout(() => setIsLoading(false), 2000);
+    setTimeoutSafe(() => setIsLoading(false), 2000);
   }, []);
 
   if (isLoading) {
@@ -210,13 +212,14 @@ export const ContentSkeletonExample: React.FC = () => {
 export const PropertyListingExample: React.FC = () => {
   const [properties, setProperties] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   React.useEffect(() => {
     // Preload hero image
     preloadCriticalResources(['/images/hero-property.jpg']);
 
     // Simulate API call
-    setTimeout(() => {
+    setTimeoutSafe(() => {
       setProperties([
         { id: 1, image: '/images/property-1.jpg', title: 'Modern Villa', price: '$850,000' },
         { id: 2, image: '/images/property-2.jpg', title: 'Cozy Cottage', price: '$450,000' },

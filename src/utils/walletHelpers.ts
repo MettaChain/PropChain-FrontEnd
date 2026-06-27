@@ -68,6 +68,7 @@ export const parseBalance = (wei: string, decimals: number = 4): string => {
     const remainderStr = remainder.toString().padStart(WEI_DECIMALS, '0').slice(0, decimals);
     return `${whole.toString()}.${remainderStr}`;
   } catch {
+    logger.warn('Failed to parse balance');
     return '0.0000';
   }
 };
