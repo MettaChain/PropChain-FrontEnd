@@ -4,12 +4,14 @@ import React, { useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
 import { SaveSearchButton } from './SaveSearchButton';
+import { PropertyPagination } from './PropertyPagination';
 import type { Property, ViewMode, SortOption, SearchFilters } from '@/types/property';
 import { SORT_LABELS } from '@/types/property';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ComparisonBar } from './ComparisonBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Search } from 'lucide-react';
+import type { PageSize } from '@/hooks/usePaginationParams';
 
 interface SearchResultsProps {
   properties: Property[];
@@ -20,10 +22,14 @@ interface SearchResultsProps {
   sortBy: SortOption;
   page: number;
   totalPages: number;
+  pageSize: PageSize;
   filters: SearchFilters;
   onViewModeChange: (mode: 'grid' | 'list') => void;
   onSortChange: (sort: SortOption) => void;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (size: PageSize) => void;
+  /** Optional href builder for accessible anchor-based page links */
+  buildPageHref?: (page: number) => string;
 }
 
 export const SearchResults: React.FC<SearchResultsProps> = ({
@@ -35,10 +41,13 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   sortBy,
   page,
   totalPages,
+  pageSize,
   filters,
   onViewModeChange,
   onSortChange,
   onPageChange,
+  onPageSizeChange,
+  buildPageHref,
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -89,9 +98,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {isLoading ? 'Searching...' : `${totalResults} Properties Found`}
+            {isLoading ? 'Searching...' : `${totalResults.toLocaleString()} Properties Found`}
           </h2>
-          {page > 1 && (
+          {totalPages > 1 && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Page {page} of {totalPages}
             </p>
@@ -195,49 +204,15 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-12">
-              <button
-                onClick={() => onPageChange(page - 1)}
-                disabled={page === 1}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Previous
-              </button>
-
-              <div className="flex items-center gap-1">
-                {[...Array(Math.min(totalPages, 5))].map((_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) pageNum = i + 1;
-                  else if (page <= 3) pageNum = i + 1;
-                  else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
-                  else pageNum = page - 2 + i;
-
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => onPageChange(pageNum)}
-                      className={`w-10 h-10 rounded-lg transition-colors ${
-                        page === pageNum
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => onPageChange(page + 1)}
-                disabled={page === totalPages}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          )}
+          <PropertyPagination
+            page={page}
+            totalPages={totalPages}
+            totalResults={totalResults}
+            pageSize={pageSize}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+            buildHref={buildPageHref}
+          />
         </>
       )}
     </div>

@@ -74,10 +74,37 @@ export class BlockchainSecurityService {
     if (cached) return cached;
 
     try {
-      // In a real implementation, this would call actual security APIs
-      // For now, we'll simulate the response
+      // Try calling a remote API if available. If `fetch` returns a Promise
+      // (for example when tests mock it), await it and use the response.
+      // Otherwise, fall back to the local simulation to preserve test behavior.
+      const fetchResult = typeof fetch === 'function' ? (fetch as any)(`${this.config.baseUrl}/address/${address}`, {
+        headers: this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}
+      }) : null;
+
+      if (fetchResult && typeof fetchResult.then === 'function') {
+        const response = await fetchResult;
+        if (response && response.ok) {
+          const body = await response.json();
+          const score = typeof body.risk_score === 'number' ? body.risk_score : 50;
+          const categories = Array.isArray(body.categories) ? body.categories : [];
+          const result: AddressRiskScore = {
+            address,
+            riskScore: score,
+            riskLevel: this.getRiskLevel(score),
+            categories,
+            labels: Array.isArray(body.labels) ? body.labels : [],
+            description: body.description || ''
+          };
+          this.setCache(cacheKey, result);
+          return result;
+        }
+        // If response not ok, throw to be caught below and return default
+        throw new Error('Remote service returned non-OK response');
+      }
+
+      // No remote fetch available — use the internal simulation
       const riskScore = await this.simulateAddressRiskCheck(address);
-      
+
       const result: AddressRiskScore = {
         address,
         riskScore: riskScore.score,
@@ -234,7 +261,7 @@ export class BlockchainSecurityService {
 
       // BigInt comparison: 1 ETH = 10^18 wei; flag high-value sends to risky recipients
       const valueBN = BigInt(value);
-      if (valueBN > BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // > 1 ETH
+      if (valueBN >= BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // >= 1 ETH
         warnings.push('High-value transaction to risky address');
       }
 

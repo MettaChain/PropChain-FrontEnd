@@ -8,6 +8,7 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  watchman: false,
   moduleNameMapper: {
     // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -20,7 +21,6 @@ const customJestConfig = {
     '/node_modules/(?!.*(wagmi|viem|@wagmi|@viem|@walletconnect|@metamask|@coinbase|@radix-ui|@storybook))'
   ],
   testPathIgnorePatterns: [
-    '<rootDir>/src/components/responsive/__tests__/ResponsiveContainer.test.tsx',
     '<rootDir>/src/lib/__tests__/mobile-optimizer.test.ts',
     '<rootDir>/src/lib/__tests__/verify-performance-monitoring.ts'
   ],

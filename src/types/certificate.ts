@@ -3,7 +3,7 @@ export interface NFTCertificate {
   propertyId: string;
   propertyName: string;
   propertyAddress: string;
-  propertyImage: string;
+  propertyImage?: string | null;
   tokenAmount: number;
   tokenSymbol: string;
   walletAddress: string;

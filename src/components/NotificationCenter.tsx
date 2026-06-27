@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,39 +28,39 @@ interface NotificationCenterProps {
   onClearAlert: (alertId: string) => void;
 }
 
-export const NotificationCenter = ({
+const getAlertIcon = (alert: PropertyAlert): ReactNode => {
+  if (alert.newPropertiesCount === 1) {
+    return <Home className="w-4 h-4 text-blue-600" />;
+  }
+  if (alert.newPropertiesCount > 5) {
+    return <TrendingUp className="w-4 h-4 text-green-600" />;
+  }
+  return <AlertCircle className="w-4 h-4 text-orange-600" />;
+};
+
+const getAlertMessage = (alert: PropertyAlert): string => {
+  if (alert.newPropertiesCount === 1) {
+    return '1 new property matches your search';
+  }
+  return `${alert.newPropertiesCount} new properties match your search`;
+};
+
+export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   alerts,
   onMarkAsRead,
   onMarkAllAsRead,
   onClearAlert,
-}: NotificationCenterProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const unreadCount = alerts.filter((alert: PropertyAlert) => !alert.isRead).length;
+}) => {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const unreadCount: number = alerts.filter((alert) => !alert.isRead).length;
 
-  const handleMarkAsRead = (alertId: string) => {
+  const handleMarkAsRead = useCallback((alertId: string): void => {
     onMarkAsRead(alertId);
-  };
+  }, [onMarkAsRead]);
 
-  const handleClearAlert = (alertId: string) => {
+  const handleClearAlert = useCallback((alertId: string): void => {
     onClearAlert(alertId);
-  };
-
-  const getAlertIcon = (alert: PropertyAlert) => {
-    if (alert.newPropertiesCount === 1) {
-      return <Home className="w-4 h-4 text-blue-600" />;
-    } else if (alert.newPropertiesCount > 5) {
-      return <TrendingUp className="w-4 h-4 text-green-600" />;
-    }
-    return <AlertCircle className="w-4 h-4 text-orange-600" />;
-  };
-
-  const getAlertMessage = (alert: PropertyAlert) => {
-    if (alert.newPropertiesCount === 1) {
-      return '1 new property matches your search';
-    } else {
-      return `${alert.newPropertiesCount} new properties match your search`;
-    }
-  };
+  }, [onClearAlert]);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>

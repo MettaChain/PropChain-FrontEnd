@@ -1,6 +1,9 @@
 "use client";
 
 import React from 'react';
+import { createLogger } from '@/utils/logger';
+
+const logger = createLogger('ImagePlaceholder');
 
 /**
  * Image Placeholder Component
@@ -215,6 +218,7 @@ export const SkeletonImage: React.FC<SkeletonImageProps> = ({
             if (dataSrc) {
               img.src = dataSrc;
               img.removeAttribute('data-src');
+              logger.debug('Lazy loading image via IntersectionObserver', { src: dataSrc });
               observer.unobserve(img);
             }
           }
@@ -235,11 +239,13 @@ export const SkeletonImage: React.FC<SkeletonImageProps> = ({
 
   const handleLoad = () => {
     setIsLoaded(true);
+    logger.debug('Image loaded successfully', { src, alt });
     onLoad?.();
   };
 
   const handleError = () => {
     setHasError(true);
+    logger.warn('Image failed to load', { src, alt });
     onError?.();
   };
 

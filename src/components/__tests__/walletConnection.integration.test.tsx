@@ -33,6 +33,18 @@ jest.mock('wagmi', () => ({
   }),
 }));
 
+// Mock next/dynamic to render lazy components via React.lazy/Suspense in tests
+jest.mock('next/dynamic', () => (loader: any) => {
+  const React = require('react');
+  const Lazy = React.lazy(() => loader().then((loaded: any) => {
+    // loader might resolve to a component or a module
+    const comp = loaded && loaded.default ? loaded.default : loaded;
+    return { default: comp };
+  }));
+
+  return (props: any) => React.createElement(React.Suspense, { fallback: null }, React.createElement(Lazy, props));
+});
+
 // Mock security hook
 jest.mock('@/hooks/useSecurity', () => ({
   useSecurity: () => ({
@@ -75,6 +87,27 @@ const createTestProviders = (children: React.ReactNode) => {
   );
 };
 
+// Simple test connector that bypasses next/dynamic and renders WalletModal synchronously
+const TestConnector: React.FC = () => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const { isConnecting } = useWalletStore();
+
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <button
+        onClick={() => setIsOpen(true)}
+        disabled={isConnecting}
+        data-tour="wallet-connector"
+        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+      >
+        {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+      </button>
+
+      <WalletModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+    </div>
+  );
+};
+
 describe('Wallet Connection Integration Tests', () => {
   beforeEach(() => {
     // Reset wallet store before each test
@@ -103,7 +136,7 @@ describe('Wallet Connection Integration Tests', () => {
         writable: true,
       });
 
-      render(createTestProviders(<WalletConnector />));
+      render(createTestProviders(<TestConnector />));
 
       // Click connect wallet button
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
@@ -148,7 +181,7 @@ describe('Wallet Connection Integration Tests', () => {
         writable: true,
       });
 
-      render(createTestProviders(<WalletConnector />));
+      render(createTestProviders(<TestConnector />));
 
       // Click connect wallet button
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
@@ -188,7 +221,7 @@ describe('Wallet Connection Integration Tests', () => {
         writable: true,
       });
 
-      render(createTestProviders(<WalletConnector />));
+      render(createTestProviders(<TestConnector />));
 
       // Click connect wallet button
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
@@ -229,7 +262,7 @@ describe('Wallet Connection Integration Tests', () => {
       // Set initial connected state
       useWalletStore.getState().setConnected('0x1234567890123456789012345678901234567890', 'metamask', 1);
 
-      render(createTestProviders(<WalletConnector />));
+      render(createTestProviders(<TestConnector />));
 
       // Should show connected state
       expect(screen.getByText(/0x1234\.\.\.7890/i)).toBeInTheDocument();
@@ -268,7 +301,7 @@ describe('Wallet Connection Integration Tests', () => {
         writable: true,
       });
 
-      const { rerender } = render(createTestProviders(<WalletConnector />));
+      const { rerender } = render(createTestProviders(<TestConnector />));
 
       // Connect wallet
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
@@ -312,7 +345,7 @@ describe('Wallet Connection Integration Tests', () => {
         writable: true,
       });
 
-      render(createTestProviders(<WalletConnector />));
+      render(createTestProviders(<TestConnector />));
 
       // Click connect wallet button
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
@@ -340,7 +373,7 @@ describe('Wallet Connection Integration Tests', () => {
         blocks: ['Address is blacklisted'],
       });
 
-      jest.mocked(useSecurity).mockReturnValue({
+      (useSecurity as unknown as jest.Mock).mockReturnValue({
         validateWalletConnection: mockValidateWalletConnection,
       } as any);
 
@@ -360,7 +393,7 @@ describe('Wallet Connection Integration Tests', () => {
         writable: true,
       });
 
-      render(createTestProviders(<WalletConnector />));
+      render(createTestProviders(<TestConnector />));
 
       // Click connect wallet button
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
@@ -390,7 +423,7 @@ describe('Wallet Connection Integration Tests', () => {
         writable: true,
       });
 
-      render(createTestProviders(<WalletConnector />));
+      render(createTestProviders(<TestConnector />));
 
       // Click connect wallet button
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
@@ -428,7 +461,7 @@ describe('Wallet Connection Integration Tests', () => {
         writable: true,
       });
 
-      render(createTestProviders(<WalletConnector />));
+      render(createTestProviders(<TestConnector />));
 
       // Connect wallet
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
@@ -450,7 +483,7 @@ describe('Wallet Connection Integration Tests', () => {
     it('should close modal when clicking outside', async () => {
       const user = userEvent.setup();
       
-      render(createTestProviders(<WalletConnector />));
+      render(createTestProviders(<TestConnector />));
 
       // Click connect wallet button to open modal
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });

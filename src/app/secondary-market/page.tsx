@@ -73,10 +73,7 @@ function SecondaryMarketPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <LoadingSpinner size="lg" />
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading market listings...</p>
-          </div>
+          <CardSkeleton count={6} />
         ) : listings.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center shadow-sm">
             <p className="text-gray-600 dark:text-gray-400">No active listings in the secondary market yet.</p>
