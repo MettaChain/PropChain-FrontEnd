@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useWalletStore } from '@/store/walletStore';
 import { getWalletErrorMessage } from '@/utils/errorHandling';
 import { toChainId } from '@/config/chains';
@@ -173,8 +173,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     return null;
   };
 
-  // Detect installed wallets
-  const detectInstalledWallets = () => {
+  // Memoize wallet detection so it doesn't re-run on every render
+  const installedWallets = useMemo(() => {
     const installed = new Set<SupportedWalletId>();
     
     // Detect MetaMask
@@ -191,9 +191,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     // We'll consider it "available" but not "installed" in the traditional sense
     
     return installed;
-  };
-
-  const installedWallets = detectInstalledWallets();
+  }, []);
 
   const wallets: Array<{
     id: SupportedWalletId;
