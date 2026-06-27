@@ -6,11 +6,12 @@ import { SecondaryMarketListing } from '@/types/property';
 import { WalletConnector } from '@/components/WalletConnector';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
 
-export default function SecondaryMarketPage() {
+function SecondaryMarketPage() {
   const [listings, setListings] = useState<SecondaryMarketListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -137,3 +138,5 @@ export default function SecondaryMarketPage() {
     </div>
   );
 }
+
+export default withRouteErrorBoundary(SecondaryMarketPage, { routeName: 'secondary-market' });

@@ -6,7 +6,7 @@ import { getWalletErrorMessage } from '@/utils/errorHandling';
 import { toChainId } from '@/config/chains';
 import { useSecurity } from '@/hooks/useSecurity';
 import { useWalletConnector } from '@/hooks/useWalletConnector';
-import { AlertTriangle, Shield, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Shield, X, CheckCircle, AlertCircle, Loader2, Wallet, Link2, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModalTransition } from './PageTransition';
 
@@ -199,7 +199,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     id: SupportedWalletId;
     name: string;
     description: string;
-    icon: string;
+    icon: React.ReactNode;
     color: string;
     installUrl?: string;
   }> = [
@@ -207,7 +207,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       id: 'metamask',
       name: 'MetaMask',
       description: 'Connect to your MetaMask wallet',
-      icon: '🦊',
+      icon: <Wallet className="w-6 h-6" aria-hidden="true" />,
       color: 'bg-orange-500',
       installUrl: 'https://metamask.io/download/',
     },
@@ -215,7 +215,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       id: 'coinbase',
       name: 'Coinbase Wallet',
       description: 'Connect to your Coinbase wallet',
-      icon: '�',
+      icon: <QrCode className="w-6 h-6" aria-hidden="true" />,
       color: 'bg-blue-600',
       installUrl: 'https://www.coinbase.com/wallet',
     },
@@ -223,7 +223,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       id: 'walletconnect',
       name: 'WalletConnect',
       description: 'Connect with WalletConnect',
-      icon: '�',
+      icon: <Link2 className="w-6 h-6" aria-hidden="true" />,
       color: 'bg-blue-500',
     },
   ].sort((a, b) => {
@@ -303,7 +303,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                     disabled={isConnecting || isLoadingConnector}
                     className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl`}>
+                    <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white`} title={wallet.name} aria-label={`${wallet.name} wallet`}>
                       {wallet.icon}
                     </div>
                     <div className="flex-1 text-left">
@@ -330,7 +330,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                     key={wallet.id}
                     className="w-full flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
                   >
-                    <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white text-xl opacity-60`}>
+                    <div className={`w-12 h-12 ${wallet.color} rounded-lg flex items-center justify-center text-white opacity-60`} title={wallet.name} aria-label={`${wallet.name} wallet - not installed`}>
                       {wallet.icon}
                     </div>
                     <div className="flex-1 text-left">
