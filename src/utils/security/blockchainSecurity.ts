@@ -74,35 +74,42 @@ export class BlockchainSecurityService {
     if (cached) return cached;
 
     try {
-      // Try calling a remote API if available. If `fetch` returns a Promise
-      // (for example when tests mock it), await it and use the response.
-      // Otherwise, fall back to the local simulation to preserve test behavior.
-      const fetchResult = typeof fetch === 'function' ? (fetch as any)(`${this.config.baseUrl}/address/${address}`, {
-        headers: this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}
-      }) : null;
+      // Call the local API proxy route which securely holds the API key server-side.
+      // This avoids exposing the key in the client bundle.
+      const baseUrl = typeof window !== 'undefined'
+        ? window.location.origin
+        : this.config.baseUrl;
 
-      if (fetchResult && typeof fetchResult.then === 'function') {
-        const response = await fetchResult;
-        if (response && response.ok) {
-          const body = await response.json();
-          const score = typeof body.risk_score === 'number' ? body.risk_score : 50;
-          const categories = Array.isArray(body.categories) ? body.categories : [];
-          const result: AddressRiskScore = {
-            address,
-            riskScore: score,
-            riskLevel: this.getRiskLevel(score),
-            categories,
-            labels: Array.isArray(body.labels) ? body.labels : [],
-            description: body.description || ''
-          };
-          this.setCache(cacheKey, result);
-          return result;
-        }
-        // If response not ok, throw to be caught below and return default
-        throw new Error('Remote service returned non-OK response');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+
+      let response;
+      try {
+        response = await fetch(
+          `${baseUrl}/api/security/address-check?address=${encodeURIComponent(address)}`,
+          { signal: controller.signal }
+        );
+      } finally {
+        clearTimeout(timeoutId);
       }
 
-      // No remote fetch available — use the internal simulation
+      if (response && response.ok) {
+        const body = await response.json();
+        const score = typeof body.risk_score === 'number' ? body.risk_score : 50;
+        const categories = Array.isArray(body.categories) ? body.categories : [];
+        const result: AddressRiskScore = {
+          address,
+          riskScore: score,
+          riskLevel: this.getRiskLevel(score),
+          categories,
+          labels: Array.isArray(body.labels) ? body.labels : [],
+          description: body.description || ''
+        };
+        this.setCache(cacheKey, result);
+        return result;
+      }
+
+      // If the proxy returned an error or is unavailable, fall back to simulated check
       const riskScore = await this.simulateAddressRiskCheck(address);
 
       const result: AddressRiskScore = {
@@ -494,10 +501,11 @@ export class BlockchainSecurityService {
 
 // Default configuration for development
 const defaultConfig: SecurityServiceConfig = {
-  baseUrl: 'https://api.chainalysis.com/api/v2',
+  baseUrl: 'http://localhost:3000',
   timeout: 10000,
-  // In production, this would be set via environment variables
-  apiKey: typeof window !== 'undefined' ? (window as any).__CHAINALYSIS_API_KEY__ : undefined
+  // API key is now configured only on the server side via CHAINALYSIS_API_KEY env var.
+  // The browser never has access to this key.
+  apiKey: undefined
 };
 
 // Export singleton instance
