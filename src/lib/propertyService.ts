@@ -26,6 +26,7 @@ import {
   cacheSearchResult,
 } from './propertyCache';
 import { isNetworkOnline } from './cacheManager';
+import { generateSecureId } from '@/utils/secureId';
 
 /**
  * Property Service
@@ -401,7 +402,7 @@ class PropertyService {
    * Generate unique ID
    */
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return generateSecureId();
   }
 }
 

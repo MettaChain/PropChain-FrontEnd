@@ -1,6 +1,7 @@
 'use client';
 
 import { getErrorMessage } from './typeGuards';
+import { generateCorrelationId, generateChildId } from './secureId';
 
 // ============================================================================
 // Log Levels
@@ -134,12 +135,6 @@ let globalConfig = getDefaultConfig();
 // Correlation ID Management
 // ============================================================================
 
-const generateCorrelationId = (): string => {
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.random().toString(36).substring(2, 15);
-  return `corr-${timestamp}-${randomPart}`;
-};
-
 class CorrelationIdManager {
   private static instance: CorrelationIdManager;
   private correlationId: string = generateCorrelationId();
@@ -168,9 +163,7 @@ class CorrelationIdManager {
   }
 
   createChild(): string {
-    const parentId = this.correlationId;
-    const childId = `${parentId}-${Math.random().toString(36).substring(2, 8)}`;
-    return childId;
+    return generateChildId(this.correlationId);
   }
 
   // For async operations - returns a new correlation ID

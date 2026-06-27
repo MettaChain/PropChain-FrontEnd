@@ -39,6 +39,7 @@ import {
   getCacheEntryStatus,
   calculateEntrySize,
 } from '@/types/cache';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 // Event listeners
 const eventListeners: Set<CacheEventListener> = new Set();
@@ -117,16 +118,8 @@ const updateMetadataOnAccess = (metadata: CacheMetadata): CacheMetadata => ({
 export const getCacheConfig = (): CacheConfig => {
   if (typeof window === 'undefined') return DEFAULT_CACHE_CONFIG;
   
-  try {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.CACHE_CONFIG);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return { ...DEFAULT_CACHE_CONFIG, ...parsed };
-    }
-  } catch (error) {
-    logger.error('Error reading cache config:', error);
-  }
-  return DEFAULT_CACHE_CONFIG;
+  const stored = safeLocalStorage.getJSON<CacheConfig>(LOCAL_STORAGE_KEYS.CACHE_CONFIG, DEFAULT_CACHE_CONFIG);
+  return { ...DEFAULT_CACHE_CONFIG, ...stored };
 };
 
 /**
@@ -135,13 +128,9 @@ export const getCacheConfig = (): CacheConfig => {
 export const setCacheConfig = (config: Partial<CacheConfig>): void => {
   if (typeof window === 'undefined') return;
   
-  try {
-    const current = getCacheConfig();
-    const updated = { ...current, ...config };
-    localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_CONFIG, JSON.stringify(updated));
-  } catch (error) {
-    logger.error('Error saving cache config:', error);
-  }
+  const current = getCacheConfig();
+  const updated = { ...current, ...config };
+  safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.CACHE_CONFIG, updated);
 };
 
 /**
@@ -377,11 +366,9 @@ export const cacheSearchResult = async (
     };
 
     if (typeof window !== 'undefined') {
-      const searches = JSON.parse(
-        localStorage.getItem('propchain-search-cache') || '{}'
-      );
+      const searches = safeLocalStorage.getJSON<Record<string, any>>('propchain-search-cache', {});
       searches[key] = searchCache;
-      localStorage.setItem('propchain-search-cache', JSON.stringify(searches));
+      safeLocalStorage.setJSON('propchain-search-cache', searches);
     }
 
     emitEvent({ type: 'set', key, timestamp: Date.now() });
@@ -403,9 +390,7 @@ export const getCachedSearchResult = async (
   try {
     if (typeof window === 'undefined') return null;
 
-    const searches = JSON.parse(
-      localStorage.getItem('propchain-search-cache') || '{}'
-    );
+    const searches = safeLocalStorage.getJSON<Record<string, any>>('propchain-search-cache', {});
     const cached = searches[key];
 
     if (!cached) {
@@ -418,7 +403,7 @@ export const getCachedSearchResult = async (
     if (Date.now() - cached.cachedAt > config.ttl) {
       cacheMisses++;
       delete searches[key];
-      localStorage.setItem('propchain-search-cache', JSON.stringify(searches));
+      safeLocalStorage.setJSON('propchain-search-cache', searches);
       return null;
     }
 
@@ -510,7 +495,7 @@ export const clearAllCachedProperties = async (): Promise<void> => {
     await dbClear(CACHE_STORE_NAMES.MOBILE_PROPERTIES);
     
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('propchain-search-cache');
+      safeLocalStorage.remove('propchain-search-cache');
     }
 
     cacheHits = 0;
@@ -570,10 +555,7 @@ export const updateCacheStats = async (): Promise<CacheStats> => {
 
     // Persist stats
     if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        LOCAL_STORAGE_KEYS.CACHE_STATS,
-        JSON.stringify(cacheStats)
-      );
+      safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.CACHE_STATS, cacheStats);
     }
 
     return cacheStats;
@@ -634,7 +616,7 @@ export const cleanupExpiredEntries = async (): Promise<number> => {
       }
       
       if (modified) {
-        localStorage.setItem('propchain-search-cache', JSON.stringify(searches));
+        safeLocalStorage.setJSON('propchain-search-cache', searches);
       }
     }
 
@@ -666,10 +648,8 @@ export const initPropertyCache = async (): Promise<void> => {
   try {
     // Load cached stats
     if (typeof window !== 'undefined') {
-      const storedStats = localStorage.getItem(LOCAL_STORAGE_KEYS.CACHE_STATS);
-      if (storedStats) {
-        cacheStats = { ...cacheStats, ...JSON.parse(storedStats) };
-      }
+      const storedStats = safeLocalStorage.getJSON<Partial<CacheStats>>(LOCAL_STORAGE_KEYS.CACHE_STATS, {});
+      cacheStats = { ...cacheStats, ...storedStats };
     }
 
     // Clean up expired entries on init

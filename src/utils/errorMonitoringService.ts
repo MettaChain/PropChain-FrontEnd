@@ -4,6 +4,7 @@ import { structuredLogger } from './structuredLogger';
 import { errorReporting } from './errorReporting';
 import { logger } from './logger';
 import { ErrorCategory, ErrorSeverity, type AppError } from '@/types/errors';
+import { generateAlertId } from './secureId';
 
 // ============================================================================
 // Error Monitoring Service
@@ -165,7 +166,7 @@ class ErrorMonitoringService {
 
   private createAlert(error: AppError): void {
     const alert: ErrorAlert = {
-      id: `alert_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      id: generateAlertId(),
       error,
       timestamp: new Date(),
       severity: error.severity,

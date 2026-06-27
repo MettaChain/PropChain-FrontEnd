@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { generateSecureId } from '@/utils/secureId';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 interface SearchHistoryItem {
   id: string;
@@ -17,16 +19,9 @@ export const useSearchHistory = () => {
 
   // Load search history from localStorage on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(SEARCH_HISTORY_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setSearchHistory(parsed);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading search history:', error);
+    const saved = safeLocalStorage.getJSON<SearchHistoryItem[]>(SEARCH_HISTORY_KEY, []);
+    if (Array.isArray(saved)) {
+      setSearchHistory(saved);
     }
   }, []);
 
@@ -34,7 +29,7 @@ export const useSearchHistory = () => {
     if (!query.trim()) return;
 
     const newItem: SearchHistoryItem = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: generateSecureId('search'),
       query: query.trim(),
       timestamp: new Date().toISOString(),
       type,
@@ -51,11 +46,7 @@ export const useSearchHistory = () => {
       const limited = updated.slice(0, MAX_HISTORY_ITEMS);
       
       // Save to localStorage
-      try {
-        localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(limited));
-      } catch (error) {
-        console.error('Error saving search history:', error);
-      }
+      safeLocalStorage.setJSON(SEARCH_HISTORY_KEY, limited);
       
       return limited;
     });
@@ -64,22 +55,14 @@ export const useSearchHistory = () => {
   const removeFromHistory = (id: string) => {
     setSearchHistory(prev => {
       const updated = prev.filter(item => item.id !== id);
-      try {
-        localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updated));
-      } catch (error) {
-        console.error('Error updating search history:', error);
-      }
+      safeLocalStorage.setJSON(SEARCH_HISTORY_KEY, updated);
       return updated;
     });
   };
 
   const clearHistory = () => {
     setSearchHistory([]);
-    try {
-      localStorage.removeItem(SEARCH_HISTORY_KEY);
-    } catch (error) {
-      console.error('Error clearing search history:', error);
-    }
+    safeLocalStorage.remove(SEARCH_HISTORY_KEY);
   };
 
   const getRecentSearches = (limit: number = 5) => {

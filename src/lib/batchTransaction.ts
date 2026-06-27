@@ -1,6 +1,7 @@
 import type { CartItem } from '@/types/cart';
 import type { BatchTransactionResult } from '@/types/cart';
 import { logger } from '@/utils/logger';
+import { generateMockTxHash } from '@/utils/secureId';
 
 // Mock multicall implementation - in production, this would use actual smart contracts
 export class BatchTransactionService {
@@ -33,9 +34,8 @@ export class BatchTransactionService {
       // Simulate blockchain transaction delay
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Generate mock transaction hash
-      const transactionHash = `0x${Array.from({length: 64}, () => 
-        Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      // Generate mock transaction hash using secure random values
+      const transactionHash = generateMockTxHash();
 
       // Simulate individual transaction results
       const results = items.map(item => ({

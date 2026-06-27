@@ -4,6 +4,7 @@ import { logger, LogLevel, type LoggerConfig } from './logger';
 import { errorReporting } from './errorReporting';
 import { ErrorCategory, ErrorSeverity } from '@/types/errors';
 import type { AppError } from '@/types/errors';
+import { generateSessionId, generateErrorId } from './secureId';
 
 // ============================================================================
 // Structured Logging Service
@@ -90,7 +91,7 @@ class StructuredLogger {
   }
 
   private generateSessionId(): string {
-    return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    return generateSessionId();
   }
 
   private startFlushTimer(): void {
@@ -178,7 +179,7 @@ class StructuredLogger {
 
     // Create AppError from structured log
     const appError: AppError = {
-      id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      id: generateErrorId(),
       message: log.error.message,
       category: log.category || ErrorCategory.UI,
       severity: log.severity || ErrorSeverity.MEDIUM,

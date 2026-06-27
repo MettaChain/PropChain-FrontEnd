@@ -26,6 +26,8 @@ import {
   isCacheAvailable,
   initPropertyCache,
 } from './propertyCache';
+import { generateSecureId } from '@/utils/secureId';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 // Sync queue for offline operations
 interface SyncQueueItem {
@@ -60,10 +62,7 @@ export const initCacheManager = async (): Promise<void> => {
 
     // Load last sync time
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.LAST_SYNC);
-      if (stored) {
-        lastSyncTime = parseInt(stored, 10);
-      }
+      lastSyncTime = safeLocalStorage.getJSON<number>(LOCAL_STORAGE_KEYS.LAST_SYNC, 0);
     }
 
     // Perform initial sync if online
@@ -150,10 +149,7 @@ export const performBackgroundSync = async (): Promise<void> => {
     // Update last sync time
     lastSyncTime = Date.now();
     if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        LOCAL_STORAGE_KEYS.LAST_SYNC,
-        lastSyncTime.toString()
-      );
+      safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.LAST_SYNC, lastSyncTime);
     }
 
     logger.info('Background sync completed');
@@ -171,10 +167,7 @@ const processSyncQueue = async (): Promise<void> => {
   if (typeof window === 'undefined') return;
 
   try {
-    const queueJson = localStorage.getItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
-    if (!queueJson) return;
-
-    const queue: SyncQueueItem[] = JSON.parse(queueJson);
+    const queue = safeLocalStorage.getJSON<SyncQueueItem[]>(LOCAL_STORAGE_KEYS.SYNC_QUEUE, []);
     if (queue.length === 0) return;
 
     logger.info(`Processing ${queue.length} sync queue items`);
@@ -205,10 +198,7 @@ const processSyncQueue = async (): Promise<void> => {
       (item) => !processedIds.includes(item.id) || failedItems.some((f) => f.id === item.id)
     );
 
-    localStorage.setItem(
-      LOCAL_STORAGE_KEYS.SYNC_QUEUE,
-      JSON.stringify(remainingQueue)
-    );
+    safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.SYNC_QUEUE, remainingQueue);
 
     logger.info(`Sync queue processed: ${processedIds.length} succeeded, ${failedItems.length} failed`);
   } catch (error) {
@@ -247,11 +237,10 @@ export const addToSyncQueue = (
   if (typeof window === 'undefined') return;
 
   try {
-    const queueJson = localStorage.getItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
-    const queue: SyncQueueItem[] = queueJson ? JSON.parse(queueJson) : [];
+    const queue = safeLocalStorage.getJSON<SyncQueueItem[]>(LOCAL_STORAGE_KEYS.SYNC_QUEUE, []);
 
     const newItem: SyncQueueItem = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateSecureId('sync'),
       type,
       payload,
       timestamp: Date.now(),
@@ -259,7 +248,7 @@ export const addToSyncQueue = (
     };
 
     queue.push(newItem);
-    localStorage.setItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(queue));
+    safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.SYNC_QUEUE, queue);
 
     logger.info(`Added item to sync queue: ${newItem.id}`);
   } catch (error) {
@@ -274,9 +263,7 @@ export const getSyncQueueLength = (): number => {
   if (typeof window === 'undefined') return 0;
 
   try {
-    const queueJson = localStorage.getItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
-    if (!queueJson) return 0;
-    const queue: SyncQueueItem[] = JSON.parse(queueJson);
+    const queue = safeLocalStorage.getJSON<SyncQueueItem[]>(LOCAL_STORAGE_KEYS.SYNC_QUEUE, []);
     return queue.length;
   } catch {
     return 0;
@@ -288,7 +275,7 @@ export const getSyncQueueLength = (): number => {
  */
 export const clearSyncQueue = (): void => {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
+  safeLocalStorage.remove(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
   logger.info('Sync queue cleared');
 };
 

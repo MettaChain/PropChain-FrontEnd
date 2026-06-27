@@ -9,6 +9,7 @@ import { structuredLogger } from "@/utils/structuredLogger";
 import { errorMonitoring } from "@/utils/errorMonitoringService";
 import { ErrorCategory, ErrorSeverity } from "@/types/errors";
 import { logger } from "@/utils/logger";
+import { generateErrorId } from "@/utils/secureId";
 import { WalletConnector } from "@/components/WalletConnector";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -49,7 +50,7 @@ function HomeContent() {
       error.stack = event.error?.stack;
       
       const appError = {
-        id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        id: generateErrorId(),
         category: ErrorCategory.UI,
         severity: ErrorSeverity.HIGH,
         message: event.message,
@@ -72,7 +73,7 @@ function HomeContent() {
       const error = new Error(event.reason?.message || 'Unhandled promise rejection');
       
       const appError = {
-        id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        id: generateErrorId(),
         category: ErrorCategory.NETWORK,
         severity: ErrorSeverity.MEDIUM,
         message: error.message,

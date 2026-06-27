@@ -27,6 +27,8 @@ export interface TransactionMetrics {
   transactionFrequency: number; // transactions per hour
 }
 
+import { generateSecureId } from '@/utils/secureId';
+
 export class TransactionMonitor {
   private static instance: TransactionMonitor;
   private transactionHistory: Map<string, any[]> = new Map(); // wallet -> transactions
@@ -514,7 +516,7 @@ export class TransactionMonitor {
    * Generates a unique ID
    */
   private generateId(): string {
-    return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    return generateSecureId();
   }
 }
 
