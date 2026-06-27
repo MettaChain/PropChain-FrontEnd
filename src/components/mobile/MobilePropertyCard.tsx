@@ -231,8 +231,8 @@ export const MobilePropertyCard = ({
           {/* Amenities Preview */}
           {property.amenities && property.amenities.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {property.amenities.slice(0, 2).map((amenity, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
+              {property.amenities.slice(0, 2).map((amenity) => (
+                <Badge key={amenity} variant="outline" className="text-xs">
                   {amenity}
                 </Badge>
               ))}

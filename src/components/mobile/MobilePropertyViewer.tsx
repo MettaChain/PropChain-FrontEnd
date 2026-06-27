@@ -259,7 +259,7 @@ export const MobilePropertyViewer = ({
           <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
             {property.images.map((image, index) => (
               <button
-                key={index}
+                key={image}
                 onClick={() => setCurrentImageIndex(index)}
                 className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
                   index === currentImageIndex
@@ -341,9 +341,9 @@ export const MobilePropertyViewer = ({
 
                 {property.amenities && (
                   <div className="flex flex-wrap gap-2">
-                    {property.amenities.slice(0, 3).map((amenity, index) => (
+                    {property.amenities.slice(0, 3).map((amenity) => (
                       <Badge
-                        key={index}
+                        key={amenity}
                         variant="secondary"
                         className="text-xs"
                       >

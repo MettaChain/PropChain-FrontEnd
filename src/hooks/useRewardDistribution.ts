@@ -198,7 +198,7 @@ export function useClaimRewards() {
 
         // In a real scenario, this would call a smart contract
         // For now, we'll simulate the transaction
-        const mockTxHash = `0x${Math.random().toString(16).slice(2)}`;
+        const mockTxHash = `0x${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
 
         return {
           transactionHash: mockTxHash,

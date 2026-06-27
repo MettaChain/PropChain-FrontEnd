@@ -34,16 +34,22 @@ export class BatchTransactionService {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Generate mock transaction hash
-      const transactionHash = `0x${Array.from({length: 64}, () => 
-        Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      const txHashBytes = new Uint8Array(32);
+      crypto.getRandomValues(txHashBytes);
+      const transactionHash = '0x' + Array.from(txHashBytes, (b) => b.toString(16).padStart(2, '0')).join('');
 
       // Simulate individual transaction results
-      const results = items.map(item => ({
-        propertyId: item.property.id,
-        success: Math.random() > 0.1, // 90% success rate for demo
-        transactionHash: Math.random() > 0.1 ? transactionHash : undefined,
-        error: Math.random() > 0.1 ? undefined : 'Transaction failed: Insufficient gas'
-      }));
+      const results = items.map(item => {
+        const rand1 = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
+        const rand2 = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
+        const rand3 = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
+        return {
+          propertyId: item.property.id,
+          success: rand1 > 0.1, // 90% success rate for demo
+          transactionHash: rand2 > 0.1 ? transactionHash : undefined,
+          error: rand3 > 0.1 ? undefined : 'Transaction failed: Insufficient gas',
+        };
+      });
 
       const allSuccessful = results.every(result => result.success);
       const totalGasUsed = items.length * 0.0025 + 0.005; // Base gas + per transaction
@@ -107,12 +113,15 @@ export class BatchTransactionService {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Simulate different statuses
-    const random = Math.random();
+    const random = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
     if (random < 0.7) {
+      const blockBytes = crypto.getRandomValues(new Uint8Array(4));
+      const blockNumber = ((blockBytes[0] << 24) | (blockBytes[1] << 16) | (blockBytes[2] << 8) | blockBytes[3]) >>> 0;
+      const confirmBytes = crypto.getRandomValues(new Uint8Array(1))[0];
       return {
         status: 'confirmed',
-        blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
-        confirmations: Math.floor(Math.random() * 50) + 1
+        blockNumber: (blockNumber % 1000000) + 18000000,
+        confirmations: (confirmBytes % 50) + 1
       };
     } else if (random < 0.9) {
       return {

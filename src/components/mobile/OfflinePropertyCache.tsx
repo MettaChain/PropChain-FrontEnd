@@ -340,9 +340,9 @@ export const OfflinePropertyCache = ({
                 Cache Health Issues
               </h4>
               <ul className="mt-1 space-y-1">
-                {healthIssues.map((issue, index) => (
+                {healthIssues.map((issue) => (
                   <li
-                    key={index}
+                    key={issue}
                     className="text-sm text-orange-700 dark:text-orange-300"
                   >
                     {issue}
