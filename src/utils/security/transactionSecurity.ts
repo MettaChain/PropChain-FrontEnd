@@ -75,17 +75,40 @@ export function createTrustedDeviceId(): string {
   return `trusted_${crypto.randomUUID()}`;
 }
 
+function simpleHash(input: string): string {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(16).padStart(8, '0');
+}
+
+const SESSION_SALT_KEY = 'propchain-session-salt';
+
+function getSessionSalt(): string {
+  let salt = window.sessionStorage.getItem(SESSION_SALT_KEY);
+  if (!salt) {
+    salt = crypto.randomUUID();
+    window.sessionStorage.setItem(SESSION_SALT_KEY, salt);
+  }
+  return salt;
+}
+
 export function getSecurityDeviceId(): string {
   if (typeof window === 'undefined') {
     return 'server-device';
   }
 
-  const key = 'propchain-security-device-id';
+  const key = 'propchain-security-device-id-hash';
   const existing = window.localStorage.getItem(key);
   if (existing) return existing;
 
   const deviceId = crypto.randomUUID();
-  window.localStorage.setItem(key, deviceId);
+  const salt = getSessionSalt();
+  const hashedId = simpleHash(`${deviceId}:${salt}`);
+  window.localStorage.setItem(key, hashedId);
   return deviceId;
 }
 
