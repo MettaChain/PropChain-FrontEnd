@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
@@ -21,8 +21,25 @@ export const DataRefreshWrapper = ({
 }: DataRefreshWrapperProps) => {
   const [refreshState, setRefreshState] = useState<RefreshState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup all timers on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+        successTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const handleRefresh = useCallback(async () => {
+    // Cancel any pending success timeout from a previous refresh
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+
     setRefreshState("loading");
     setError(null);
 
@@ -44,7 +61,10 @@ export const DataRefreshWrapper = ({
       }
 
       setRefreshState("success");
-      setTimeout(() => setRefreshState("idle"), 2000);
+      successTimerRef.current = setTimeout(() => {
+        setRefreshState("idle");
+        successTimerRef.current = null;
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setRefreshState("error");
