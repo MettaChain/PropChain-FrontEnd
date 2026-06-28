@@ -24,6 +24,12 @@ export const DataRefreshWrapper = ({
   const id = useId();
 
   const handleRefresh = useCallback(async () => {
+    // Cancel any pending success timeout from a previous refresh
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+
     setRefreshState("loading");
     setError(null);
 
@@ -46,7 +52,10 @@ export const DataRefreshWrapper = ({
       }
 
       setRefreshState("success");
-      setTimeout(() => setRefreshState("idle"), 2000);
+      successTimerRef.current = setTimeout(() => {
+        setRefreshState("idle");
+        successTimerRef.current = null;
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setRefreshState("error");
