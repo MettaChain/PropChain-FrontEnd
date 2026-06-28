@@ -82,11 +82,20 @@ export const MortgageCalculator: React.FC<MortgageCalculatorProps> = ({
       years: yearsLabel,
     });
 
+    let currentUrl = '';
+    try {
+      if (typeof window !== 'undefined') {
+        currentUrl = new URL(window.location.href).href;
+      }
+    } catch {
+      currentUrl = '';
+    }
+
     if (navigator.share) {
       navigator.share({
         title: t('mortgageCalculator.shareTitle'),
         text,
-        url: window.location.href,
+        url: currentUrl,
       }).catch((err) => logger.error('Mortgage calculation error:', err));
     } else {
       navigator.clipboard.writeText(text);

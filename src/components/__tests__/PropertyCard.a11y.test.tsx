@@ -92,10 +92,12 @@ describe('PropertyCard Accessibility', () => {
     expect(results).toHaveNoViolations();
   });
 
-  it('should have accessible property link with proper aria-label', () => {
+  it('should have accessible property links with proper aria-labels', () => {
     render(<PropertyCard property={mockProperty} />);
-    const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('aria-label', 'View details for Sunset Villa');
+    const links = screen.getAllByRole('link');
+    expect(links.length).toBeGreaterThanOrEqual(2);
+    const viewLink = screen.getByLabelText('View details for Sunset Villa');
+    expect(viewLink).toBeInTheDocument();
   });
 
   it('should have accessible image with descriptive alt text', () => {
