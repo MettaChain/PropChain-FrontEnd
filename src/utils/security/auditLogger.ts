@@ -1,7 +1,8 @@
+import { logger } from '@/utils/logger';
 export interface AuditLogEntry {
   id: string;
   timestamp: number;
-  eventType: 'wallet_connection' | 'wallet_disconnection' | 'transaction_signing' | 'signature_request' | 'network_switch' | 'account_switch' | 'security_alert';
+  eventType: 'wallet_connection' | 'wallet_disconnection' | 'transaction_signing' | 'signature_request' | 'network_switch' | 'account_switch' | 'security_alert' | 'auth_failure' | 'settings_change' | 'kyc_status_change' | 'transaction_initiation' | 'transaction_completion';
   userId?: string;
   walletAddress?: string;
   chainId?: number;
@@ -279,6 +280,123 @@ export class SecurityAuditLogger {
   }
 
   /**
+   * Logs a failed authentication attempt
+   */
+  logAuthFailure(
+    reason: string,
+    walletAddress?: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'auth_failure',
+      userId,
+      walletAddress,
+      details: { reason },
+      riskScore: 40,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
+  }
+
+  /**
+   * Logs a user settings change
+   */
+  logSettingsChange(
+    setting: string,
+    previousValue: unknown,
+    newValue: unknown,
+    walletAddress?: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'settings_change',
+      userId,
+      walletAddress,
+      details: { setting, previousValue, newValue },
+      riskScore: 5,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
+  }
+
+  /**
+   * Logs a KYC status change
+   */
+  logKycStatusChange(
+    previousStatus: string,
+    newStatus: string,
+    walletAddress?: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'kyc_status_change',
+      userId,
+      walletAddress,
+      details: { previousStatus, newStatus },
+      riskScore: 10,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
+  }
+
+  /**
+   * Logs a transaction initiation event
+   */
+  logTransactionInitiation(
+    from: string,
+    to: string,
+    value: string,
+    txType: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'transaction_initiation',
+      userId,
+      walletAddress: from,
+      details: { to, value, txType },
+      riskScore: 15,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
+  }
+
+  /**
+   * Logs a transaction completion (success or failure)
+   */
+  logTransactionCompletion(
+    txHash: string,
+    from: string,
+    success: boolean,
+    errorMessage?: string,
+    userId?: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: this.generateId(),
+      timestamp: Date.now(),
+      eventType: 'transaction_completion',
+      userId,
+      walletAddress: from,
+      details: { txHash, success, errorMessage },
+      riskScore: success ? 0 : 20,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+    };
+    this.addLog(entry);
+  }
+
+  /**
    * Exports logs for analysis
    */
   exportLogs(format: 'json' | 'csv' = 'json'): string {
@@ -370,7 +488,7 @@ export class SecurityAuditLogger {
    */
   private notifySecurityAlert(alert: SecurityAlert): void {
     // In a real implementation, this would send notifications to security team
-    console.warn('Security Alert:', alert);
+    logger.warn('Security Alert:', alert);
     
     // Could also integrate with external monitoring services
     if (alert.severity === 'critical') {
@@ -388,7 +506,7 @@ export class SecurityAuditLogger {
     // - Security team email/Slack
     // - SIEM systems
     // - Incident response platforms
-    console.error('CRITICAL SECURITY ALERT:', alert);
+    logger.error('CRITICAL SECURITY ALERT:', alert);
   }
 
   /**

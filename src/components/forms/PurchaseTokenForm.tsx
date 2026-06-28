@@ -35,7 +35,11 @@ export function PurchaseTokenForm({ propertyId, propertyName, onSubmit }: Purcha
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        data-tour="purchase-form"
+        className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+      >
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Purchase Tokens</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Purchase tokens for {propertyName} with on-chain validation and an enforced approval step.</p>

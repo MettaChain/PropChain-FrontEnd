@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 
@@ -38,7 +39,7 @@ export const useCurrencyConverter = () => {
         localStorage.setItem('ethToUsdLastUpdated', new Date().toISOString());
       }
     } catch (err) {
-      console.error('Error fetching ETH price:', err);
+      logger.error('Error fetching ETH price:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch exchange rate');
       
       // Try to use cached rate

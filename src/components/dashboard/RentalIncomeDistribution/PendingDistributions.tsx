@@ -1,4 +1,5 @@
 "use client";
+import { logger } from '@/utils/logger';
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,11 +18,9 @@ const PendingDistributions = ({ pending, count, onClaimAll }: PendingDistributio
   const handleClaimAll = async () => {
     setIsClaiming(true);
     try {
-      // TODO: Implement claim functionality
-      // await claimDistributions();
       onClaimAll();
     } catch (error) {
-      console.error("Failed to claim distributions:", error);
+      logger.error("Failed to claim distributions:", error);
     } finally {
       setIsClaiming(false);
     }

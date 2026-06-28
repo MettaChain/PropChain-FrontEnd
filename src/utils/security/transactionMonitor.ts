@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 export interface TransactionPattern {
   type: 'frequency' | 'value' | 'recipient' | 'timing' | 'gas_price';
   riskScore: number;
@@ -494,7 +495,7 @@ export class TransactionMonitor {
    * Notifies about detected anomalies
    */
   private notifyAnomaly(anomaly: AnomalyDetection): void {
-    console.warn('Transaction Anomaly Detected:', anomaly);
+    logger.warn('Transaction Anomaly Detected:', anomaly);
     
     // In a real implementation, this would:
     // - Send alerts to security team

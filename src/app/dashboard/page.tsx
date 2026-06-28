@@ -12,9 +12,17 @@ import { ComplianceAuditLog } from "@/components/kyc/ComplianceAuditLog";
 import { KycStatusBadge } from "@/components/kyc/KycStatusBadge";
 import { useKycStore } from "@/store/kycStore";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
-import { StakingPanel } from "@/components/dashboard/StakingPanel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const StakingPanel = dynamic(
+  () => import("@/components/dashboard/StakingPanel").then((m) => m.StakingPanel),
+  { loading: () => <WidgetSkeleton className="h-[400px]" /> }
+);
 
 const PortfolioOverview = dynamic(
   () => import("@/components/dashboard/PortfolioOverview").then((m) => m.PortfolioOverview),
@@ -57,18 +65,35 @@ const DataRefreshWrapper = dynamic(
 );
 
 const Index = () => {
+  const { t } = useTranslation("common");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { profile } = useKycStore();
 
   return (
     <div className="min-h-screen bg-background flex w-full">
+      <Sidebar
+        isOpen={sidebarOpen}
+        isCollapsed={sidebarCollapsed}
+        onClose={() => setSidebarOpen(false)}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+      />
       <div className="flex-1 flex flex-col min-w-0">
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
           <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center h-16">
                 <div className="flex items-center gap-3">
+                  {/* Mobile menu toggle */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="lg:hidden"
+                    onClick={() => setSidebarOpen(true)}
+                    aria-label="Open sidebar"
+                  >
+                    <Menu className="w-5 h-5" />
+                  </Button>
                   <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                     <span className="text-white font-bold text-sm">PC</span>
                   </div>
@@ -138,14 +163,22 @@ const Index = () => {
               <Tabs defaultValue="queue" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
-                  <TabsTrigger value="history">Transaction History</TabsTrigger>
+                  <TabsTrigger value="history">Transactions</TabsTrigger>
                   <TabsTrigger value="staking">Staking & Yield</TabsTrigger>
                   <TabsTrigger value="certificates">My Certificates</TabsTrigger>
                 </TabsList>
                 <TabsContent value="queue">
                   <TransactionQueue />
                 </TabsContent>
-                <TabsContent value="history">
+                <TabsContent value="history" className="space-y-3">
+                  <div className="flex justify-end">
+                    <Link
+                      href="/transactions"
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      {t("transactions.viewFullHistory")} →
+                    </Link>
+                  </div>
                   <TransactionHistory />
                 </TabsContent>
                 <TabsContent value="certificates">

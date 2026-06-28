@@ -104,6 +104,7 @@ export function usePropertySearch() {
     clearFilters,
     setSortBy,
     setPage,
+    setResultsPerPage,
   } = searchStore;
 
   const query = usePropertySearchQuery(filters, sortBy, page, resultsPerPage);
@@ -133,6 +134,10 @@ export function usePropertySearch() {
     }
   };
 
+  const handleResultsPerPageChange = (count: number) => {
+    setResultsPerPage(count);
+  };
+
   const totalPages = query.data ? Math.ceil(query.data.total / resultsPerPage) : 0;
 
   return {
@@ -149,10 +154,12 @@ export function usePropertySearch() {
     lastUpdated: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : undefined,
 
     // Actions
+    setFilters,
     setFilter: handleFilterChange,
     clearFilters: handleClearFilters,
     setSortBy: handleSortChange,
     setPage: (newPage: number) => handlePageChange(newPage),
+    setResultsPerPage: handleResultsPerPageChange,
     loadMore: () => handlePageChange(page + 1, { scrollToTop: false }),
     refetch: query.refetch,
   };

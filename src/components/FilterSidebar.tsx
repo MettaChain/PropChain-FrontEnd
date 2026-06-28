@@ -77,6 +77,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
       {/* Sidebar */}
       <div
+        data-testid="filter-sidebar"
         className={`
           fixed lg:sticky top-0 left-0 h-screen lg:h-auto w-80 bg-white dark:bg-gray-800 
           border-r lg:border-r-0 border-gray-200 dark:border-gray-700 

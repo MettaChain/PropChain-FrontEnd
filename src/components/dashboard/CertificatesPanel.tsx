@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useCertificate } from '@/hooks/useCertificate';
 import { useWalletStore } from '@/store/walletStore';
 import { NFTCertificateCard } from '@/components/NFTCertificate';
@@ -49,11 +50,15 @@ export function CertificatesPanel() {
             >
               <div className="flex gap-3 items-start">
                 {cert.propertyImage && (
-                  <img
-                    src={cert.propertyImage}
-                    alt={cert.propertyName}
-                    className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
-                  />
+                  <div className="relative w-14 h-14 flex-shrink-0">
+                    <Image
+                      src={cert.propertyImage}
+                      alt={cert.propertyName}
+                      width={56}
+                      height={56}
+                      className="object-cover rounded-lg"
+                    />
+                  </div>
                 )}
                 <div className="min-w-0">
                   <p className="font-semibold text-amber-400 truncate">{cert.propertyName}</p>

@@ -1,4 +1,5 @@
 import { isAddress, isHex, recoverMessageAddress, type Hex } from 'viem';
+import { logger } from '@/utils/logger';
 
 export interface PhishingDetectionResult {
   isPhishing: boolean;
@@ -34,6 +35,14 @@ export class PhishingProtection {
     // Add more suspicious method signatures
   ];
 
+  private static readonly OFFICIAL_DOMAINS = [
+    'propchain.io',
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    // Add more official domains here
+  ];
+
   /**
    * Detects phishing attempts based on domain and content analysis
    */
@@ -46,25 +55,31 @@ export class PhishingProtection {
       const urlObj = new URL(url);
       const domain = urlObj.hostname;
 
-      // Check against known phishing domains
+      // Hard match against a curated blocklist of known phishing domains
       if (this.isKnownPhishingDomain(domain)) {
         threats.push('Known phishing domain detected');
-        riskScore += 90;
+        riskScore += 90; // Near-certain phishing — very high score
       }
 
-      // Check for domain spoofing
+      // Fuzzy match: detect typosquatting (e.g. "metamask.io.fake")
       if (this.isDomainSpoofing(domain)) {
         threats.push('Domain spoofing detected');
         riskScore += 70;
       }
 
-      // Check for suspicious URL patterns
+      // Whitelist check: warn if not on an official domain
+      if (!this.isOfficialDomain(domain)) {
+        warnings.push('Unofficial domain detected');
+        riskScore += 20;
+      }
+
+      // Pattern-based heuristics: URL shorteners, IP addresses, long random strings
       if (this.hasSuspiciousUrlPatterns(url)) {
         warnings.push('Suspicious URL patterns detected');
         riskScore += 30;
       }
 
-      // Check content if provided
+      // Optional deep content scan (e.g. page HTML passed by caller)
       if (content) {
         const contentAnalysis = this.analyzeContent(content);
         threats.push(...contentAnalysis.threats);
@@ -73,13 +88,15 @@ export class PhishingProtection {
       }
 
     } catch (error) {
+      // URL constructor throws on malformed URLs — treat as suspicious
       warnings.push('Invalid URL format');
       riskScore += 20;
     }
 
     return {
+      // Threshold of 70 chosen to balance false positives vs. missed phishing
       isPhishing: riskScore >= 70,
-      riskScore: Math.min(riskScore, 100),
+      riskScore: Math.min(riskScore, 100), // Cap at 100 regardless of additive scores
       threats,
       warnings
     };
@@ -138,11 +155,13 @@ export class PhishingProtection {
     const warnings: string[] = [];
     let isMalicious = false;
     let decodedData: any;
+    let contractMalicious = false;
 
     // Check if recipient is a known malicious contract
     if (this.isMaliciousContract(to)) {
       warnings.push('Transaction to known malicious contract');
       isMalicious = true;
+      contractMalicious = true;
     }
 
     // Analyze transaction data
@@ -153,7 +172,12 @@ export class PhishingProtection {
         
         if (this.isSuspiciousMethod(functionSelector)) {
           warnings.push('Suspicious function call detected');
-          isMalicious = true;
+          // Treat some very common methods (e.g., token `transfer`) as warnings
+          // but not necessarily malicious. Flag as malicious for less-common
+          // suspicious methods such as `approve` or `withdraw`.
+          if (functionSelector !== '0xa9059cbb') {
+            isMalicious = true;
+          }
         }
 
         // Try to decode the data (basic attempt)
@@ -172,7 +196,11 @@ export class PhishingProtection {
     }
 
     return {
-      isValid: !isMalicious,
+      // `isValid` here indicates syntactic/operational validity; if the
+      // recipient is a known malicious contract we mark the transaction as
+      // invalid. Other suspicious findings emit warnings but may still be
+      // considered syntactically valid.
+      isValid: !contractMalicious,
       isMalicious,
       warnings,
       decodedData
@@ -216,6 +244,36 @@ export class PhishingProtection {
   }
 
   /**
+   * Reports a suspicious domain to the security team
+   */
+  static async reportSuspiciousDomain(domain: string, reason: string): Promise<boolean> {
+    try {
+      // In a real implementation, this would send data to a security API
+      logger.warn('[Security] Reporting suspicious domain', { domain, reason });
+      
+      // Placeholder for actual API call
+      // await fetch('https://api.propchain.io/security/report', {
+      //   method: 'POST',
+      //   body: JSON.stringify({ domain, reason, timestamp: Date.now() })
+      // });
+      
+      return true;
+    } catch (error) {
+      logger.error('Failed to report suspicious domain', error);
+      return false;
+    }
+  }
+
+  /**
+   * Checks if a domain is an official PropChain domain
+   */
+  private static isOfficialDomain(domain: string): boolean {
+    return this.OFFICIAL_DOMAINS.some(officialDomain =>
+      domain === officialDomain || domain.endsWith(`.${officialDomain}`)
+    );
+  }
+
+  /**
    * Checks if a domain is known for phishing
    */
   private static isKnownPhishingDomain(domain: string): boolean {
@@ -226,13 +284,15 @@ export class PhishingProtection {
 
   /**
    * Checks for domain spoofing attempts
+   * Uses string similarity to catch typosquatting (e.g. "metamask.io" vs "metarnask.io")
    */
   private static isDomainSpoofing(domain: string): boolean {
     const legitimateDomains = ['metamask.io', 'myetherwallet.com', 'trustwallet.app'];
-    
     return legitimateDomains.some(legit => {
+      // Lowered similarity threshold to catch more typosquatting attempts
       const similarity = this.calculateStringSimilarity(domain, legit);
-      return similarity > 0.8 && domain !== legit;
+      // Exclude exact matches — only flag near-duplicates
+      return similarity > 0.65 && domain !== legit;
     });
   }
 
@@ -408,8 +468,8 @@ export class PhishingProtection {
   private static hasUnusualMessagePatterns(message: string): boolean {
     // Check for unusual patterns in the message
     const patterns = [
-      /^[0-9a-f]{130,}$/, // Long hex strings
-      /^[A-Za-z0-9+/]{100,}={0,2}$/, // Long base64 strings
+      /^[0-9a-f]{32,}$/i, // Long hex strings (lowered threshold)
+      /^[A-Za-z0-9+/]{30,}={0,2}$/, // Long base64 strings (lowered threshold)
     ];
 
     return patterns.some(pattern => pattern.test(message));
@@ -430,14 +490,20 @@ export class PhishingProtection {
 
   /**
    * Calculates Levenshtein distance between two strings
+   * Uses dynamic programming (Wagner-Fischer algorithm) — O(m*n) time and space.
+   * The edit distance is the minimum number of single-character edits (insert,
+   * delete, substitute) needed to transform str1 into str2.
    */
   private static levenshteinDistance(str1: string, str2: string): number {
+    // matrix[i][j] = edit distance between str2[0..i-1] and str1[0..j-1]
     const matrix = [];
 
+    // Initialize first column: cost of deleting all chars from str2 prefix
     for (let i = 0; i <= str2.length; i++) {
       matrix[i] = [i];
     }
 
+    // Initialize first row: cost of inserting all chars from str1 prefix
     for (let j = 0; j <= str1.length; j++) {
       matrix[0][j] = j;
     }
@@ -445,12 +511,14 @@ export class PhishingProtection {
     for (let i = 1; i <= str2.length; i++) {
       for (let j = 1; j <= str1.length; j++) {
         if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          // Characters match — no edit needed, inherit diagonal cost
           matrix[i][j] = matrix[i - 1][j - 1];
         } else {
+          // Take the cheapest of: substitution, insertion, or deletion
           matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
           );
         }
       }

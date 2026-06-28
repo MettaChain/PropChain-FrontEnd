@@ -1,4 +1,5 @@
 'use client';
+import { createLogger } from '@/utils/logger';
 
 import React from 'react';
 import Image from 'next/image';
@@ -6,6 +7,8 @@ import { X, Plus, Minus, ShoppingCart, Trash2, Fuel } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice } from '@/utils/searchUtils';
 import type { CartItem } from '@/types/cart';
+
+const logger = createLogger('CartSidebar');
 
 export const CartSidebar: React.FC = () => {
   const {
@@ -21,8 +24,19 @@ export const CartSidebar: React.FC = () => {
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
+  const handleToggleCart = () => {
+    logger.debug('Toggling cart', { newState: !isOpen });
+    toggleCart();
+  };
+
   const handleCheckout = async () => {
     if (items.length === 0) return;
+
+    logger.info('Initiating checkout', { 
+      itemCount: items.length, 
+      totalCost,
+      totalGas: totalGasEstimate 
+    });
 
     try {
       // Import dynamically to avoid SSR issues
@@ -35,16 +49,18 @@ export const CartSidebar: React.FC = () => {
       const result = await BatchTransactionService.executeBatchPurchase(items, walletAddress);
       
       if (result.success) {
+        logger.info('Checkout successful', { transactionHash: result.transactionHash });
         // Clear cart on successful purchase
         clearCart();
         // Show success message
         alert('Batch purchase completed successfully!');
       } else {
+        logger.warn('Checkout failed', { error: result.error });
         // Show error message
         alert(`Purchase failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('Checkout error:', error);
+      logger.error('Checkout error:', error);
       alert('Checkout failed. Please try again.');
     }
   };
@@ -52,7 +68,7 @@ export const CartSidebar: React.FC = () => {
   if (!isOpen) {
     return (
       <button
-        onClick={toggleCart}
+        onClick={handleToggleCart}
         className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-all duration-200 z-50 flex items-center gap-2"
       >
         <ShoppingCart className="w-6 h-6" />
@@ -70,7 +86,7 @@ export const CartSidebar: React.FC = () => {
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
-        onClick={toggleCart}
+        onClick={handleToggleCart}
       />
 
       {/* Sidebar */}
@@ -85,7 +101,7 @@ export const CartSidebar: React.FC = () => {
               </h2>
             </div>
             <button
-              onClick={toggleCart}
+              onClick={handleToggleCart}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <X className="w-5 h-5 text-gray-500" />
@@ -101,7 +117,7 @@ export const CartSidebar: React.FC = () => {
                   Your cart is empty
                 </p>
                 <button
-                  onClick={toggleCart}
+                  onClick={handleToggleCart}
                   className="text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Continue Shopping
@@ -113,10 +129,14 @@ export const CartSidebar: React.FC = () => {
                   <CartItemRow
                     key={item.id}
                     item={item}
-                    onUpdateQuantity={(quantity) =>
-                      updateQuantity(item.property.id, quantity)
-                    }
-                    onRemove={() => removeItem(item.property.id)}
+                    onUpdateQuantity={(quantity) => {
+                      logger.debug('Updating item quantity', { propertyId: item.property.id, newQuantity: quantity });
+                      updateQuantity(item.property.id, quantity);
+                    }}
+                    onRemove={() => {
+                      logger.debug('Removing item from cart', { propertyId: item.property.id });
+                      removeItem(item.property.id);
+                    }}
                   />
                 ))}
               </div>
@@ -164,7 +184,10 @@ export const CartSidebar: React.FC = () => {
                   Purchase All ({totalItems} tokens)
                 </button>
                 <button
-                  onClick={clearCart}
+                  onClick={() => {
+                    logger.debug('Clearing cart');
+                    clearCart();
+                  }}
                   className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 px-4 rounded-lg transition-colors"
                 >
                   Clear Cart

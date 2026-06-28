@@ -1,153 +1,33 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import dynamic from "next/dynamic";
+import React, { useEffect } from 'react';
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
-import { logger } from '@/utils/logger';
-import { useKycStore } from '@/store/kycStore';
-import { KycStatusBadge } from '@/components/kyc/KycStatusBadge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { updateWalletBalance } from '@/utils/walletHelpers';
+import { WalletConnectedView } from './WalletConnectedView';
+import { WalletDisconnectedView } from './WalletDisconnectedView';
 
-const WalletModal = dynamic(
-  () => import("./WalletModal").then((m) => m.WalletModal),
-  { ssr: false }
-);
-const NetworkSwitcher = dynamic(
-  () => import("./NetworkSwitcher").then((m) => m.NetworkSwitcher),
-  { ssr: false }
-);
-
+/**
+ * WalletConnector component that handles wallet connection UI, balance display,
+ * network switching, and KYC status integration.
+ *
+ * Delegates the connected and disconnected UI states to dedicated sub-components
+ * for better testability and separation of concerns.
+ */
 export const WalletConnector: React.FC = () => {
-  const {
-    isConnected,
-    address,
-    isConnecting,
-    error,
-    setDisconnected,
-    clearError,
-    setBalance,
-  } = useWalletStore();
+  const { isConnected, address, setBalance } = useWalletStore();
+  const { currentChain } = useChain();
 
-  const { profile } = useKycStore();
-  const { currentChain, chainConfig } = useChain();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+  // Fetch wallet balance when connected
   useEffect(() => {
     if (isConnected && address) {
-      updateBalance();
+      updateWalletBalance(window.ethereum, address, setBalance);
     }
-  }, [isConnected, address, currentChain]);
-
-  const updateBalance = async () => {
-    try {
-      if (window.ethereum && address) {
-        const balance = await window.ethereum.request<string>({
-          method: 'eth_getBalance',
-          params: [address, 'latest'],
-        });
-
-        if (typeof balance !== 'string') {
-          throw new Error('Invalid balance response');
-        }
-
-        const balanceInEth = Number(BigInt(balance) / BigInt(10 ** 18));
-        setBalance(balanceInEth.toFixed(4));
-      }
-    } catch (error) {
-      logger.error('Failed to fetch balance:', error);
-    }
-  };
-
-  const handleDisconnect = () => {
-    setDisconnected();
-    clearError();
-  };
-
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
+  }, [isConnected, address, currentChain, setBalance]);
 
   if (isConnected && address) {
-    const balanceRaw = useWalletStore.getState().balance;
-    const balanceText = balanceRaw ? parseFloat(balanceRaw).toFixed(3) : null;
-    return (
-      <div className="flex items-center gap-3">
-        <NetworkSwitcher />
-
-        <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: chainConfig.color }}
-          />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {chainConfig.symbol}
-          </span>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {balanceText ?? <Skeleton className="h-4 w-10 inline-block align-middle" />}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 bg-blue-100 dark:bg-blue-900 rounded-lg px-3 py-2">
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            {formatAddress(address)}
-          </span>
-          <button
-            onClick={() => navigator.clipboard.writeText(address)}
-            className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded transition-colors"
-            title="Copy wallet address"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          </button>
-        </div>
-
-        <KycStatusBadge status={profile.status} thresholdEth={profile.thresholdEth} compact />
-
-        <button
-          onClick={handleDisconnect}
-          className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-        >
-          Disconnect
-        </button>
-
-        {error && (
-          <div className="text-sm text-red-600 dark:text-red-400">
-            {error}
-          </div>
-        )}
-      </div>
-    );
+    return <WalletConnectedView address={address} />;
   }
 
-  return (
-    <div className="flex items-center justify-center gap-3">
-      <button
-        onClick={() => setIsModalOpen(true)}
-        disabled={isConnecting}
-        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-      >
-        {isConnecting ? (
-          <>
-            <Skeleton className="w-4 h-4 rounded-full bg-white/40" />
-            <Skeleton className="h-4 w-20 bg-white/40" />
-          </>
-        ) : (
-          'Connect Wallet'
-        )}
-      </button>
-
-      <WalletModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
-
-      {error && (
-        <div className="text-sm text-red-600 dark:text-red-400">
-          {error}
-        </div>
-      )}
-    </div>
-  );
+  return <WalletDisconnectedView />;
 };

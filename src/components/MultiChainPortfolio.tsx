@@ -1,14 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { RefreshCw, TrendingUp, AlertTriangle, ExternalLink, Filter } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { RefreshCw, TrendingUp, AlertTriangle, ExternalLink, Filter, Wallet, Briefcase } from 'lucide-react';
 import { usePortfolioStore } from '@/store/portfolioStore';
 import { useWalletStore } from '@/store/walletStore';
 import { CHAIN_CONFIG, type ChainId } from '@/config/chains';
 import { formatPrice } from '@/utils/searchUtils';
 import type { ChainPortfolio, BridgeSuggestion } from '@/types/portfolio';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export const MultiChainPortfolio: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { 
     portfolio, 
     selectedChain, 
@@ -45,12 +48,18 @@ export const MultiChainPortfolio: React.FC = () => {
 
   if (!isConnected) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
-        <div className="text-gray-500 dark:text-gray-400 mb-4">
-          <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
-          <p>Connect your wallet to view your portfolio</p>
-        </div>
-      </div>
+      <EmptyState
+        title={t('multiChainPortfolio.connectWalletTitle')}
+        description={t('multiChainPortfolio.connectWalletDescription')}
+        icon={Wallet}
+        action={{
+          label: t('multiChainPortfolio.connectWalletAction'),
+          onClick: () => {
+            // This would typically trigger the wallet connection modal
+          }
+        }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg"
+      />
     );
   }
 
@@ -58,35 +67,50 @@ export const MultiChainPortfolio: React.FC = () => {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-400">Loading portfolio...</p>
+        <p className="text-gray-600 dark:text-gray-400">{t('multiChainPortfolio.loadingPortfolio')}</p>
       </div>
     );
   }
 
   if (error || !portfolio) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-600 dark:text-red-400 mb-4">
-          {error || 'Failed to load portfolio'}
-        </p>
-        <button
-          onClick={handleRefresh}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          Try Again
-        </button>
-      </div>
+      <EmptyState
+        title={t('multiChainPortfolio.failedToLoad')}
+        description={error || t('multiChainPortfolio.failedToLoadDescription')}
+        icon={AlertTriangle}
+        action={{
+          label: t('multiChainPortfolio.tryAgain'),
+          onClick: handleRefresh
+        }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg"
+      />
+    );
+  }
+
+  const totalHoldings = portfolio.chains.reduce((sum, chain) => sum + chain.holdings.length, 0);
+
+  if (totalHoldings === 0) {
+    return (
+      <EmptyState
+        title={t('multiChainPortfolio.noInvestmentsTitle')}
+        description={t('multiChainPortfolio.noInvestmentsDescription')}
+        icon={Briefcase}
+        action={{
+          label: t('multiChainPortfolio.browseProperties'),
+          href: "/properties"
+        }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg"
+      />
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Portfolio Summary */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Portfolio Overview
+            {t('multiChainPortfolio.portfolioOverview')}
           </h2>
           <button
             onClick={handleRefresh}
@@ -100,7 +124,7 @@ export const MultiChainPortfolio: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              Total Value (USD)
+              {t('multiChainPortfolio.totalValueUSD')}
             </p>
             <p className="text-3xl font-bold text-blue-600">
               {formatPrice(portfolio.totalValueUSD)}
@@ -108,7 +132,7 @@ export const MultiChainPortfolio: React.FC = () => {
           </div>
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              Total Properties
+              {t('multiChainPortfolio.totalProperties')}
             </p>
             <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {portfolio.chains.reduce((sum, chain) => sum + chain.holdings.length, 0)}
@@ -116,7 +140,7 @@ export const MultiChainPortfolio: React.FC = () => {
           </div>
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              Chains Used
+              {t('multiChainPortfolio.chainsUsed')}
             </p>
             <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {portfolio.chains.length}
@@ -130,7 +154,7 @@ export const MultiChainPortfolio: React.FC = () => {
         <div className="flex items-center gap-2 mb-6">
           <Filter className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Filter by Chain
+            {t('multiChainPortfolio.filterByChain')}
           </h3>
         </div>
 
@@ -143,7 +167,7 @@ export const MultiChainPortfolio: React.FC = () => {
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            All Chains ({portfolio.chains.length})
+            {t('multiChainPortfolio.allChainsWithCount', { count: portfolio.chains.length })}
           </button>
           
           {portfolio.chains.map((chain) => (
@@ -160,7 +184,7 @@ export const MultiChainPortfolio: React.FC = () => {
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: chain.chainColor }}
               />
-              {chain.chainName} ({chain.holdings.length})
+              {chain.chainName} ({t('multiChainPortfolio.properties', { count: chain.holdings.length })})
             </button>
           ))}
         </div>
@@ -180,14 +204,14 @@ export const MultiChainPortfolio: React.FC = () => {
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-600" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Bridge Suggestions
+                {t('multiChainPortfolio.bridgeSuggestions')}
               </h3>
             </div>
             <button
               onClick={() => setShowBridgeSuggestions(!showBridgeSuggestions)}
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
-              {showBridgeSuggestions ? 'Hide' : 'Show'}
+              {showBridgeSuggestions ? t('multiChainPortfolio.hide') : t('multiChainPortfolio.show')}
             </button>
           </div>
 
@@ -222,13 +246,13 @@ const ChainPortfolioCard: React.FC<ChainPortfolioCardProps> = ({ chain }) => {
               {chain.chainName}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {chain.holdings.length} properties
+              {t('multiChainPortfolio.properties', { count: chain.holdings.length })}
             </p>
           </div>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Total Value
+            {t('multiChainPortfolio.totalValue')}
           </p>
           <p className="text-xl font-bold text-gray-900 dark:text-white">
             {formatPrice(chain.totalValueUSD)}
@@ -241,7 +265,7 @@ const ChainPortfolioCard: React.FC<ChainPortfolioCardProps> = ({ chain }) => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Gas Balance
+              {t('multiChainPortfolio.gasBalance')}
             </p>
             <p className="font-medium text-gray-900 dark:text-white">
               {chain.gasBalance} {chain.chainSymbol}
@@ -249,7 +273,7 @@ const ChainPortfolioCard: React.FC<ChainPortfolioCardProps> = ({ chain }) => {
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Value in USD
+              {t('multiChainPortfolio.valueInUSD')}
             </p>
             <p className="font-medium text-gray-900 dark:text-white">
               {formatPrice(chain.gasBalanceUSD)}
@@ -273,7 +297,7 @@ const ChainPortfolioCard: React.FC<ChainPortfolioCardProps> = ({ chain }) => {
                   {holding.propertyName}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {holding.quantity} tokens
+                  {t('multiChainPortfolio.tokens', { count: holding.quantity })}
                 </p>
               </div>
             </div>
@@ -312,18 +336,18 @@ const BridgeSuggestionCard: React.FC<BridgeSuggestionCardProps> = ({ suggestion 
           </p>
           <div className="flex items-center gap-4 text-sm">
             <span className="text-gray-600 dark:text-gray-400">
-              From: {CHAIN_CONFIG[suggestion.fromChain].name}
+              {t('multiChainPortfolio.fromLabel', { chain: CHAIN_CONFIG[suggestion.fromChain].name })}
             </span>
             <span className="text-gray-600 dark:text-gray-400">
-              To: {CHAIN_CONFIG[suggestion.toChain].name}
+              {t('multiChainPortfolio.toLabel', { chain: CHAIN_CONFIG[suggestion.toChain].name })}
             </span>
             <span className="font-medium text-green-600">
-              Save: {formatPrice(suggestion.potentialSavings)}
+              {t('multiChainPortfolio.saveAmount', { amount: formatPrice(suggestion.potentialSavings) })}
             </span>
           </div>
         </div>
         <button className="ml-4 px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors">
-          Bridge
+          {t('multiChainPortfolio.bridgeAction')}
         </button>
       </div>
     </div>

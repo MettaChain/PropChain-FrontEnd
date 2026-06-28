@@ -14,6 +14,7 @@
  */
 
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { 
@@ -142,7 +143,7 @@ export function ViewportProvider({ children }: ViewportProviderProps) {
       resizeObserver.observe(document.documentElement);
     } catch (error) {
       // Fallback to window resize event if ResizeObserver is not supported
-      console.warn('ResizeObserver not supported, falling back to resize event:', error);
+      logger.warn('ResizeObserver not supported, falling back to resize event:', error);
       
       const handleResize = () => {
         if (debounceTimeout) {

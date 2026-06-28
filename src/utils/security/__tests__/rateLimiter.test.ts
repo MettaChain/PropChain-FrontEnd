@@ -128,8 +128,9 @@ describe('RateLimiter', () => {
       limiter.reset('user1');
 
       expect(limiter.check('user1').allowed).toBe(true);
-      expect(limiter.check('user2').allowed).toBe(true);
-      expect(limiter.check('user2').remainingAttempts).toBe(1);
+      const user2Result = limiter.check('user2');
+      expect(user2Result.allowed).toBe(true);
+      expect(user2Result.remainingAttempts).toBe(1);
     });
   });
 
@@ -287,7 +288,7 @@ describe('RateLimiter', () => {
 
       // Mock minimal time passage
       const originalNow = Date.now;
-      global.Date.now = jest.fn(() => Date.now() + 2);
+      global.Date.now = jest.fn(() => originalNow() + 2);
 
       const result2 = shortLimiter.check('user1');
       expect(result2.allowed).toBe(true); // Should reset due to time passage

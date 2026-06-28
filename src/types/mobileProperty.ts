@@ -1,10 +1,22 @@
 import { isRecord } from "@/utils/typeGuards";
 
+export const PROPERTY_TYPES = [
+  "Residential",
+  "Commercial",
+  "Industrial",
+  "Mixed-Use",
+] as const;
+
+export type PropertyType = (typeof PROPERTY_TYPES)[number];
+
+export const isPropertyType = (value: unknown): value is PropertyType =>
+  PROPERTY_TYPES.includes(value as PropertyType);
+
 export interface MobileProperty {
   id: string;
   name: string;
   location: string;
-  type: string;
+  type: PropertyType;
   value: number;
   tokens: number;
   roi: number;
@@ -36,7 +48,7 @@ export const isMobileProperty = (value: unknown): value is MobileProperty => {
     typeof value.id === "string" &&
     typeof value.name === "string" &&
     typeof value.location === "string" &&
-    typeof value.type === "string" &&
+    isPropertyType(value.type) &&
     typeof value.value === "number" &&
     typeof value.tokens === "number" &&
     typeof value.roi === "number" &&

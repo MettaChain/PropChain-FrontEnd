@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Component } from "react";
+import React, { Component, createRef } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,8 @@ interface State extends ErrorBoundaryState {
 }
 
 export class UIErrorBoundary extends Component<Props, State> {
+  private titleRef = createRef<HTMLHeadingElement>();
+
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -89,6 +91,12 @@ export class UIErrorBoundary extends Component<Props, State> {
       errorHistory,
       lastErrorTime: new Date(),
     });
+  }
+
+  componentDidUpdate(prevProps: Props, prevState: State) {
+    if (this.state.hasError && !prevState.hasError) {
+      this.titleRef.current?.focus();
+    }
   }
 
   private handleRetry = async () => {
@@ -161,15 +169,15 @@ export class UIErrorBoundary extends Component<Props, State> {
   };
 
   private getErrorIcon = () => {
-    if (!this.state.error) return <AlertTriangle className="w-6 h-6" />;
+    if (!this.state.error) return <AlertTriangle className="w-6 h-6" aria-hidden="true" />;
 
     switch (this.state.error.category) {
       case "validation":
-        return <AlertTriangle className="w-6 h-6 text-yellow-600" />;
+        return <AlertTriangle className="w-6 h-6 text-yellow-600" aria-hidden="true" />;
       case "resource":
-        return <Bug className="w-6 h-6 text-orange-600" />;
+        return <Bug className="w-6 h-6 text-orange-600" aria-hidden="true" />;
       default:
-        return <AlertTriangle className="w-6 h-6 text-red-600" />;
+        return <AlertTriangle className="w-6 h-6 text-red-600" aria-hidden="true" />;
     }
   };
 
@@ -201,7 +209,13 @@ export class UIErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <div 
+            role="alert" 
+            aria-modal="true"
+            aria-labelledby="error-boundary-title"
+            aria-describedby="error-boundary-description"
+            className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700"
+          >
             <div className="p-6">
               {/* Error Header */}
               <div className="flex items-center gap-3 mb-4">
@@ -209,10 +223,15 @@ export class UIErrorBoundary extends Component<Props, State> {
                   {this.getErrorIcon()}
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h2 
+                    id="error-boundary-title"
+                    ref={this.titleRef}
+                    tabIndex={-1}
+                    className="text-lg font-semibold text-gray-900 dark:text-white focus:outline-none"
+                  >
                     {this.getErrorTitle()}
                   </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Error ID: {this.state.errorId} • Severity:{" "}
                     {this.state.error.severity}
                   </p>
@@ -221,7 +240,7 @@ export class UIErrorBoundary extends Component<Props, State> {
 
               {/* Error Message */}
               <Alert variant={this.getErrorSeverity() as any} className="mb-6">
-                <AlertDescription className="text-sm">
+                <AlertDescription id="error-boundary-description" className="text-sm">
                   {this.state.error.userMessage ||
                     "An unexpected error occurred in the user interface."}
                 </AlertDescription>

@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import { useEffect } from 'react';
 
@@ -18,13 +19,13 @@ export function useAxeAudit() {
         });
         if (cancelled) return;
         if (results.violations.length === 0) {
-          console.info('[axe] ✅ No accessibility violations found.');
+          logger.info('[axe] ✅ No accessibility violations found.');
           return;
         }
         console.group(`[axe] ⚠️ ${results.violations.length} violation(s)`);
         for (const v of results.violations) {
-          console.warn(`[${v.impact?.toUpperCase()}] ${v.id}: ${v.description} — ${v.helpUrl}`);
-          for (const node of v.nodes) console.warn('  Element:', node.html);
+          logger.warn(`[${v.impact?.toUpperCase()}] ${v.id}: ${v.description} — ${v.helpUrl}`);
+          for (const node of v.nodes) logger.warn('  Element:', node.html);
         }
         console.groupEnd();
       } catch { /* silently ignore */ }

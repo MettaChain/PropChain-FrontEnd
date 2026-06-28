@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import { useEffect, useRef } from 'react';
 import { useSavedSearchStore } from '@/store/savedSearchStore';
@@ -48,7 +49,7 @@ export const useNotificationChecker = () => {
           }
         }
       } catch (error) {
-        console.error('Error checking notifications:', error);
+        logger.error('Error checking notifications:', error);
       }
     };
 

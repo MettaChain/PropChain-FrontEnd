@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import { useState, useEffect } from 'react';
 
@@ -26,7 +27,7 @@ export const useSearchHistory = () => {
         }
       }
     } catch (error) {
-      console.error('Error loading search history:', error);
+      logger.error('Error loading search history:', error);
     }
   }, []);
 
@@ -54,7 +55,7 @@ export const useSearchHistory = () => {
       try {
         localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(limited));
       } catch (error) {
-        console.error('Error saving search history:', error);
+        logger.error('Error saving search history:', error);
       }
       
       return limited;
@@ -67,7 +68,7 @@ export const useSearchHistory = () => {
       try {
         localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updated));
       } catch (error) {
-        console.error('Error updating search history:', error);
+        logger.error('Error updating search history:', error);
       }
       return updated;
     });
@@ -78,7 +79,7 @@ export const useSearchHistory = () => {
     try {
       localStorage.removeItem(SEARCH_HISTORY_KEY);
     } catch (error) {
-      console.error('Error clearing search history:', error);
+      logger.error('Error clearing search history:', error);
     }
   };
 

@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -69,7 +70,7 @@ export const SaveSearchButton: React.FC<SaveSearchButtonProps> = ({
       setIsOpen(false);
     } catch (error) {
       toast.error('Failed to save search. Please try again.');
-      console.error('Save search error:', error);
+      logger.error('Save search error:', error);
     } finally {
       setIsLoading(false);
     }

@@ -1,4 +1,5 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Wallet, DollarSign, ChevronDown } from 'lucide-react';
@@ -24,14 +25,14 @@ export const MultiCurrencyBalance: React.FC = () => {
   useEffect(() => {
     if (!address || !balance) return;
 
-    // Fetch USD price for the native token
-    fetchUsdPrice();
-    
-    // Simulate fetching multiple token balances
-    fetchTokenBalances();
+    void (async () => {
+      const price = await fetchUsdPrice();
+      setUsdPrice(price);
+      await fetchTokenBalances(price);
+    })();
   }, [address, balance, chainId]);
 
-  const fetchUsdPrice = async () => {
+  const fetchUsdPrice = async (): Promise<number> => {
     try {
       // In production, use a real price API like CoinGecko
       const mockPrices: Record<number, number> = {
@@ -39,14 +40,14 @@ export const MultiCurrencyBalance: React.FC = () => {
         137: 0.85, // MATIC
         56: 600, // BNB
       };
-      const price = mockPrices[chainId] || 2000;
-      setUsdPrice(price);
+      return mockPrices[chainId] || 2000;
     } catch (error) {
-      console.error('Failed to fetch USD price:', error);
+      logger.error('Failed to fetch USD price:', error);
+      return 0;
     }
   };
 
-  const fetchTokenBalances = async () => {
+  const fetchTokenBalances = async (price: number) => {
     if (!address) return;
 
     // Mock token balances - in production, fetch from blockchain
@@ -55,8 +56,8 @@ export const MultiCurrencyBalance: React.FC = () => {
         symbol: chainConfig.symbol,
         name: chainConfig.name,
         balance: balance || '0',
-        usdValue: (parseFloat(balance || '0') * usdPrice).toFixed(2),
-        price: usdPrice,
+        usdValue: (parseFloat(balance || '0') * price).toFixed(2),
+        price,
       },
     ];
 

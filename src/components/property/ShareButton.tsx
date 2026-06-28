@@ -1,6 +1,8 @@
 'use client';
+import { logger } from '@/utils/logger';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Share2, Twitter, Linkedin, Link2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +19,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import {
+  buildPropertyShareUrl,
+  buildShareText,
+  buildTwitterShareUrl,
+  buildLinkedInShareUrl,
+  buildEmailShareUrl,
+} from '@/utils/security/shareUrl';
 
 interface ShareButtonProps {
   property: {
@@ -49,13 +58,11 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
   const [copied, setCopied] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const propertyUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/properties/${property.id}`;
+  const propertyUrl = buildPropertyShareUrl(property);
+  const shareText = buildShareText(property);
   
-  const shareText = `Check out this property: ${property.name} in ${property.location.city}, ${property.location.state}. ${property.metrics.roi}% ROI - ${property.price.total} ETH total value.`;
-  
-  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(propertyUrl)}`;
-  
-  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(propertyUrl)}`;
+  const twitterUrl = propertyUrl ? buildTwitterShareUrl(propertyUrl, shareText) : '';
+  const linkedinUrl = propertyUrl ? buildLinkedInShareUrl(propertyUrl) : '';
 
   const handleNativeShare = async () => {
     if (navigator.share) {
@@ -69,7 +76,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
       } catch (error) {
         // User cancelled or error occurred
         if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error);
+          logger.error('Error sharing:', error);
           toast.error('Failed to share property');
         }
       }
@@ -88,7 +95,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
       // Reset copied state after 2 seconds
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Error copying link:', error);
+      logger.error('Error copying link:', error);
       toast.error('Failed to copy link');
     }
   };
@@ -104,9 +111,8 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
   };
 
   const handleEmailShare = () => {
-    const subject = encodeURIComponent(`Check out this property: ${property.name}`);
-    const body = encodeURIComponent(`I found this interesting property and thought you might like it:\n\n${shareText}\n\nView it here: ${propertyUrl}`);
-    window.open(`mailto:?subject=${subject}&body=${body}`);
+    const mailtoUrl = buildEmailShareUrl(property.name, shareText, propertyUrl);
+    window.open(mailtoUrl);
     toast.success('Opening email client...');
   };
 
@@ -129,12 +135,14 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
         <div className="space-y-4">
           {/* Property Preview */}
           <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
+            <div className="relative w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
               {property.images[0] && (
-                <img
+                <Image
                   src={property.images[0]}
                   alt={property.name}
-                  className="w-full h-full object-cover"
+                  width={64}
+                  height={64}
+                  className="object-cover"
                 />
               )}
             </div>
