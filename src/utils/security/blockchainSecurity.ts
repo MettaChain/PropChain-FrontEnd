@@ -492,13 +492,36 @@ export class BlockchainSecurityService {
   }
 }
 
-// Default configuration for development
-const defaultConfig: SecurityServiceConfig = {
-  baseUrl: 'https://api.chainalysis.com/api/v2',
-  timeout: 10000,
-  // In production, this would be set via environment variables
-  apiKey: typeof window !== 'undefined' ? (window as any).__CHAINALYSIS_API_KEY__ : undefined
-};
+// Server-side singleton (only use this on the server; the API key stays server-side)
+export function createServerSecurityService(config?: SecurityServiceConfig): BlockchainSecurityService {
+  const effectiveConfig = config ?? {
+    baseUrl: process.env.CHAINALYSIS_API_URL || 'https://api.chainalysis.com/api/v2',
+    timeout: 10000,
+    apiKey: process.env.CHAINALYSIS_API_KEY || undefined,
+  };
+  return BlockchainSecurityService.getInstance(effectiveConfig);
+}
 
-// Export singleton instance
-export const blockchainSecurity = BlockchainSecurityService.getInstance(defaultConfig);
+// Client-side proxy: calls our own API endpoint so the API key never reaches the browser.
+export async function checkAddressRiskViaProxy(address: string): Promise<AddressRiskScore> {
+  const res = await fetch(`/api/security/address-check?address=${encodeURIComponent(address)}`);
+  if (!res.ok) {
+    return {
+      address,
+      riskScore: 50,
+      riskLevel: 'medium',
+      categories: ['unknown'],
+      labels: ['unable_to_verify'],
+      description: 'Unable to verify address risk via proxy',
+    };
+  }
+  const body = await res.json();
+  return {
+    address,
+    riskScore: typeof body.risk_score === 'number' ? body.risk_score : 50,
+    riskLevel: body.risk_level ?? 'medium',
+    categories: Array.isArray(body.categories) ? body.categories : [],
+    labels: Array.isArray(body.labels) ? body.labels : [],
+    description: body.description ?? '',
+  };
+}
