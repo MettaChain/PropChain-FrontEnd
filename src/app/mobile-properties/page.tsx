@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 import {
   Search,
   MapPin,
@@ -211,7 +212,7 @@ const properties: MobileProperty[] = [
   },
 ];
 
-export default function MobilePropertiesPage() {
+function MobilePropertiesPage() {
   const [activeTab, setActiveTab] = useState("browse");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -462,6 +463,8 @@ export default function MobilePropertiesPage() {
     </div>
   );
 }
+
+export default withRouteErrorBoundary(MobilePropertiesPage, { routeName: 'mobile-properties' });
 
 function SectionSkeleton() {
   return (

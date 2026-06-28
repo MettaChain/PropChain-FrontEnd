@@ -84,7 +84,7 @@ class StructuredLogger {
       flushInterval: 5000,
       ...config,
     };
-    this.sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    this.sessionId = `sess_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 7)}`;
     this.startFlushTimer();
   }
 
