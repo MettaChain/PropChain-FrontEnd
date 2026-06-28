@@ -43,6 +43,9 @@ import {
 // Event listeners
 const eventListeners: Set<CacheEventListener> = new Set();
 
+// Interval handle for cleanup timer (stored at module level to allow cleanup on re-init)
+let cleanupIntervalHandle: ReturnType<typeof setInterval> | null = null;
+
 // Cache statistics
 let cacheStats: CacheStats = {
   totalEntries: 0,
@@ -675,9 +678,14 @@ export const initPropertyCache = async (): Promise<void> => {
     // Clean up expired entries on init
     await cleanupExpiredEntries();
     
+    // Clear any existing cleanup interval (prevents accumulation on HMR / re-imports)
+    if (cleanupIntervalHandle !== null) {
+      clearInterval(cleanupIntervalHandle);
+    }
+
     // Set up periodic cleanup
     const config = getCacheConfig();
-    setInterval(cleanupExpiredEntries, config.cleanupInterval);
+    cleanupIntervalHandle = setInterval(cleanupExpiredEntries, config.cleanupInterval);
 
     logger.info('Property cache initialized');
   } catch (error) {

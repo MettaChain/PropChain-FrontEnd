@@ -150,45 +150,69 @@ export default function ComparePage() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Property Comparison</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-            th { background-color: #f5f5f5; font-weight: bold; }
-            h1 { color: #333; }
-            @media print { body { padding: 0; } }
-          </style>
-        </head>
-        <body>
-          <h1>Property Comparison Report</h1>
-          <p>Generated on ${new Date().toLocaleDateString()}</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Metric</th>
-                ${properties.map(p => `<th>${p.name}</th>`).join('')}
-              </tr>
-            </thead>
-            <tbody>
-              ${comparisonMetrics.map(metric => `
-                <tr>
-                  <td>${metric.label}</td>
-                  ${properties.map(p => `<td>${metric.format(getNestedValue(p, metric.key), p)}</td>`).join('')}
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `;
+    // Build document via safe DOM APIs instead of document.write to avoid
+    // CSP bypass and script re-execution risks.
+    const doc = printWindow.document;
 
-    printWindow.document.write(html);
-    printWindow.document.close();
+    // Create title
+    const title = doc.createElement('title');
+    title.textContent = 'Property Comparison';
+    doc.head.appendChild(title);
+
+    // Create styles
+    const style = doc.createElement('style');
+    style.textContent = `
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+      th { background-color: #f5f5f5; font-weight: bold; }
+      h1 { color: #333; }
+      @media print { body { padding: 0; } }
+    `;
+    doc.head.appendChild(style);
+
+    // Build body
+    const h1 = doc.createElement('h1');
+    h1.textContent = 'Property Comparison Report';
+    doc.body.appendChild(h1);
+
+    const dateP = doc.createElement('p');
+    dateP.textContent = `Generated on ${new Date().toLocaleDateString()}`;
+    doc.body.appendChild(dateP);
+
+    // Build table
+    const table = doc.createElement('table');
+    const thead = doc.createElement('thead');
+    const headerRow = doc.createElement('tr');
+    const metricTh = doc.createElement('th');
+    metricTh.textContent = 'Metric';
+    headerRow.appendChild(metricTh);
+    properties.forEach(p => {
+      const th = doc.createElement('th');
+      th.textContent = p.name;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = doc.createElement('tbody');
+    comparisonMetrics.forEach(metric => {
+      const row = doc.createElement('tr');
+      const labelTd = doc.createElement('td');
+      labelTd.textContent = metric.label;
+      row.appendChild(labelTd);
+      properties.forEach(p => {
+        const td = doc.createElement('td');
+        td.textContent = metric.format(getNestedValue(p, metric.key), p);
+        row.appendChild(td);
+      });
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    doc.body.appendChild(table);
+
+    // Close the document stream so browsers finish rendering before printing
+    doc.close();
     printWindow.print();
   };
 

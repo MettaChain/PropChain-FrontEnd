@@ -390,6 +390,9 @@ class StructuredLogger {
 
 export const structuredLogger = new StructuredLogger();
 
+// Note: structuredLogger.destroy() should be called manually for cleanup
+// in test teardowns or before recreating the singleton.
+
 // ============================================================================
 // Performance Monitoring Helper
 // ============================================================================
