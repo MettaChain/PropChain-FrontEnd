@@ -66,12 +66,10 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
   }, [isFavorite, removeFavorite, addFavorite, property]);
 
   return (
-    <Link
-      href={`/properties/${property.id}`}
-      className={`group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden ${
+    <article
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden ${
         isListView ? 'flex flex-row' : 'flex flex-col'
       }`}
-      aria-label={`View details for ${property.name}`}
     >
 {/* Image */}
         <div className={`relative overflow-hidden ${isListView ? 'w-64 flex-shrink-0' : 'w-full h-56'}`}>
@@ -188,9 +186,12 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* Title */}
-        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+        <Link
+          href={`/properties/${property.id}`}
+          className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2"
+        >
           {property.name}
-        </h3>
+        </Link>
 
         {/* Location */}
         <div className="flex items-start gap-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
@@ -280,13 +281,17 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
               <Plus className="w-2 h-2 sm:w-3 sm:h-3" aria-hidden="true" />
               <span className="hidden sm:inline">Add to Cart</span>
             </button>
-            <button className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label={`View details for ${property.name}`}>
+            <Link
+              href={`/properties/${property.id}`}
+              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center"
+              aria-label={`View details for ${property.name}`}
+            >
               View
-            </button>
+            </Link>
           </div>
         </div>
       </div>
-    </Link>
+    </article>
   );
 };
 
