@@ -7,6 +7,7 @@ import { ArrowLeft, Share2, Download, Clock, Trash2, FileText } from 'lucide-rea
 import { propertyService } from '@/lib/propertyService';
 import { useComparisonHistoryStore } from '@/store/comparisonHistoryStore';
 import { useComparisonStore } from '@/store/comparisonStore';
+import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 import type { Property } from '@/types/property';
 import { formatPrice, formatROI } from '@/utils/searchUtils';
 
@@ -93,7 +94,7 @@ function getBestValue(properties: Property[], metric: ComparisonMetric): number 
   return metric.higherIsBetter ? Math.max(...numericValues) : Math.min(...numericValues);
 }
 
-export default function ComparePage() {
+function ComparePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { selectedProperties, clearProperties } = useComparisonStore();
@@ -403,3 +404,5 @@ export default function ComparePage() {
     </div>
   );
 }
+
+export default withRouteErrorBoundary(ComparePage, { routeName: 'compare' });

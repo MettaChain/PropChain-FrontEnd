@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
@@ -25,6 +25,12 @@ export const DataRefreshWrapper = ({
   const { setTimeoutSafe } = useSafeTimeout();
 
   const handleRefresh = useCallback(async () => {
+    // Cancel any pending success timeout from a previous refresh
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+
     setRefreshState("loading");
     setError(null);
 

@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateProperty, revalidateAllProperties } from '@/lib/propertyServiceServer';
+import { requireEnvStrict } from '@/lib/requireEnv';
 import crypto from 'crypto';
 
 const WEBHOOK_SECRET: string | undefined = process.env.REVALIDATE_WEBHOOK_SECRET;
