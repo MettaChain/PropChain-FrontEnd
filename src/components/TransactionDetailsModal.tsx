@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface TransactionDetailsModalProps {
   transaction: Transaction | null;
@@ -105,7 +106,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
       doc.save(`transaction-receipt-${transaction.hash.slice(0, 8)}.pdf`);
       toast.success('Transaction receipt downloaded successfully');
     } catch (error) {
-      console.error('Error downloading PDF:', error);
+      logger.error('Error downloading PDF', error);
       toast.error('Failed to download transaction receipt');
     }
   };
