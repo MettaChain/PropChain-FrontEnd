@@ -24,13 +24,7 @@ export interface SecurityAlert {
   walletAddress?: string;
 }
 
-export interface AuditLogRotationConfig {
-  maxLogSize: number;
-  maxAlertSize: number;
-  retentionPeriodMs: number;
-  evictionThreshold: number;
-  remoteExportUrl?: string;
-}
+import { generateSecureId } from '@/utils/secureId';
 
 export class SecurityAuditLogger {
   private static instance: SecurityAuditLogger;
@@ -649,14 +643,14 @@ export class SecurityAuditLogger {
    * Generates a unique ID
    */
   private generateId(): string {
-    return crypto.randomUUID().replace(/-/g, '').substring(0, 9) + Date.now().toString(36);
+    return generateSecureId();
   }
 
   /**
    * Generates a session ID
    */
   private generateSessionId(): string {
-    return 'session_' + Date.now().toString(36) + '_' + crypto.randomUUID().replace(/-/g, '').substring(0, 9);
+    return generateSecureId('session');
   }
 }
 
