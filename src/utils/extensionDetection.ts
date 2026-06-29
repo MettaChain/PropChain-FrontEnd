@@ -15,19 +15,19 @@ export const detectWalletExtensions = (): WalletExtension[] => {
       name: 'MetaMask',
       id: 'metamask',
       isInstalled: typeof window !== 'undefined' && !!window.ethereum?.isMetaMask,
-      icon: '🦊',
+      icon: 'metamask',
     },
     {
       name: 'Coinbase Wallet',
       id: 'coinbase',
       isInstalled: typeof window !== 'undefined' && !!window.ethereum?.isCoinbaseWallet,
-      icon: '🔵',
+      icon: 'coinbase',
     },
     {
       name: 'WalletConnect',
       id: 'walletconnect',
       isInstalled: false, // WalletConnect is not a browser extension
-      icon: '🔗',
+      icon: 'walletconnect',
     },
   ];
 

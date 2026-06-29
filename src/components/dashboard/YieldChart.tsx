@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import type { TooltipProps } from "recharts";
 
 const yieldData = [
   { name: "Manhattan Luxury", yield: 12.5, color: "hsl(160, 84%, 39%)" },
@@ -21,7 +22,7 @@ const yieldData = [
   { name: "Chicago Ind.", yield: 6.5, color: "hsl(20, 90%, 60%)" },
 ];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="glass-card rounded-lg p-3 shadow-lg border border-border">

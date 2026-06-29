@@ -10,7 +10,8 @@ import {
   Wallet,
   ArrowRight,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Home
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -129,7 +130,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-xl">🏠</span>
+                          <Home className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
                           <div className="text-left">
                             <p className="text-sm font-semibold">{t.name}</p>
                             <p className="text-xs text-muted-foreground">{t.balance} {t.symbol} available</p>

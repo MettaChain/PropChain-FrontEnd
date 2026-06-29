@@ -228,19 +228,16 @@ export function getBlockchainColor(blockchain: string): string {
 }
 
 /**
- * Returns an emoji icon associated with a property type.
+ * Returns a descriptive icon label for a property type.
+ * Note: Rendering the actual icon (lucide-react) should be done
+ * at the component level. This utility returns the type string for
+ * use with icon mapping components.
  * 
  * @param type - The property type.
- * @returns An emoji icon.
+ * @returns The property type label.
  */
 export function getPropertyTypeIcon(type: string): string {
-  const icons: Record<string, string> = {
-    residential: '🏠',
-    commercial: '🏢',
-    industrial: '🏭',
-    'mixed-use': '🏗️',
-  };
-  return icons[type] || '🏘️';
+  return type; // Components should map this to the appropriate lucide-react icon
 }
 
 /**

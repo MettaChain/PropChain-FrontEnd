@@ -1,5 +1,6 @@
 'use client';
 import { logger } from '@/utils/logger';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 import { useState, useEffect } from 'react';
 import { generateSecureId } from '@/utils/secureId';
@@ -12,7 +13,7 @@ interface SearchHistoryItem {
   type: 'location' | 'property_type' | 'price_range' | 'general';
 }
 
-const SEARCH_HISTORY_KEY = 'propchain_search_history';
+const SEARCH_HISTORY_KEY = STORAGE_KEYS.SEARCH_HISTORY.key;
 const MAX_HISTORY_ITEMS = 10;
 
 export const useSearchHistory = () => {
