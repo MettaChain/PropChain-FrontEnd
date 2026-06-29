@@ -85,11 +85,12 @@ export const profileSettingsSchema = z.object({
     .max(50, "Display name cannot exceed 50 characters."),
   email: z.string().email("Enter a valid email address."),
   phoneNumber: z
-    .string()
-    .trim()
+    .union([
+      z.string().trim().regex(/^$|^[\d()+\s-]{7,25}$/, "Enter a valid phone number."),
+      z.literal(""),
+    ])
     .optional()
-    .or(z.literal(""))
-    .regex(/^$|^[\d()+\s-]{7,25}$/, "Enter a valid phone number."),
+    .default(""),
   preferredNetwork: z.enum(BLOCKCHAIN_NETWORKS),
   receiveNewsletter: z.boolean(),
 })
