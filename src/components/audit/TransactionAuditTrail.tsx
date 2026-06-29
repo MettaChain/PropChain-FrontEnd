@@ -369,7 +369,7 @@ export const TransactionAuditTrail: React.FC<TransactionAuditTrailProps> = ({ cl
                               <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
                               <div className="space-y-1">
                                 {entry.warnings.map((warning, index) => (
-                                  <p key={index} className="text-xs text-yellow-700 dark:text-yellow-300">
+                                  <p key={`${entry.id}-warn-${index}`} className="text-xs text-yellow-700 dark:text-yellow-300">
                                     • {warning}
                                   </p>
                                 ))}

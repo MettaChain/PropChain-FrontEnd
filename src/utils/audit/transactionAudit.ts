@@ -53,7 +53,7 @@ class TransactionAuditTrail {
     const riskLevel = this.calculateRiskLevel(signedTransaction, warnings);
     
     const entry: AuditTrailEntry = {
-      id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `audit-${Date.now()}-${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`,
       signer: signedTransaction.signer,
       to: signedTransaction.transaction.to,
       value: signedTransaction.transaction.value || '0',

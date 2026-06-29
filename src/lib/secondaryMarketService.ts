@@ -82,7 +82,7 @@ export const secondaryMarketService = {
     
     const newListing: SecondaryMarketListing = {
       ...data,
-      id: `sec-${Math.random().toString(36).substr(2, 9)}`,
+      id: `sec-${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`,
       listedDate: new Date().toISOString(),
     };
     
@@ -97,7 +97,7 @@ export const secondaryMarketService = {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     return {
-      transactionHash: `0x${Math.random().toString(16).substr(2, 64)}`
+      transactionHash: `0x${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`
     };
   }
 };
