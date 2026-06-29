@@ -6,9 +6,13 @@ import { getWalletErrorMessage } from '@/utils/errorHandling';
 import { toChainId } from '@/config/chains';
 import { useSecurity } from '@/hooks/useSecurity';
 import { useWalletConnector } from '@/hooks/useWalletConnector';
-import { AlertTriangle, Shield, X, CheckCircle, AlertCircle, Loader2, Wallet, Link2, QrCode } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ModalTransition } from './PageTransition';
+import { AlertTriangle, Shield, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -234,8 +238,6 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     return 0;
   });
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -263,8 +265,13 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
               <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="sm:max-w-md" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>Connect Wallet</DialogTitle>
+        </DialogHeader>
 
-        <div className="p-6">
+        <div className="p-0">
           {renderLoadingStep()}
           {renderSecurityStatus()}
           
@@ -368,9 +375,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
               </div>
             </div>
           </div>
-          </div>
-        </ModalTransition>
-      </div>
-    </AnimatePresence>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

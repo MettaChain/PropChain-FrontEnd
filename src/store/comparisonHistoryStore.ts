@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { generateSecureId } from '@/utils/secureId';
 
 export interface ComparisonHistory {
   id: string;
@@ -28,7 +29,7 @@ export const useComparisonHistoryStore = create<ComparisonHistoryStore>()(
       addComparison: (propertyIds: string[]) => {
         if (propertyIds.length === 0) return;
 
-        const id = `comp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const id = generateSecureId('comp');
         const shareUrl = `/compare?ids=${propertyIds.join(',')}`;
         
         const newComparison: ComparisonHistory = {

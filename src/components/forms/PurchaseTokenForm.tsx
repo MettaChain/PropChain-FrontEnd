@@ -7,6 +7,7 @@ import {
   Form,
   FormControl,
   FormDescription,
+  FormField,
   FormItem,
   FormLabel,
   FormMessage,
@@ -25,18 +26,38 @@ export function PurchaseTokenForm({ propertyId, propertyName, onSubmit }: Purcha
     resolver: zodResolver(purchaseTokenSchema),
     defaultValues: {
       propertyId,
-      tokenAmount: 1,
+      tokenAmount: 0,
       maxPricePerToken: 0,
       purchaseType: "market",
       agreeToTerms: false,
     },
-    mode: "onBlur",
+    mode: "onSubmit",
   })
+
+  const handleSubmit = (values: PurchaseTokenFormValues) => {
+    const result = purchaseTokenSchema.safeParse(values)
+
+    if (!result.success) {
+      form.clearErrors()
+      result.error.issues.forEach((issue) => {
+        const fieldName = issue.path[0]
+        if (typeof fieldName === "string") {
+          form.setError(fieldName as keyof PurchaseTokenFormValues, {
+            type: "validation",
+            message: issue.message,
+          })
+        }
+      })
+      return
+    }
+
+    onSubmit(values)
+  }
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={form.handleSubmit(handleSubmit)}
         data-tour="purchase-form"
         className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900"
       >
@@ -47,56 +68,139 @@ export function PurchaseTokenForm({ propertyId, propertyName, onSubmit }: Purcha
 
         <input type="hidden" value={propertyId} {...form.register("propertyId")} />
 
-        <FormItem>
-          <FormLabel>Token amount</FormLabel>
-          <FormControl>
-            <Input
-              type="number"
-              min={1}
-              step={1}
-              {...form.register("tokenAmount", { valueAsNumber: true })}
-            />
-          </FormControl>
-          <FormDescription>Enter the number of property tokens you want to purchase.</FormDescription>
-          <FormMessage />
-        </FormItem>
+        <FormField
+          control={form.control}
+          name="tokenAmount"
+          render={({ field }) => {
+            const descriptionId = `${field.name}-description`
+            const messageId = `${field.name}-message`
+            const errorMessage = getFieldError(field.name as keyof PurchaseTokenFormValues)
 
-        <FormItem>
-          <FormLabel>Max price per token</FormLabel>
-          <FormControl>
-            <Input
-              type="number"
-              min={0}
-              step={0.01}
-              {...form.register("maxPricePerToken", { valueAsNumber: true })}
-            />
-          </FormControl>
-          <FormDescription>Limits the price for each token to protect against slippage.</FormDescription>
-          <FormMessage />
-        </FormItem>
+            return (
+              <FormItem>
+                <FormLabel>Token amount</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={field.value ?? ""}
+                    onChange={(event) => {
+                      field.onChange(event.target.value === "" ? undefined : Number(event.target.value))
+                    }}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    aria-invalid={Boolean(errorMessage)}
+                    aria-describedby={[descriptionId, errorMessage ? messageId : undefined].filter(Boolean).join(" ") || undefined}
+                  />
+                </FormControl>
+                <FormDescription id={descriptionId}>Enter the number of property tokens you want to purchase.</FormDescription>
+                <FormMessage id={messageId}>{errorMessage}</FormMessage>
+              </FormItem>
+            )
+          }}
+        />
 
-        <FormItem>
-          <FormLabel>Purchase type</FormLabel>
-          <FormControl>
-            <select
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-base outline-none focus-visible:border-ring focus-visible:ring-ring/50"
-              {...form.register("purchaseType")}
-            >
-              <option value="market">Market order</option>
-              <option value="bid">Bid order</option>
-            </select>
-          </FormControl>
-          <FormDescription>Choose whether to buy immediately or submit a bid.</FormDescription>
-          <FormMessage />
-        </FormItem>
+        <FormField
+          control={form.control}
+          name="maxPricePerToken"
+          render={({ field }) => {
+            const descriptionId = `${field.name}-description`
+            const messageId = `${field.name}-message`
+            const errorMessage = getFieldError(field.name as keyof PurchaseTokenFormValues)
 
-        <FormItem>
-          <label className="inline-flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" {...form.register("agreeToTerms")} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-            I agree to the terms and conditions for this purchase.
-          </label>
-          <FormMessage />
-        </FormItem>
+            return (
+              <FormItem>
+                <FormLabel>Max price per token</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={field.value ?? ""}
+                    onChange={(event) => {
+                      field.onChange(event.target.value === "" ? undefined : Number(event.target.value))
+                    }}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    aria-invalid={Boolean(errorMessage)}
+                    aria-describedby={[descriptionId, errorMessage ? messageId : undefined].filter(Boolean).join(" ") || undefined}
+                  />
+                </FormControl>
+                <FormDescription id={descriptionId}>Limits the price for each token to protect against slippage.</FormDescription>
+                <FormMessage id={messageId}>{errorMessage}</FormMessage>
+              </FormItem>
+            )
+          }}
+        />
+
+        <FormField
+          control={form.control}
+          name="purchaseType"
+          render={({ field }) => {
+            const descriptionId = `${field.name}-description`
+            const messageId = `${field.name}-message`
+            const errorMessage = getFieldError(field.name as keyof PurchaseTokenFormValues)
+
+            return (
+              <FormItem>
+                <FormLabel>Purchase type</FormLabel>
+                <FormControl>
+                  <select
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-base outline-none focus-visible:border-ring focus-visible:ring-ring/50"
+                    value={field.value}
+                    onChange={(event) => {
+                      field.onChange(event)
+                    }}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    aria-invalid={Boolean(errorMessage)}
+                    aria-describedby={[descriptionId, errorMessage ? messageId : undefined].filter(Boolean).join(" ") || undefined}
+                  >
+                    <option value="market">Market order</option>
+                    <option value="bid">Bid order</option>
+                  </select>
+                </FormControl>
+                <FormDescription id={descriptionId}>Choose whether to buy immediately or submit a bid.</FormDescription>
+                <FormMessage id={messageId}>{errorMessage}</FormMessage>
+              </FormItem>
+            )
+          }}
+        />
+
+        <FormField
+          control={form.control}
+          name="agreeToTerms"
+          render={({ field, fieldState }) => {
+            const messageId = `${field.name}-message`
+            const errorMessage = fieldState.error?.message
+
+            return (
+              <FormItem>
+                <label className="inline-flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(field.value)}
+                    onChange={(event) => {
+                      field.onChange(event.target.checked)
+                    }}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    aria-invalid={Boolean(errorMessage)}
+                    aria-describedby={errorMessage ? messageId : undefined}
+                  />
+                  I agree to the terms and conditions for this purchase.
+                </label>
+                <FormMessage id={messageId}>{errorMessage}</FormMessage>
+              </FormItem>
+            )
+          }}
+        />
 
         <Button type="submit">Submit purchase request</Button>
       </form>

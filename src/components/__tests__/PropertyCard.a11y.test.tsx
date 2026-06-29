@@ -60,6 +60,11 @@ const mockProperty: Property = {
   verified: true,
 };
 
+jest.mock('next/image', () => ({
+  __esModule: true,
+  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} />,
+}));
+
 // Mock stores
 jest.mock('@/store/cartStore', () => ({
   useCartStore: () => ({ addItem: jest.fn() }),
@@ -73,10 +78,8 @@ jest.mock('@/store/comparisonStore', () => ({
 }));
 
 jest.mock('@/store/compareStore', () => ({
-  useCompareStore: () => ({
-    selectedIds: [],
-    toggleProperty: jest.fn(),
-  }),
+  useCompareStore: (selector: (state: { selectedIds: string[]; toggleProperty: jest.Mock }) => unknown) =>
+    selector({ selectedIds: [], toggleProperty: jest.fn() }),
 }));
 
 jest.mock('@/store/favoritesStore', () => ({
@@ -116,15 +119,17 @@ describe('PropertyCard Accessibility', () => {
 
   it('should have accessible featured badge with role status', () => {
     render(<PropertyCard property={mockProperty} />);
-    const featuredBadge = screen.getByText('Featured');
+    const featuredBadge = screen.getByText(/Featured/i).closest('[role="status"]');
     expect(featuredBadge).toHaveAttribute('role', 'status');
+    expect(featuredBadge).toHaveAttribute('aria-live', 'polite');
     expect(featuredBadge).toHaveAttribute('aria-label', 'Featured property');
   });
 
   it('should have accessible verified badge with role status', () => {
     render(<PropertyCard property={mockProperty} />);
-    const verifiedBadge = screen.getByText('Verified');
+    const verifiedBadge = screen.getByText(/Verified/i).closest('[role="status"]');
     expect(verifiedBadge).toHaveAttribute('role', 'status');
+    expect(verifiedBadge).toHaveAttribute('aria-live', 'polite');
     expect(verifiedBadge).toHaveAttribute('aria-label', 'Verified property');
   });
 
@@ -171,13 +176,13 @@ describe('PropertyCard Accessibility', () => {
     render(<PropertyCard property={mockProperty} />);
     const interactiveButtons = screen.getAllByRole('button');
     interactiveButtons.forEach(button => {
-      expect(button).toHaveClass('focus:outline-none');
+      expect(button.className).toMatch(/focus-visible:ring/);
     });
   });
 
   it('should have accessible location information', () => {
     render(<PropertyCard property={mockProperty} />);
-    const locationText = screen.getByText('Los Angeles, California');
+    const locationText = screen.getByText(/Los Angeles, California/i);
     expect(locationText).toHaveAttribute('aria-label', 'Location: Los Angeles, California');
   });
 });

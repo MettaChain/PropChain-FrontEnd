@@ -21,7 +21,10 @@ export default [{
     "@typescript-eslint": tseslint,
   },
   rules: {
-    "@typescript-eslint/no-explicit-any": "off",
+    // Warn on `as any` / `: any` in new code; existing justified survivors are
+    // documented in docs/as-any-survivors.md.  Set to "warn" so CI surfaces
+    // regressions without hard-failing on the one remaining legacy site.
+    "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/consistent-type-imports": "off",
     "@typescript-eslint/no-unnecessary-type-assertion": "off",
     // Escalated to `error` to enforce routing through the structured logger.

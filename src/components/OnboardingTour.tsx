@@ -61,18 +61,32 @@ const steps: Step[] = [
   },
 ];
 
+/**
+ * Returns the focusable elements inside a container, in tab order.
+ * Excludes elements with `tabindex="-1"` or `disabled`, and hidden inputs.
+ */
+function getFocusableElements(container: HTMLElement | null): HTMLElement[] {
+  if (!container) return [];
+  const selector =
+    'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  return Array.from(container.querySelectorAll<HTMLElement>(selector)).filter(
+    (el) => !el.hasAttribute('inert') && el.tabIndex !== -1
+  );
+}
+
 export const OnboardingTour: React.FC = () => {
-  const { 
-    isActive, 
-    currentStep, 
-    nextStep, 
-    prevStep, 
-    stopOnboarding, 
-    completeOnboarding 
+  const {
+    isActive,
+    currentStep,
+    nextStep,
+    prevStep,
+    stopOnboarding,
+    completeOnboarding,
   } = useOnboardingStore();
 
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  const portalRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const step = steps[currentStep];
 
@@ -102,6 +116,88 @@ export const OnboardingTour: React.FC = () => {
     };
   }, [isActive, step]);
 
+  // Focus management: move focus into the tour card when it opens,
+  // and restore focus to the element that was active before it opened.
+  useEffect(() => {
+    if (!isActive) return;
+
+    previousFocusRef.current = (document.activeElement as HTMLElement) ?? null;
+
+    // Wait a frame so the card has rendered its focusable children.
+    const focusTimer = window.setTimeout(() => {
+      const focusables = getFocusableElements(cardRef.current);
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      } else if (cardRef.current) {
+        cardRef.current.focus();
+      }
+    }, 0);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      const previous = previousFocusRef.current;
+      if (previous && typeof previous.focus === 'function') {
+        previous.focus();
+      }
+      previousFocusRef.current = null;
+    };
+  }, [isActive]);
+
+  // Keyboard handling: Escape closes the tour; Tab/Shift+Tab cycle within it.
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        stopOnboarding();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusables = getFocusableElements(cardRef.current);
+      if (focusables.length === 0) {
+        // Nothing focusable inside — swallow Tab so focus stays put.
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      const insideCard =
+        active && cardRef.current ? cardRef.current.contains(active) : false;
+
+      if (event.shiftKey) {
+        if (!insideCard) {
+          // Focus is outside the dialog — pull it back to the last item.
+          event.preventDefault();
+          last.focus();
+        } else if (active === first) {
+          // At the first focusable — wrap to the last.
+          event.preventDefault();
+          last.focus();
+        }
+        // Middle items: let the browser advance focus naturally (still inside the card).
+      } else {
+        if (!insideCard) {
+          // Focus is outside the dialog — pull it back to the first item.
+          event.preventDefault();
+          first.focus();
+        } else if (active === last) {
+          // At the last focusable — wrap to the first.
+          event.preventDefault();
+          first.focus();
+        }
+        // Middle items: let the browser advance focus naturally (still inside the card).
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isActive, stopOnboarding]);
+
   if (!isActive) return null;
 
   const isLastStep = currentStep === steps.length - 1;
@@ -129,6 +225,11 @@ export const OnboardingTour: React.FC = () => {
       {/* Tour Card */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <motion.div
+          ref={cardRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Onboarding step ${currentStep + 1} of ${steps.length}: ${step.title}`}
+          tabIndex={-1}
           layout
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
