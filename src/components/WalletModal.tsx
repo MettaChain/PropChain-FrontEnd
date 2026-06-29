@@ -255,10 +255,12 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
               Connect Wallet
             </h2>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="Close wallet selector"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 

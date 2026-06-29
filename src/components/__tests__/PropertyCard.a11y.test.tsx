@@ -4,6 +4,14 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import { PropertyCard } from '../PropertyCard';
 import type { Property } from '@/types/property';
 
+jest.mock('next/image', () => ({
+  __esModule: true,
+  default: (props: { alt: string }) => {
+    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+    return <img alt={props.alt} />;
+  },
+}));
+
 expect.extend(toHaveNoViolations);
 
 const mockProperty: Property = {

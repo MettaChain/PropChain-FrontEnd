@@ -48,12 +48,13 @@ const FloatingComparisonBar = () => {
   const propertyChips = useMemo(
     () =>
       selectedProperties.map((property) => (
-        <PropertyChip
-          key={property.id}
-          name={property.name}
-          price={property.price.total}
-          onRemove={() => removeProperty(property)}
-        />
+        <li key={property.id} className="flex-1 list-none">
+          <PropertyChip
+            name={property.name}
+            price={property.price.total}
+            onRemove={() => removeProperty(property)}
+          />
+        </li>
       )),
     [selectedProperties, removeProperty],
   );
@@ -84,7 +85,13 @@ const FloatingComparisonBar = () => {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 mb-3">{propertyChips}</div>
+        <ul
+          role="list"
+          aria-label={`Selected properties for comparison, ${propertyCount} ${propertyCount === 1 ? 'item' : 'items'}`}
+          className="flex items-center gap-2 mb-3 list-none p-0 m-0"
+        >
+          {propertyChips}
+        </ul>
 
         <div className="flex justify-end">
           <Link
