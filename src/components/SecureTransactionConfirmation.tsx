@@ -236,7 +236,7 @@ export const SecureTransactionConfirmation: React.FC<SecureTransactionConfirmati
                               Warnings
                             </p>
                             {validation.warnings.map((warning: string, index: number) => (
-                              <p key={`warn-${index}`} className="text-xs text-yellow-700 dark:text-yellow-300">
+                              <p key={`${warning}-${index}`} className="text-xs text-yellow-700 dark:text-yellow-300">
                                 • {warning}
                               </p>
                             ))}
@@ -254,7 +254,7 @@ export const SecureTransactionConfirmation: React.FC<SecureTransactionConfirmati
                               Risk Factors
                             </p>
                             {validation.risks.map((risk: string, index: number) => (
-                              <p key={`risk-${index}`} className="text-xs text-orange-700 dark:text-orange-300">
+                              <p key={`${risk}-${index}`} className="text-xs text-orange-700 dark:text-orange-300">
                                 • {risk}
                               </p>
                             ))}
