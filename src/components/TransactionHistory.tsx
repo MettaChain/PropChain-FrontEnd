@@ -136,6 +136,12 @@ export const TransactionHistory: React.FC = () => {
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
 
+  // Expose the current sort state to assistive tech through aria-sort.
+  const getSortAria = (field: 'timestamp' | 'value' | 'gasUsed') => {
+    if (sortBy !== field) return 'none';
+    return sortOrder === 'asc' ? 'ascending' : 'descending';
+  };
+
   const handleSort = (field: 'timestamp' | 'value' | 'gasUsed') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -498,7 +504,7 @@ export const TransactionHistory: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('timestamp')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50" aria-sort={getSortAria('timestamp')} onClick={() => handleSort('timestamp')}>
                         <div className="flex items-center gap-1">
                           {t('transactions.time')}
                           {sortBy === 'timestamp' && <ArrowUpDown className="h-3 w-3" />}
@@ -507,7 +513,7 @@ export const TransactionHistory: React.FC = () => {
                       <TableHead>{t('transactions.hash')}</TableHead>
                       <TableHead>{t('transactions.type')}</TableHead>
                       <TableHead>{t('transactions.status')}</TableHead>
-                      <TableHead className="hidden md:table-cell cursor-pointer hover:bg-muted/50" onClick={() => handleSort('value')}>
+                      <TableHead className="hidden md:table-cell cursor-pointer hover:bg-muted/50" aria-sort={getSortAria('value')} onClick={() => handleSort('value')}>
                         <div className="flex items-center gap-1">
                           {t('transactions.value')}
                           {sortBy === 'value' && <ArrowUpDown className="h-3 w-3" />}
@@ -515,7 +521,7 @@ export const TransactionHistory: React.FC = () => {
                       </TableHead>
                       <TableHead className="hidden md:table-cell">{t('transactions.from')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('transactions.to')}</TableHead>
-                      <TableHead className="hidden lg:table-cell cursor-pointer hover:bg-muted/50" onClick={() => handleSort('gasUsed')}>
+                      <TableHead className="hidden lg:table-cell cursor-pointer hover:bg-muted/50" aria-sort={getSortAria('gasUsed')} onClick={() => handleSort('gasUsed')}>
                         <div className="flex items-center gap-1">
                           Gas
                           {sortBy === 'gasUsed' && <ArrowUpDown className="h-3 w-3" />}
