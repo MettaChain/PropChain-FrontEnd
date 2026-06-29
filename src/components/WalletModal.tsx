@@ -6,7 +6,7 @@ import { getWalletErrorMessage } from '@/utils/errorHandling';
 import { toChainId } from '@/config/chains';
 import { useSecurity } from '@/hooks/useSecurity';
 import { useWalletConnector } from '@/hooks/useWalletConnector';
-import { AlertTriangle, Shield, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Shield, X, CheckCircle, CheckCircle2, AlertCircle, Loader2, Wallet, Link2, QrCode } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -239,32 +239,6 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   });
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <motion.div 
-            className="fixed inset-0 bg-black bg-opacity-50" 
-            onClick={onClose}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          />
-          
-          <ModalTransition className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Connect Wallet
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close wallet selector"
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-            >
-              <X className="w-5 h-5" aria-hidden="true" />
-            </button>
-          </div>
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
@@ -319,7 +293,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
                           {wallet.name}
                         </span>
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          ✓ Installed
+                          <CheckCircle2 className="w-3 h-3 mr-1" aria-hidden="true" />
+                          Installed
                         </span>
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">

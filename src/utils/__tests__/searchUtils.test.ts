@@ -258,16 +258,16 @@ describe('searchUtils', () => {
   });
 
   describe('getPropertyTypeIcon', () => {
-    it('should return correct icons for known property types', () => {
-      expect(getPropertyTypeIcon('residential')).toBe('🏠');
-      expect(getPropertyTypeIcon('commercial')).toBe('🏢');
-      expect(getPropertyTypeIcon('industrial')).toBe('🏭');
-      expect(getPropertyTypeIcon('mixed-use')).toBe('🏗️');
+    it('should return the property type string for icon mapping', () => {
+      expect(getPropertyTypeIcon('residential')).toBe('residential');
+      expect(getPropertyTypeIcon('commercial')).toBe('commercial');
+      expect(getPropertyTypeIcon('industrial')).toBe('industrial');
+      expect(getPropertyTypeIcon('mixed-use')).toBe('mixed-use');
     });
 
-    it('should return default icon for unknown property types', () => {
-      expect(getPropertyTypeIcon('unknown')).toBe('🏘️');
-      expect(getPropertyTypeIcon('')).toBe('🏘️');
+    it('should return the input for unknown property types', () => {
+      expect(getPropertyTypeIcon('unknown')).toBe('unknown');
+      expect(getPropertyTypeIcon('')).toBe('');
     });
   });
 

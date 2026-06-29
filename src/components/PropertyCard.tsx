@@ -3,9 +3,9 @@
 import React, { useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Plus, CheckSquare, Square, Heart } from 'lucide-react';
+import { ShoppingCart, Plus, CheckSquare, Square, Heart, Star } from 'lucide-react';
 import type { Property } from '@/types/property';
-import { formatPrice, formatNumber, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
+import { formatPrice, formatNumber, formatROI, getBlockchainColor } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
 import { useComparisonStore } from '@/store/comparisonStore';
@@ -92,14 +92,13 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
          */}
         <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 sm:gap-2">
           {property.featured && (
-            <span className="bg-yellow-700 dark:bg-yellow-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded" role="status" aria-label="Featured property">
-            <span className="bg-yellow-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded" role="status" aria-live="polite" aria-label="Featured property">
-              ⭐ Featured
+            <span className="bg-yellow-700 dark:bg-yellow-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-live="polite" aria-label="Featured property">
+              <Star className="w-3 h-3" aria-hidden="true" />
+              Featured
             </span>
           )}
           {property.verified && (
-            <span className="bg-emerald-700 dark:bg-emerald-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-label="Verified property">
-            <span className="bg-green-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-live="polite" aria-label="Verified property">
+            <span className="bg-emerald-700 dark:bg-emerald-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-live="polite" aria-label="Verified property">
               <svg aria-hidden="true" className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
@@ -109,10 +108,8 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* ROI Badge */}
-        <div className="absolute top-2 right-20 sm:top-3 sm:right-24" role="status" aria-label={`Return on investment: ${formatROI(property.metrics.roi)}`}>
-          <div className="bg-blue-700 dark:bg-blue-800 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
         <div className="absolute top-2 right-20 sm:top-3 sm:right-24" role="status" aria-live="polite" aria-label={`Return on investment: ${formatROI(property.metrics.roi)}`}>
-          <div className="bg-blue-600 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
+          <div className="bg-blue-700 dark:bg-blue-800 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
             {formatROI(property.metrics.roi)} ROI
           </div>
         </div>
@@ -193,7 +190,6 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
       <div className={`p-3 sm:p-5 flex flex-col ${isListView ? 'flex-1' : ''}`}>
         {/* Property Type */}
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className="text-lg sm:text-xl">{getPropertyTypeIcon(property.propertyType)}</span>
           <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             {PROPERTY_TYPE_LABELS[property.propertyType]}
           </span>

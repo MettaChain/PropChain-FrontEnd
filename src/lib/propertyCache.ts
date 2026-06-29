@@ -4,6 +4,7 @@
  */
 
 import { logger } from '@/utils/logger';
+import { STORAGE_KEYS } from './storageKeys';
 import {
   dbGet,
   dbSet,
@@ -501,9 +502,9 @@ export const cacheSearchResult = async (
     };
 
     if (typeof window !== 'undefined') {
-      const searches = safeLocalStorage.getJSON<Record<string, any>>('propchain-search-cache', {});
+      const searches = safeLocalStorage.getJSON<Record<string, any>>(STORAGE_KEYS.SEARCH_CACHE.key, {});
       searches[key] = searchCache;
-      safeLocalStorage.setJSON('propchain-search-cache', searches);
+      safeLocalStorage.setJSON(STORAGE_KEYS.SEARCH_CACHE.key, searches);
     }
 
     emitEvent({ type: 'set', key, timestamp: Date.now() });
@@ -525,7 +526,7 @@ export const getCachedSearchResult = async (
   try {
     if (typeof window === 'undefined') return null;
 
-    const searches = safeLocalStorage.getJSON<Record<string, any>>('propchain-search-cache', {});
+    const searches = safeLocalStorage.getJSON<Record<string, any>>(STORAGE_KEYS.SEARCH_CACHE.key, {});
     const cached = searches[key];
 
     if (!cached) {
@@ -538,7 +539,7 @@ export const getCachedSearchResult = async (
     if (Date.now() - cached.cachedAt > config.ttl) {
       cacheMisses++;
       delete searches[key];
-      safeLocalStorage.setJSON('propchain-search-cache', searches);
+      safeLocalStorage.setJSON(STORAGE_KEYS.SEARCH_CACHE.key, searches);
       return null;
     }
 
@@ -630,7 +631,7 @@ export const clearAllCachedProperties = async (): Promise<void> => {
     await dbClear(CACHE_STORE_NAMES.MOBILE_PROPERTIES);
     
     if (typeof window !== 'undefined') {
-      safeLocalStorage.remove('propchain-search-cache');
+      safeLocalStorage.remove(STORAGE_KEYS.SEARCH_CACHE.key);
     }
 
     cacheHits = 0;
@@ -771,9 +772,7 @@ export const cleanupExpiredEntries = async (): Promise<number> => {
 
     // Clean expired search caches
     if (typeof window !== 'undefined') {
-      const searches = JSON.parse(
-        localStorage.getItem('propchain-search-cache') || '{}'
-      );
+      const searches = safeLocalStorage.getJSON<Record<string, any>>(STORAGE_KEYS.SEARCH_CACHE.key, {});
       let modified = false;
       
       for (const [key, value] of Object.entries(searches)) {
@@ -794,7 +793,7 @@ export const cleanupExpiredEntries = async (): Promise<number> => {
       }
       
       if (modified) {
-        safeLocalStorage.setJSON('propchain-search-cache', searches);
+        safeLocalStorage.setJSON(STORAGE_KEYS.SEARCH_CACHE.key, searches);
       }
     }
 

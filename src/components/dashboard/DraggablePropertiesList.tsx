@@ -1,5 +1,6 @@
 'use client';
 import { logger } from '@/utils/logger';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback, memo } from "react";
@@ -96,7 +97,7 @@ export const DraggablePropertiesList = memo(() => {
 
   // Load properties from localStorage or use default
   useEffect(() => {
-    const savedOrder = localStorage.getItem('portfolioOrder');
+    const savedOrder = localStorage.getItem(STORAGE_KEYS.PORTFOLIO_ORDER.key);
     if (savedOrder) {
       try {
         const savedIds = JSON.parse(savedOrder);
@@ -116,7 +117,7 @@ export const DraggablePropertiesList = memo(() => {
   // Save order to localStorage whenever it changes
   useEffect(() => {
     if (properties.length > 0) {
-      localStorage.setItem('portfolioOrder', JSON.stringify(properties.map(p => p.id)));
+      localStorage.setItem(STORAGE_KEYS.PORTFOLIO_ORDER.key, JSON.stringify(properties.map(p => p.id)));
     }
   }, [properties]);
 
@@ -160,7 +161,7 @@ export const DraggablePropertiesList = memo(() => {
 
   const resetToDefault = () => {
     setProperties(defaultProperties);
-    localStorage.removeItem('portfolioOrder');
+    localStorage.removeItem(STORAGE_KEYS.PORTFOLIO_ORDER.key);
   };
 
   // Keyboard accessibility
