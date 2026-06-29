@@ -32,7 +32,7 @@ export const PropertyCard = ({ property, index }: PropertyCardProps) => {
 
   const handlePurchase = () => {
     // Simulate a transaction hash for demo purposes
-    const mockTxHash = `0x${Math.random().toString(16).substr(2, 64)}`;
+    const mockTxHash = `0x${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
     
     addTransactionToQueue({
       hash: mockTxHash,

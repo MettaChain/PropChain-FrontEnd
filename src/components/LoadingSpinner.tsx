@@ -94,11 +94,12 @@ interface SkeletonProps {
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({ className = '', lines = 1 }) => {
+  const id = React.useId();
   return (
     <div role="status" aria-busy="true" aria-label="Loading content" className={`space-y-2 ${className}`}>
       {Array.from({ length: lines }).map((_, index) => (
         <div
-          key={index}
+          key={`${id}-skeleton-line-${index}`}
           className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
           style={{
             width: `${Math.random() * 40 + 60}%`,

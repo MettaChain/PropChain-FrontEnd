@@ -140,8 +140,8 @@ export const RiskAnalysis = () => {
             <TrendingUp className="w-4 h-4 text-primary" />
             <h4 className="font-medium">Risk Metrics</h4>
           </div>
-          {riskMetrics.map((metric, index) => (
-            <RiskMeter key={index} metric={metric} />
+          {riskMetrics.map((metric) => (
+            <RiskMeter key={metric.label} metric={metric} />
           ))}
         </div>
 
@@ -152,8 +152,8 @@ export const RiskAnalysis = () => {
             <h4 className="font-medium">Top Holdings Concentration</h4>
           </div>
           <div className="glass-card rounded-lg p-4">
-            {concentrationData.map((item, index) => (
-              <ConcentrationItem key={index} {...item} />
+            {concentrationData.map((item) => (
+              <ConcentrationItem key={item.name} {...item} />
             ))}
           </div>
           <div className="mt-4 p-3 rounded-lg bg-warning/10 border border-warning/20">

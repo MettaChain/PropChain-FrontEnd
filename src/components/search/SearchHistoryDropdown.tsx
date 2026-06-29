@@ -125,9 +125,9 @@ export const SearchHistoryDropdown: React.FC<SearchHistoryDropdownProps> = ({
           </div>
           <div className="space-y-1">
             {filteredTrending.length > 0 ? (
-              filteredTrending.map((search, index) => (
+              filteredTrending.map((search) => (
                 <div
-                  key={index}
+                  key={search}
                   className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                   onClick={() => handleSelect(search)}
                 >
