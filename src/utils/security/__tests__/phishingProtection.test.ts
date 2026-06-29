@@ -13,6 +13,7 @@ jest.mock('viem', () => ({
 describe('PhishingProtection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    PhishingProtection.clearMemoizedResults();
   });
 
   describe('detectPhishing', () => {
@@ -474,6 +475,66 @@ describe('PhishingProtection', () => {
         // The decode happens inside the try block; if it throws, it should be caught
         // and warnings will include 'Unable to decode transaction data'
       });
+    });
+  });
+
+  describe('memoization', () => {
+    it('should return cached result for same URL', () => {
+      const url = 'https://metamask.io.fake/phishing';
+      const result1 = PhishingProtection.detectPhishing(url);
+      const result2 = PhishingProtection.detectPhishing(url);
+      expect(result1).toBe(result2);
+    });
+
+    it('should return different results for different URLs', () => {
+      const result1 = PhishingProtection.detectPhishing('https://metamask.io.fake/page1');
+      const result2 = PhishingProtection.detectPhishing('https://legitimate.com/page2');
+      expect(result1).not.toBe(result2);
+    });
+  });
+
+  describe('reportPhishing', () => {
+    beforeEach(() => {
+      PhishingProtection.clearMemoizedResults();
+    });
+
+    it('should respect rate limit', async () => {
+      const reportUrl = 'https://phishing.test/report';
+      const results: boolean[] = [];
+      for (let i = 0; i < 15; i++) {
+        results.push(await PhishingProtection.reportPhishing(reportUrl, 10));
+      }
+      const allowed = results.filter(r => r).length;
+      expect(allowed).toBeLessThanOrEqual(10);
+    });
+  });
+
+  describe('clearMemoizedResults', () => {
+    it('should clear all memoized results and report timestamps', () => {
+      PhishingProtection.detectPhishing('https://test.com/1');
+      PhishingProtection.detectPhishing('https://test.com/2');
+      PhishingProtection.clearMemoizedResults();
+      const result1 = PhishingProtection.detectPhishing('https://test.com/1');
+      const result2 = PhishingProtection.detectPhishing('https://test.com/2');
+      expect(result1).not.toBe(result2);
+    });
+  });
+
+  describe('CDN manifest', () => {
+    beforeEach(() => {
+      PhishingProtection.clearMemoizedResults();
+    });
+
+    it('should return false when CDN fetch fails', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+      const result = await PhishingProtection.loadManifestFromCDN();
+      expect(result).toBe(false);
+    });
+
+    it('should fall back to static domains when CDN not loaded', () => {
+      const result = PhishingProtection.detectPhishing('https://metamask.io.fake/phishing');
+      expect(result.isPhishing).toBe(true);
+      expect(result.threats).toContain('Known phishing domain detected');
     });
   });
 });

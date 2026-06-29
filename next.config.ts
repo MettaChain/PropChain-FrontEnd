@@ -2,6 +2,16 @@ import type { NextConfig } from "next";
 
 const isAnalyzeEnabled = process.env.ANALYZE === "true";
 const isDev = process.env.NODE_ENV === "development";
+const isProd = process.env.NODE_ENV === "production";
+
+// `BuildStatsPlugin` writes a JSON payload into `.next/` for on-demand
+// inspection.  It is ONLY meant for local development/debugging — production
+// builds must never emit it.
+//   - Gate on the explicit `ANALYZE=true` opt-in flag.
+//   - Hard-disable on production builds even if `ANALYZE=true` is set
+//     (e.g. misconfigured CI).
+//   - Skip on server builds (this plugin is client-side only).
+// See README § "Build stats plugin" for details.
 
 const cspReportOnly = [
   "default-src 'self'",
@@ -140,7 +150,7 @@ const nextConfig: NextConfig = {
       };
     }
 
-    if (isAnalyzeEnabled && !isServer) {
+    if (isAnalyzeEnabled && !isServer && !isProd) {
       class BuildStatsPlugin {
         apply(compiler: any) {
           compiler.hooks.done.tap("BuildStatsPlugin", (stats: any) => {

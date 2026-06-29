@@ -4,10 +4,17 @@ import { revalidateProperty, revalidateAllProperties } from '@/lib/propertyServi
 import { requireEnvStrict } from '@/lib/requireEnv';
 import crypto from 'crypto';
 
-const WEBHOOK_SECRET = requireEnvStrict('REVALIDATE_WEBHOOK_SECRET');
+const WEBHOOK_SECRET: string | undefined = process.env.REVALIDATE_WEBHOOK_SECRET;
 
 export async function POST(request: NextRequest) {
   try {
+    if (!WEBHOOK_SECRET) {
+      return NextResponse.json(
+        { error: 'REVALIDATE_WEBHOOK_SECRET is not configured' },
+        { status: 500 }
+      );
+    }
+
     // Verify webhook signature for security
     const signature = request.headers.get('x-webhook-signature');
     const body = await request.text();

@@ -161,6 +161,16 @@ function ComparePage() {
     doc.head.appendChild(title);
 
     // Create styles
+    const doc = printWindow.document;
+    doc.open();
+    doc.write('<!DOCTYPE html>');
+    
+    const html = doc.createElement('html');
+    
+    const head = doc.createElement('head');
+    const title = doc.createElement('title');
+    title.textContent = 'Property Comparison';
+    head.appendChild(title);
     const style = doc.createElement('style');
     style.textContent = `
       body { font-family: Arial, sans-serif; padding: 20px; }
@@ -183,6 +193,20 @@ function ComparePage() {
 
     // Build table
     const table = doc.createElement('table');
+    head.appendChild(style);
+    html.appendChild(head);
+    
+    const body = doc.createElement('body');
+    const h1 = doc.createElement('h1');
+    h1.textContent = 'Property Comparison Report';
+    body.appendChild(h1);
+    
+    const p = doc.createElement('p');
+    p.textContent = `Generated on ${new Date().toLocaleDateString()}`;
+    body.appendChild(p);
+    
+    const table = doc.createElement('table');
+    
     const thead = doc.createElement('thead');
     const headerRow = doc.createElement('tr');
     const metricTh = doc.createElement('th');
@@ -191,6 +215,9 @@ function ComparePage() {
     properties.forEach(p => {
       const th = doc.createElement('th');
       th.textContent = p.name;
+    properties.forEach(prop => {
+      const th = doc.createElement('th');
+      th.textContent = prop.name;
       headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
@@ -206,6 +233,17 @@ function ComparePage() {
         const td = doc.createElement('td');
         td.textContent = metric.format(getNestedValue(p, metric.key), p);
         row.appendChild(td);
+    
+    const tbody = doc.createElement('tbody');
+    comparisonMetrics.forEach(metric => {
+      const row = doc.createElement('tr');
+      const labelCell = doc.createElement('td');
+      labelCell.textContent = metric.label;
+      row.appendChild(labelCell);
+      properties.forEach(prop => {
+        const cell = doc.createElement('td');
+        cell.textContent = metric.format(getNestedValue(prop, metric.key), prop);
+        row.appendChild(cell);
       });
       tbody.appendChild(row);
     });
@@ -213,6 +251,10 @@ function ComparePage() {
     doc.body.appendChild(table);
 
     // Close the document stream so browsers finish rendering before printing
+    body.appendChild(table);
+    html.appendChild(body);
+    
+    doc.documentElement.replaceWith(html);
     doc.close();
     printWindow.print();
   };
