@@ -1,7 +1,8 @@
 'use client';
 import { logger } from '@/utils/logger';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, memo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { useTransactionHistory } from '@/hooks/useTransactionQuery';
 import type { Transaction, TransactionType, TransactionStatus } from '@/store/transactionStore';
@@ -45,6 +46,55 @@ const isTransactionType = (value: string): value is TransactionType =>
 
 const isTransactionStatus = (value: string): value is TransactionStatus =>
   TRANSACTION_STATUSES.includes(value as TransactionStatus);
+
+const TransactionRow = memo(function TransactionRow({
+  tx,
+  t,
+  onViewDetails,
+}: {
+  tx: Transaction;
+  t: ReturnType<typeof useTranslation<'common'>>['t'];
+  onViewDetails: (tx: Transaction) => void;
+}) {
+  return (
+    <TableRow key={tx.id} data-testid="transaction-item" className="hover:bg-muted/50">
+      <TableCell className="text-xs text-muted-foreground">
+        {format(new Date(tx.timestamp), 'MMM dd, HH:mm')}
+      </TableCell>
+      <TableCell className="font-mono text-xs">
+        {tx.hash.slice(0, 8)}…{tx.hash.slice(-6)}
+      </TableCell>
+      <TableCell className="capitalize">{tx.type}</TableCell>
+      <TableCell className="capitalize">
+        <Badge variant={tx.status === 'confirmed' ? 'default' : tx.status === 'failed' ? 'destructive' : 'secondary'}>
+          {tx.status}
+        </Badge>
+      </TableCell>
+      <TableCell className="hidden md:table-cell font-mono text-xs">
+        {tx.value || '0'}
+      </TableCell>
+      <TableCell className="hidden md:table-cell font-mono text-xs">
+        {tx.from.slice(0, 8)}…{tx.from.slice(-6)}
+      </TableCell>
+      <TableCell className="hidden md:table-cell font-mono text-xs">
+        {tx.to ? `${tx.to.slice(0, 8)}…${tx.to.slice(-6)}` : '-'}
+      </TableCell>
+      <TableCell className="hidden lg:table-cell font-mono text-xs">
+        {tx.gasUsed || '0'}
+      </TableCell>
+      <TableCell className="text-right">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onViewDetails(tx)}
+          className="h-8 w-8 p-0"
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+});
 
 export const TransactionHistory: React.FC = () => {
   const { t } = useTranslation('common');
@@ -274,6 +324,15 @@ export const TransactionHistory: React.FC = () => {
 
   const rowsToRender = isLoading ? [] : paginatedTransactions;
 
+  // Virtualizer for large paginated lists
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: rowsToRender.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 48,
+    overscan: 5,
+  });
+
   return (
     <Card className="w-full" data-testid="transaction-list">
       <CardHeader>
@@ -494,7 +553,7 @@ export const TransactionHistory: React.FC = () => {
             )}
             {/* Transaction Table */}
             <div className="rounded-lg border border-border overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto max-h-[480px]" ref={tableContainerRef}>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -555,44 +614,32 @@ export const TransactionHistory: React.FC = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      rowsToRender.map((tx) => (
-                        <TableRow key={tx.id} data-testid="transaction-item" className="hover:bg-muted/50">
-                          <TableCell className="text-xs text-muted-foreground">
-                            {format(new Date(tx.timestamp), 'MMM dd, HH:mm')}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {tx.hash.slice(0, 8)}…{tx.hash.slice(-6)}
-                          </TableCell>
-                          <TableCell className="capitalize">{tx.type}</TableCell>
-                          <TableCell className="capitalize">
-                            <Badge variant={tx.status === 'confirmed' ? 'default' : tx.status === 'failed' ? 'destructive' : 'secondary'}>
-                              {tx.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell font-mono text-xs">
-                            {tx.value || '0'}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell font-mono text-xs">
-                            {tx.from.slice(0, 8)}…{tx.from.slice(-6)}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell font-mono text-xs">
-                            {tx.to ? `${tx.to.slice(0, 8)}…${tx.to.slice(-6)}` : '-'}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell font-mono text-xs">
-                            {tx.gasUsed || '0'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewDetails(tx)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      <>
+                        {rowVirtualizer.getTotalSize() > 0 && (
+                          <tr aria-hidden style={{ height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0 }} />
+                        )}
+                        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                          const tx = rowsToRender[virtualRow.index];
+                          return (
+                            <TransactionRow
+                              key={tx.id}
+                              tx={tx}
+                              t={t}
+                              onViewDetails={handleViewDetails}
+                            />
+                          );
+                        })}
+                        {rowVirtualizer.getTotalSize() > 0 && (
+                          <tr
+                            aria-hidden
+                            style={{
+                              height:
+                                rowVirtualizer.getTotalSize() -
+                                (rowVirtualizer.getVirtualItems().at(-1)?.end ?? 0),
+                            }}
+                          />
+                        )}
+                      </>
                     )}
                   </TableBody>
                 </Table>
@@ -681,7 +728,7 @@ export const TransactionHistory: React.FC = () => {
                   <CardContent>
                     <ChartContainer config={chartConfig} className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
-                        <RechartsPieChart>
+                        <RechartsPieChart aria-label={`Pie chart: Transaction status distribution. ${analyticsData.statusChartData.map(d => `${d.name}: ${d.value}`).join(', ')}.`} role="img">
                           <Pie
                             data={analyticsData.statusChartData}
                             cx="50%"
@@ -715,7 +762,7 @@ export const TransactionHistory: React.FC = () => {
                   <CardContent>
                     <ChartContainer config={chartConfig} className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analyticsData.typeChartData}>
+                        <BarChart data={analyticsData.typeChartData} aria-label={`Bar chart: Transaction type distribution. ${analyticsData.typeChartData.map(d => `${d.name}: ${d.value}`).join(', ')}.`} role="img">
                           <XAxis dataKey="name" />
                           <YAxis />
                           <ChartTooltip content={<ChartTooltipContent />} />
@@ -737,7 +784,7 @@ export const TransactionHistory: React.FC = () => {
                   <CardContent>
                     <ChartContainer config={chartConfig} className="h-64">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={analyticsData.volumeChartData}>
+                        <LineChart data={analyticsData.volumeChartData} aria-label="Line chart: Transaction volume over the last 30 days." role="img">
                           <XAxis dataKey="date" />
                           <YAxis />
                           <ChartTooltip content={<ChartTooltipContent />} />

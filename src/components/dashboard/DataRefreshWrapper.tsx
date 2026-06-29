@@ -23,31 +23,13 @@ export const DataRefreshWrapper = ({
   const [refreshState, setRefreshState] = useState<RefreshState>("idle");
   const [error, setError] = useState<string | null>(null);
   const { setTimeoutSafe } = useSafeTimeout();
+  const id = useId();
 
   const handleRefresh = useCallback(async () => {
-    // Cancel any pending success timeout from a previous refresh
-    if (successTimerRef.current) {
-      clearTimeout(successTimerRef.current);
-      successTimerRef.current = null;
-    }
-
     setRefreshState("loading");
     setError(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // 90% success rate for demo
-          const randomValue = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
-          if (randomValue > 0.1) {
-            resolve(true);
-          } else {
-            reject(new Error("Failed to fetch latest data"));
-          }
-        }, 1500);
-      });
-
       if (onRefresh) {
         await onRefresh();
       }
@@ -58,7 +40,7 @@ export const DataRefreshWrapper = ({
       setError(err instanceof Error ? err.message : "An error occurred");
       setRefreshState("error");
     }
-  }, [onRefresh]);
+  }, [onRefresh, setTimeoutSafe]);
 
   return (
     <div className="relative">
