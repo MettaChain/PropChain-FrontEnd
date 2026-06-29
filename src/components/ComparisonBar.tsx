@@ -55,10 +55,11 @@ export const ComparisonBar = () => {
                 type="button"
                 onClick={() => removeProperty(id)}
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:border-red-300 hover:bg-red-50 transition-colors"
-                title={t('comparison.removeFromComparison')}
+                aria-label={`${t('comparison.removeFromComparison')}: #${id}`}
               >
+                <span className="sr-only">{t('comparison.selected')}: </span>
                 <span>#{id}</span>
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             ))}
           </div>
