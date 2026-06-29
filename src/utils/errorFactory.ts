@@ -190,7 +190,7 @@ export class ErrorFactory {
       {
         ...options,
         stack: error?.stack,
-        technicalDetails: (error as any)?.technicalDetails || error?.toString(),
+        technicalDetails: (error as Error & { technicalDetails?: string })?.technicalDetails || error?.toString(),
       }
     );
   }
