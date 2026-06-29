@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 
 interface DataRefreshWrapperProps {
   children: ReactNode;
@@ -21,7 +22,7 @@ export const DataRefreshWrapper = ({
 }: DataRefreshWrapperProps) => {
   const [refreshState, setRefreshState] = useState<RefreshState>("idle");
   const [error, setError] = useState<string | null>(null);
-  const id = useId();
+  const { setTimeoutSafe } = useSafeTimeout();
 
   const handleRefresh = useCallback(async () => {
     // Cancel any pending success timeout from a previous refresh
@@ -52,10 +53,7 @@ export const DataRefreshWrapper = ({
       }
 
       setRefreshState("success");
-      successTimerRef.current = setTimeout(() => {
-        setRefreshState("idle");
-        successTimerRef.current = null;
-      }, 2000);
+      setTimeoutSafe(() => setRefreshState("idle"), 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setRefreshState("error");

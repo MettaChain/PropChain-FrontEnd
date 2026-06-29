@@ -31,7 +31,6 @@ export function useViewMode() {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (isValidViewMode(stored)) return stored;
     } catch (err) {
-      // Swallow storage errors — fallback to default
       logger.warn("useViewMode: localStorage unavailable, falling back to default view mode", err);
     }
 
@@ -51,7 +50,6 @@ export function useViewMode() {
     try {
       localStorage.setItem(STORAGE_KEY, mode);
     } catch (err) {
-      // Storage might be disabled; log and continue without throwing
       logger.warn("useViewMode: failed to persist mode to localStorage", err);
     }
   }, [mode]);
@@ -80,7 +78,6 @@ export function ViewToggle({ mode, onChange }: ViewToggleProps) {
       if (typeof onChange === "function") onChange(v);
       else logger.warn("ViewToggle: onChange is not a function", onChange);
     } catch (err) {
-      // Avoid bubbling UI errors — log instead
       logger.error("ViewToggle: onChange handler threw an error", err);
     }
   };
