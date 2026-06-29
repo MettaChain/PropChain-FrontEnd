@@ -67,7 +67,7 @@ export function rateLimitByIP(request: NextRequest): RateLimitResult {
   const windowMs = env.RATE_LIMIT_WINDOW_MS;
   const maxRequests = env.RATE_LIMIT_MAX_REQUESTS;
   
-  const ip = (request as any).ip || 
+  const ip = (request as NextRequest & { ip?: string }).ip || 
     request.headers.get('x-forwarded-for')?.split(',')[0] || 
     request.headers.get('x-real-ip') || 
     'unknown';

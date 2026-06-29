@@ -77,7 +77,7 @@ export class BlockchainSecurityService {
       // Try calling a remote API if available. If `fetch` returns a Promise
       // (for example when tests mock it), await it and use the response.
       // Otherwise, fall back to the local simulation to preserve test behavior.
-      const fetchResult = typeof fetch === 'function' ? (fetch as any)(`${this.config.baseUrl}/address/${address}`, {
+      const fetchResult = typeof fetch === 'function' ? fetch(`${this.config.baseUrl}/address/${address}`, {
         headers: this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}
       }) : null;
 
