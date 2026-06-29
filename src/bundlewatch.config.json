@@ -1,0 +1,18 @@
+{
+  "files": [
+    {
+      "path": "frontend/dist/assets/*.js",
+      "maxSize": "250 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "frontend/dist/assets/*.css",
+      "maxSize": "50 kB",
+      "compression": "gzip"
+    }
+  ],
+  "ci": {
+    "trackBranches": ["main"],
+    "githubAccessor": "comment"
+  }
+}
