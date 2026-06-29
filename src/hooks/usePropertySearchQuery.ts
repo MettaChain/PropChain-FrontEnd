@@ -89,7 +89,24 @@ export function usePropertyQuery(id: string, enabled: boolean = true) {
 
 /**
  * Combined hook that maintains the same API as the original usePropertySearch
- * but uses React Query under the hood
+ * but uses React Query under the hood for caching, deduplication, and stale-while-revalidate.
+ *
+ * ## What it does
+ * - Reads filters, sort, page, and resultsPerPage from the Zustand search store.
+ * - Passes them to `usePropertySearchQuery` which uses React Query (`useQuery`).
+ * - Automatically refetches whenever filters, sort, or page change (enabled after initialization).
+ * - Returns the same shape as the legacy hook so consumers don't need to change.
+ *
+ * ## Edge cases handled
+ * - **Empty results**: `properties` is an empty array, `totalResults` is 0, and `totalPages` is 0.
+ * - **Fetch error**: `error` is set to the error message, `properties` is cleared to `[]`.
+ * - **Loading state**: `isLoading` is true while the query is pending or refetching.
+ * - **Stale data**: React Query serves cached data for 5 minutes (staleTime) while refetching silently.
+ * - **Rapid filter changes**: React Query deduplicates concurrent requests for the same key.
+ * - **Window refocus**: Does NOT refetch on window focus (refetchOnWindowFocus: false).
+ * - **4xx errors**: Not retried; network/5xx errors retried up to 3 times.
+ * - **Pagination**: `setPage` scrolls to top by default; `loadMore` appends without scrolling.
+ * - **URL sync**: The parent component is responsible for URL synchronization (see `usePropertySearch.ts`).
  */
 export function usePropertySearch() {
   const searchStore = useSearchStore();
