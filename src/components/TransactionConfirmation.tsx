@@ -1,14 +1,8 @@
 'use client';
 import { logger } from '@/utils/logger';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useSecurity } from '@/hooks/useSecurity';
-import { AlertTriangle, Shield, CheckCircle, X, Eye, EyeOff, Info } from 'lucide-react';
-import { useWalletStore } from '@/store/walletStore';
-import { useKycStore } from '@/store/kycStore';
-import { formatEthAmount, shouldRequireKyc, weiToEth } from '@/lib/kyc';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useSecurity } from '@/hooks/useSecurity';
 import {
   AlertTriangle,
@@ -23,6 +17,9 @@ import {
   ShieldCheck,
   Lock,
 } from 'lucide-react';
+import { useWalletStore } from '@/store/walletStore';
+import { useKycStore } from '@/store/kycStore';
+import { formatEthAmount, shouldRequireKyc, weiToEth } from '@/lib/kyc';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -96,7 +93,6 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
       logTransactionScreening(valueEth, requiresKyc, profile.status === 'verified' || !requiresKyc);
     }
   }, [isOpen, transaction, profile.status, profile.thresholdEth, logTransactionScreening]);
-  }, [isOpen, transaction.to, transaction.value, transaction.data]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -370,7 +366,7 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                       </h4>
                       <div className="space-y-1">
                         {validation.warnings.map((warning: string, index: number) => (
-                          <p key={index} className="text-sm text-yellow-700 dark:text-yellow-300">
+                          <p key={`${warning}-${index}`} className="text-sm text-yellow-700 dark:text-yellow-300">
                             • {warning}
                           </p>
                         ))}
@@ -390,7 +386,7 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                       </h4>
                       <div className="space-y-1">
                         {validation.blocks.map((block: string, index: number) => (
-                          <p key={index} className="text-sm text-red-700 dark:text-red-300">
+                          <p key={`${block}-${index}`} className="text-sm text-red-700 dark:text-red-300">
                             • {block}
                           </p>
                         ))}
@@ -537,7 +533,7 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                           >
                             <InputOTPGroup>
                               {Array.from({ length: 6 }, (_, index) => (
-                                <InputOTPSlot key={index} index={index} />
+                                <InputOTPSlot key={`otp-slot-${index}`} index={index} />
                               ))}
                             </InputOTPGroup>
                           </InputOTP>
@@ -627,8 +623,6 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                   >
                     <X className="w-4 h-4" />
                     {kycRequired && profile.status !== 'verified' ? 'Complete KYC' : 'Transaction Blocked'}
-                    <X className="h-4 w-4" />
-                    Transaction Blocked
                   </button>
                 )}
               </div>

@@ -269,9 +269,9 @@ export const PortfolioReport = () => {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {reportCards.map((item, index) => (
+        {reportCards.map((item) => (
           <div
-            key={index}
+            key={item.value}
             className="p-4 rounded-lg bg-muted/30 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
             onClick={() => setReportType(item.value)}
           >

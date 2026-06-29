@@ -248,7 +248,7 @@ export const PropertyListingExample: React.FC = () => {
         {isLoading ? (
           // Show skeleton cards while loading
           Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="property-card">
+            <div key={`${loadingId}-skeleton-${index}`} className="property-card">
               <Skeleton width="100%" height="200px" borderRadius="8px" />
               <Skeleton width="80%" height="24px" />
               <Skeleton width="100%" height="16px" lines={2} />

@@ -1,7 +1,20 @@
 'use client';
 
 /**
- * structuredLogger — thin domain-specific layer on top of logger.
+ * structuredLogger — **deprecated** thin domain-specific layer on top of logger.
+ *
+ * @deprecated This module is kept as a backwards-compatibility wrapper only.
+ *   The canonical logger lives in `@/utils/logger` — new code MUST import from
+ *   there directly (see README § "Logging").  Only `structuredLogger`,
+ *   `createStructuredLogger`, `createPerformanceTracker`, `logNetworkRequest`,
+ *   `logWeb3Activity`, and `logTransaction` plus the `StructuredLogger`,
+ *   `StructuredLogEntry`, and `StructuredLoggerConfig` types remain unique to
+ *   this module.
+ *
+ *   All other re-exports (`logger`, `createLogger`, `LogLevel`, …) are kept so
+ *   existing call sites compile, but they will be removed in a future release.
+ *   See ESLint rule `no-restricted-imports` in `eslint.config.mjs` for the
+ *   enforced single import path.
  *
  * All core logging (levels, JSON output, redaction, correlation IDs) lives in
  * logger.ts.  This module adds domain helpers (performance, network, web3,
@@ -83,7 +96,7 @@ class StructuredLogger {
       flushInterval: 5000,
       ...config,
     };
-    this.sessionId = `sess_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 7)}`;
+    this.sessionId = `sess_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`;
     this.startFlushTimer();
   }
 
@@ -135,7 +148,7 @@ class StructuredLogger {
   private reportError(entry: StructuredLogEntry): void {
     if (!entry.error) return;
     const appError: AppError = {
-      id: `error_${Date.now()}_${globalThis.crypto.randomUUID().split('-').join('').substring(0, 7)}`,
+      id: `error_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`,
       message: entry.error.message,
       category: entry.category ?? ErrorCategory.UI,
       severity: entry.severity ?? ErrorSeverity.MEDIUM,

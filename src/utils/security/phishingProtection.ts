@@ -15,24 +15,38 @@ export interface SignatureValidationResult {
   decodedData?: any;
 }
 
+export interface PhishingManifest {
+  version: string;
+  updatedAt: string;
+  domains: string[];
+  contracts: string[];
+  signature: string;
+}
+
 export class PhishingProtection {
-  private static readonly KNOWN_PHISHING_DOMAINS = [
+  private static readonly CDN_MANIFEST_URL = process.env.NEXT_PUBLIC_PHISHING_MANIFEST_URL || 'https://cdn.propchain.io/security/phishing-manifest.json';
+  private static readonly MANIFEST_PUBLIC_KEY = process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY || '';
+
+  private static cdnLoadedDomains: string[] = [];
+  private static cdnLoadedContracts: string[] = [];
+  private static manifestVersion = '';
+  private static lastManifestFetch = 0;
+  private static readonly MANIFEST_TTL = 3600_000; // 1 hour
+
+  private static readonly FALLBACK_PHISHING_DOMAINS = [
     'metamask.io.fake',
     'myetherwallet.com.scam',
     'trustwallet.app.phish',
-    // Add more known phishing domains
   ];
 
-  private static readonly MALICIOUS_CONTRACTS = [
-    '0x0000000000000000000000000000000000000000', // Example placeholder
-    // Add known malicious contract addresses
+  private static readonly FALLBACK_MALICIOUS_CONTRACTS = [
+    '0x0000000000000000000000000000000000000000',
   ];
 
   private static readonly SUSPICIOUS_METHODS = [
     '0xa9059cbb', // transfer
     '0x095ea7b3', // approve
     '0x2e1a7d4d', // withdraw
-    // Add more suspicious method signatures
   ];
 
   private static readonly OFFICIAL_DOMAINS = [
@@ -40,13 +54,134 @@ export class PhishingProtection {
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
-    // Add more official domains here
   ];
+
+  private static memoizedResults = new Map<string, PhishingDetectionResult>();
+  private static reportTimestamps: number[] = [];
+
+  /**
+   * Fetches the phishing denylist from CDN with signed manifest verification
+   */
+  static async loadManifestFromCDN(): Promise<boolean> {
+    const now = Date.now();
+    if (now - this.lastManifestFetch < this.MANIFEST_TTL && this.cdnLoadedDomains.length > 0) {
+      return true;
+    }
+
+    try {
+      const response = await fetch(this.CDN_MANIFEST_URL, { cache: 'no-cache' });
+      if (!response.ok) return false;
+
+      const manifest: PhishingManifest = await response.json();
+
+      if (!this.verifyManifestSignature(manifest)) {
+        console.warn('[PhishingProtection] Manifest signature verification failed');
+        return false;
+      }
+
+      this.cdnLoadedDomains = manifest.domains || [];
+      this.cdnLoadedContracts = manifest.contracts || [];
+      this.manifestVersion = manifest.version;
+      this.lastManifestFetch = now;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private static verifyManifestSignature(manifest: PhishingManifest): boolean {
+    if (!this.MANIFEST_PUBLIC_KEY) return true;
+    try {
+      const { signature, ...data } = manifest;
+      const encoder = new TextEncoder();
+      const dataStr = JSON.stringify(data);
+      return dataStr.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Returns the effective domain list (CDN + fallback)
+   */
+  private static getEffectiveDomains(): string[] {
+    const domains = [...this.FALLBACK_PHISHING_DOMAINS];
+    for (const d of this.cdnLoadedDomains) {
+      if (!domains.includes(d)) domains.push(d);
+    }
+    return domains;
+  }
+
+  /**
+   * Returns the effective contract list (CDN + fallback)
+   */
+  private static getEffectiveContracts(): string[] {
+    const contracts = [...this.FALLBACK_MALICIOUS_CONTRACTS];
+    for (const c of this.cdnLoadedContracts) {
+      if (!contracts.includes(c.toLowerCase())) contracts.push(c.toLowerCase());
+    }
+    return contracts;
+  }
 
   /**
    * Detects phishing attempts based on domain and content analysis
    */
   static detectPhishing(url: string, content?: string): PhishingDetectionResult {
+    const originKey = typeof window !== 'undefined' ? window.location.origin : '__server__';
+    const cacheKey = `${originKey}::${url}::${content ?? ''}`;
+
+    const cached = this.memoizedResults.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const result = this.executeDetection(url, content);
+
+    this.memoizedResults.set(cacheKey, result);
+
+    return result;
+  }
+
+  /**
+   * Rate-limited background report submission
+   */
+  static async reportPhishing(url: string, maxReportsPerMinute = 10): Promise<boolean> {
+    const now = Date.now();
+    const windowStart = now - 60_000;
+    this.reportTimestamps = this.reportTimestamps.filter(t => t > windowStart);
+
+    if (this.reportTimestamps.length >= maxReportsPerMinute) {
+      return false;
+    }
+
+    this.reportTimestamps.push(now);
+
+    try {
+      const payload = { url, reportedAt: now, origin: typeof window !== 'undefined' ? window.location.origin : '' };
+      await fetch('/api/report-phishing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Clears memoized results (useful for testing)
+   */
+  static clearMemoizedResults(): void {
+    this.memoizedResults.clear();
+    this.reportTimestamps = [];
+    this.cdnLoadedDomains = [];
+    this.cdnLoadedContracts = [];
+    this.lastManifestFetch = 0;
+    this.manifestVersion = '';
+  }
+
+  private static executeDetection(url: string, content?: string): PhishingDetectionResult {
     const threats: string[] = [];
     const warnings: string[] = [];
     let riskScore = 0;
@@ -279,7 +414,7 @@ export class PhishingProtection {
    * Checks if a domain is known for phishing
    */
   private static isKnownPhishingDomain(domain: string): boolean {
-    return this.KNOWN_PHISHING_DOMAINS.some(phishingDomain =>
+    return this.getEffectiveDomains().some(phishingDomain =>
       domain === phishingDomain || domain.endsWith(`.${phishingDomain}`)
     );
   }
@@ -398,7 +533,7 @@ export class PhishingProtection {
    * Checks if contract is known to be malicious
    */
   private static isMaliciousContract(address: string): boolean {
-    return this.MALICIOUS_CONTRACTS.includes(address.toLowerCase());
+    return this.getEffectiveContracts().includes(address.toLowerCase());
   }
 
   /**

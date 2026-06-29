@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useId } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
@@ -39,7 +39,8 @@ export const DataRefreshWrapper = ({
       await new Promise((resolve, reject) => {
         setTimeout(() => {
           // 90% success rate for demo
-          if (Math.random() > 0.1) {
+          const randomValue = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
+          if (randomValue > 0.1) {
             resolve(true);
           } else {
             reject(new Error("Failed to fetch latest data"));
@@ -130,7 +131,7 @@ export const DataRefreshWrapper = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div
-                    key={i}
+                    key={`${id}-skeleton-card-${i}`}
                     className="glass-card rounded-xl p-6 border border-border/50 bg-white/60 dark:bg-gray-900/40"
                   >
                     <div className="flex items-start justify-between gap-4">

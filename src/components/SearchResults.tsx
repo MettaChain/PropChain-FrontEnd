@@ -32,7 +32,7 @@ interface SearchResultsProps {
   buildPageHref?: (page: number) => string;
 }
 
-export const SearchResults: React.FC<SearchResultsProps> = ({
+const SearchResultsInner: React.FC<SearchResultsProps> = ({
   properties,
   totalResults,
   isLoading,
@@ -218,6 +218,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     </div>
   );
 };
+
+export const SearchResults = React.memo(SearchResultsInner);
 
 function cn(...classes: any[]) {
   return classes.filter(Boolean).join(' ');

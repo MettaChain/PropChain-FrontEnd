@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, TrendingUp, AlertTriangle, ExternalLink, Filter, Wallet, Briefcase } from 'lucide-react';
 import { usePortfolioStore } from '@/store/portfolioStore';
@@ -10,7 +10,7 @@ import { formatPrice } from '@/utils/searchUtils';
 import type { ChainPortfolio, BridgeSuggestion } from '@/types/portfolio';
 import { EmptyState } from '@/components/ui/EmptyState';
 
-export const MultiChainPortfolio: React.FC = () => {
+const MultiChainPortfolioInner: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { 
     portfolio, 
@@ -42,9 +42,9 @@ export const MultiChainPortfolio: React.FC = () => {
     return portfolio.chains.filter(chain => chain.chainId === selectedChain);
   }, [portfolio, selectedChain]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     refreshPortfolio();
-  };
+  }, [refreshPortfolio]);
 
   if (!isConnected) {
     return (
@@ -217,8 +217,8 @@ export const MultiChainPortfolio: React.FC = () => {
 
           {showBridgeSuggestions && (
             <div className="space-y-3">
-              {bridgeSuggestions.map((suggestion, index) => (
-                <BridgeSuggestionCard key={index} suggestion={suggestion} />
+              {bridgeSuggestions.map((suggestion) => (
+                <BridgeSuggestionCard key={`${suggestion.propertyId}-${suggestion.fromChain}-${suggestion.toChain}`} suggestion={suggestion} />
               ))}
             </div>
           )}
@@ -227,6 +227,8 @@ export const MultiChainPortfolio: React.FC = () => {
     </div>
   );
 };
+
+export const MultiChainPortfolio = React.memo(MultiChainPortfolioInner);
 
 interface ChainPortfolioCardProps {
   chain: ChainPortfolio;
