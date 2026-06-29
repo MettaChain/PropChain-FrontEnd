@@ -49,42 +49,82 @@ interface TransactionAnalyticsProps {
   isLoading: boolean;
 }
 
+/**
+ * Pure aggregation helpers used by the `useMemo` calls below.
+ *
+ * Exported as named functions so the structural split introduced by #506
+ * (`statusChartData`, `typeChartData`, `volumeChartData`) is observable
+ * in tests at the function boundary rather than only via React render
+ * side-effects. Each is independently testable, swappable, and free of
+ * chart-component / DOM dependencies.
+ *
+ * Kept intentionally small and pure: input is a Transaction slice, output
+ * is the data shape the corresponding Recharts element expects, with no
+ * shared module state.
+ */
+export type ChartDatum = { name: string; value: number };
+
+/** Counts transactions by `status`. */
+export const computeStatusChartData = (transactions: Transaction[]): ChartDatum[] => {
+  const counts: Record<string, number> = {};
+  for (const tx of transactions) {
+    counts[tx.status] = (counts[tx.status] ?? 0) + 1;
+  }
+  return Object.entries(counts).map(([name, value]) => ({ name, value }));
+};
+
+/** Counts transactions by `type`. */
+export const computeTypeChartData = (transactions: Transaction[]): ChartDatum[] => {
+  const counts: Record<string, number> = {};
+  for (const tx of transactions) {
+    counts[tx.type] = (counts[tx.type] ?? 0) + 1;
+  }
+  return Object.entries(counts).map(([name, value]) => ({ name, value }));
+};
+
+export type VolumeDatum = { date: string; value: number };
+
+/**
+ * Daily sum of `value` per timestamp, sorted ascending by `yyyy-MM-dd`
+ * date string, capped at the 30 most recent buckets. Missing or empty
+ * `value` short-circuits to 0 via `parseFloat(tx.value || '0')`.
+ */
+export const computeVolumeChartData = (
+  transactions: Transaction[]
+): VolumeDatum[] => {
+  const dailyVolume: Record<string, number> = {};
+  for (const tx of transactions) {
+    const date = format(new Date(tx.timestamp), 'yyyy-MM-dd');
+    dailyVolume[date] = (dailyVolume[date] ?? 0) + parseFloat(tx.value || '0');
+  }
+  return Object.entries(dailyVolume)
+    .map(([date, value]) => ({ date, value }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-30);
+};
+
 export const TransactionAnalytics: React.FC<TransactionAnalyticsProps> = ({
   transactions,
   isLoading,
 }) => {
-  // #506: derive each chart slice in isolation. They all read from the same
-  // `transactions` reference, so they invalidate together; the value of the
-  // split is structural: each slice can be replaced or filtered independently
-  // (e.g. feeding only confirmed transactions into the trend chart) without
-  // touching the others, and each one is straightforward to test in isolation.
-  const statusChartData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const tx of transactions) {
-      counts[tx.status] = (counts[tx.status] ?? 0) + 1;
-    }
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [transactions]);
+  // #506: each chart slice delegates to a pure derivation above. Wrapping
+  // each in its own `useMemo` (with `transactions` as the dep) means the
+  // slices are independently testable and individually swappable, even
+  // though their shared dep means they invalidate together.
+  const statusChartData = useMemo(
+    () => computeStatusChartData(transactions),
+    [transactions]
+  );
 
-  const typeChartData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const tx of transactions) {
-      counts[tx.type] = (counts[tx.type] ?? 0) + 1;
-    }
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [transactions]);
+  const typeChartData = useMemo(
+    () => computeTypeChartData(transactions),
+    [transactions]
+  );
 
-  const volumeChartData = useMemo(() => {
-    const dailyVolume: Record<string, number> = {};
-    for (const tx of transactions) {
-      const date = format(new Date(tx.timestamp), 'yyyy-MM-dd');
-      dailyVolume[date] = (dailyVolume[date] ?? 0) + parseFloat(tx.value || '0');
-    }
-    return Object.entries(dailyVolume)
-      .map(([date, value]) => ({ date, value }))
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-30);
-  }, [transactions]);
+  const volumeChartData = useMemo(
+    () => computeVolumeChartData(transactions),
+    [transactions]
+  );
 
   if (isLoading) {
     return null;
