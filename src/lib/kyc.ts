@@ -23,5 +23,5 @@ export function shouldRequireKyc(valueWei: string | undefined, thresholdEth: num
 }
 
 export function createComplianceId(prefix: string): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${Date.now().toString(36)}_${crypto.randomUUID().replace(/-/g, '').substring(0, 8)}`;
 }

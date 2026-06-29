@@ -83,7 +83,7 @@ class StructuredLogger {
       flushInterval: 5000,
       ...config,
     };
-    this.sessionId = `sess_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 7)}`;
+    this.sessionId = `sess_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`;
     this.startFlushTimer();
   }
 
@@ -135,7 +135,7 @@ class StructuredLogger {
   private reportError(entry: StructuredLogEntry): void {
     if (!entry.error) return;
     const appError: AppError = {
-      id: `error_${Date.now()}_${globalThis.crypto.randomUUID().split('-').join('').substring(0, 7)}`,
+      id: `error_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`,
       message: entry.error.message,
       category: entry.category ?? ErrorCategory.UI,
       severity: entry.severity ?? ErrorSeverity.MEDIUM,
