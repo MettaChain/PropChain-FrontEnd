@@ -81,13 +81,24 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
           />
         
 {/* Badge Container */}
+        {/*
+         * Badge palette tuned for WCAG AA contrast (>=4.5:1) on both light
+         * and dark surfaces. Light mode: white text on saturated dark colour.
+         * Dark mode: white text on slightly lighter hue, still well above 4.5:1
+         * against the gray-800 card surface.
+         *   Featured:  bg-yellow-700/800   (>=4.7:1 vs white)
+         *   Verified:  bg-emerald-700/800 (>=4.7:1 vs white)
+         *   ROI:       bg-blue-700/800     (>=6:1 vs white)
+         */}
         <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 sm:gap-2">
           {property.featured && (
+            <span className="bg-yellow-700 dark:bg-yellow-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded" role="status" aria-label="Featured property">
             <span className="bg-yellow-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded" role="status" aria-live="polite" aria-label="Featured property">
               ⭐ Featured
             </span>
           )}
           {property.verified && (
+            <span className="bg-emerald-700 dark:bg-emerald-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-label="Verified property">
             <span className="bg-green-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-live="polite" aria-label="Verified property">
               <svg aria-hidden="true" className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -98,6 +109,8 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* ROI Badge */}
+        <div className="absolute top-2 right-20 sm:top-3 sm:right-24" role="status" aria-label={`Return on investment: ${formatROI(property.metrics.roi)}`}>
+          <div className="bg-blue-700 dark:bg-blue-800 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
         <div className="absolute top-2 right-20 sm:top-3 sm:right-24" role="status" aria-live="polite" aria-label={`Return on investment: ${formatROI(property.metrics.roi)}`}>
           <div className="bg-blue-600 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
             {formatROI(property.metrics.roi)} ROI
@@ -187,12 +200,12 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* Title */}
-        <Link
-          href={`/properties/${property.id}`}
+        <h3
+          id={`property-${property.id}-name`}
           className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2"
         >
           {property.name}
-        </Link>
+        </h3>
 
         {/* Location */}
         <div className="flex items-start gap-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">

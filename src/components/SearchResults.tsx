@@ -191,17 +191,28 @@ const SearchResultsInner: React.FC<SearchResultsProps> = ({
       {/* Results Grid/List */}
       {!isLoading && properties.length > 0 && (
         <>
-          <div
+          {/*
+           * Use a <ul role="list"> with <li role="article"> items so screen
+           * readers (VoiceOver/NVDA) announce the result count and surface
+           * each property as a discrete list item/article. role="list" is set
+           * on the <ul> because Tailwind's `list-none` resets the implicit
+           * role in some Safari builds.
+           */}
+          <ul
+            role="list"
+            aria-label={`Property listings, ${properties.length} ${properties.length === 1 ? 'item' : 'items'}`}
             className={
               viewMode === 'grid'
-                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-                : 'flex flex-col gap-4'
+                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 list-none p-0 m-0'
+                : 'flex flex-col gap-4 list-none p-0 m-0'
             }
           >
             {properties.map((property) => (
-              <PropertyCard key={property.id} property={property} viewMode={viewMode} />
+              <li key={property.id} role="article" aria-labelledby={`property-${property.id}-name`}>
+                <PropertyCard property={property} viewMode={viewMode} />
+              </li>
             ))}
-          </div>
+          </ul>
 
           {/* Pagination */}
           <PropertyPagination

@@ -228,10 +228,16 @@ export const DraggablePropertiesList = memo(() => {
           className="bg-white/50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700"
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <ul
+          role="list"
+          aria-label={`Portfolio properties, ${properties.length} ${properties.length === 1 ? 'item' : 'items'}`}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 list-none p-0 m-0"
+        >
           {properties.map((property, index) => (
-            <motion.div
+            <motion.li
               key={property.id}
+              role="article"
+              aria-label={property.name}
               layout
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -267,9 +273,9 @@ export const DraggablePropertiesList = memo(() => {
               >
                 <PropertyCard property={property} index={index} />
               </div>
-            </motion.div>
+            </motion.li>
           ))}
-        </div>
+        </ul>
       )}
     </motion.div>
   );
