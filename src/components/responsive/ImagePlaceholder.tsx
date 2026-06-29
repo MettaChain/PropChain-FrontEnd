@@ -354,6 +354,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   const widthStyle = typeof width === 'number' ? `${width}px` : width;
   const heightStyle = typeof height === 'number' ? `${height}px` : height;
   const radiusStyle = typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius;
+  const id = React.useId();
 
   if (lines === 1) {
     return (
@@ -391,7 +392,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {Array.from({ length: lines }).map((_, index) => (
         <Skeleton
-          key={index}
+          key={`${id}-skeleton-line-${index}`}
           width={index === lines - 1 ? '80%' : width}
           height={height}
           borderRadius={borderRadius}

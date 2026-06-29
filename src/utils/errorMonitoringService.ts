@@ -1,6 +1,5 @@
 'use client';
 
-import { structuredLogger } from './structuredLogger';
 import { errorReporting } from './errorReporting';
 import { logger } from './logger';
 import { ErrorCategory, ErrorSeverity, type AppError } from '@/types/errors';
@@ -82,7 +81,7 @@ class ErrorMonitoringService {
   // Error monitoring
   monitorError(error: AppError): void {
     // Log structured error
-    structuredLogger.trackError(error, {
+    logger.errorWithStack(error.message, error, {
       category: error.category,
       severity: error.severity,
       component: error.context?.component,
@@ -132,8 +131,9 @@ class ErrorMonitoringService {
           this.activeAlerts.delete(alert.id);
         }
 
-        structuredLogger.info(`Error recovery successful for error`, {
-          metadata: { errorId: error.id, attempts: attempts + 1 },
+        logger.info(`Error recovery successful for error`, {
+          errorId: error.id,
+          attempts: attempts + 1,
         });
 
         return true;
@@ -297,15 +297,13 @@ class ErrorMonitoringService {
 
     // Check if performance threshold exceeded
     if (duration > this.config.performanceThreshold) {
-      structuredLogger.warn(`Performance threshold exceeded: ${operation}`, {
-        metadata: {
-          performance: {
-            operation,
-            duration,
-            average: metrics.reduce((sum, d) => sum + d, 0) / metrics.length,
-          },
-          threshold: this.config.performanceThreshold,
+      logger.warn(`Performance threshold exceeded: ${operation}`, {
+        performance: {
+          operation,
+          duration,
+          average: metrics.reduce((sum, d) => sum + d, 0) / metrics.length,
         },
+        threshold: this.config.performanceThreshold,
       });
     }
   }
@@ -363,8 +361,10 @@ class ErrorMonitoringService {
       this.sendFeedbackToServer(fullFeedback);
     }
 
-    structuredLogger.info(`User feedback submitted for error`, {
-      metadata: { errorId: feedback.errorId, feedback: feedback.feedback, comment: feedback.comment },
+    logger.info(`User feedback submitted for error`, {
+      errorId: feedback.errorId,
+      feedback: feedback.feedback,
+      comment: feedback.comment,
     });
   }
 

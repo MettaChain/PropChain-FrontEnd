@@ -10,7 +10,7 @@ interface FilterSidebarProps {
   onClearFilters: () => void;
 }
 
-export const FilterSidebar: React.FC<FilterSidebarProps> = ({
+const FilterSidebarInner: React.FC<FilterSidebarProps> = ({
   filters,
   onFilterChange,
   onClearFilters,
@@ -304,3 +304,5 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     </>
   );
 };
+
+export const FilterSidebar = React.memo(FilterSidebarInner);

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { 
   X, 
   ShieldCheck, 
@@ -57,6 +58,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   const [lockPeriod, setLockPeriod] = useState<number>(3); // months
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedToken, setSelectedToken] = useState(token || mockAvailableTokens[0]);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   useEffect(() => {
     if (isOpen) {
@@ -89,7 +91,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   const handleClose = () => {
     onClose();
     // Small delay to reset state after animation
-    setTimeout(() => setStep('input'), 300);
+    setTimeoutSafe(() => setStep('input'), 300);
   };
 
   const apyMultiplier = 1 + (lockPeriod / 12) * 0.5; // Simple mock formula

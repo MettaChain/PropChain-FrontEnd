@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
 import { useWalletPersistence } from "@/utils/walletPersistence";
 import { setupExtensionErrorHandling } from "@/utils/extensionDetection";
-import { structuredLogger } from "@/utils/structuredLogger";
 import { errorMonitoring } from "@/utils/errorMonitoringService";
 import { ErrorCategory, ErrorSeverity } from "@/types/errors";
 import { logger } from "@/utils/logger";
@@ -37,10 +36,10 @@ function HomeContent() {
     setupExtensionErrorHandling();
     
     // Initialize structured logging and error monitoring
-    structuredLogger.info('Application initialized', {
+    logger.info('Application initialized', {
       component: 'HomeContent',
       action: 'initialization',
-      metadata: { timestamp: new Date().toISOString() },
+      timestamp: new Date().toISOString(),
     });
 
     // Set up global error handling

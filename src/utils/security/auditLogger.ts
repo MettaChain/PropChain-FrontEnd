@@ -31,7 +31,12 @@ export class SecurityAuditLogger {
   private logs: AuditLogEntry[] = [];
   private alerts: SecurityAlert[] = [];
   private sessionId: string;
-  private maxLogSize = 10000; // Maximum number of logs to keep in memory
+  private readonly MAX_LOG_SIZE = 10000;
+  private readonly MAX_ALERT_SIZE = 1000;
+  private readonly RETENTION_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
+  private readonly EVICTION_THRESHOLD = 0.9;
+  private evictionCount = 0;
+  private evictionWarningIssued = false;
 
   constructor() {
     this.sessionId = this.generateSessionId();
@@ -239,6 +244,12 @@ export class SecurityAuditLogger {
     };
 
     this.alerts.push(alert);
+
+    if (this.alerts.length > this.MAX_ALERT_SIZE) {
+      this.alerts.sort((a, b) => b.timestamp - a.timestamp);
+      this.alerts = this.alerts.slice(0, Math.floor(this.MAX_ALERT_SIZE * 0.7));
+    }
+
     this.notifySecurityAlert(alert);
   }
 
@@ -436,18 +447,57 @@ export class SecurityAuditLogger {
   }
 
   /**
-   * Adds a log entry and manages log size
+   * Adds a log entry and manages log size with LRU-by-time eviction
    */
   private addLog(entry: AuditLogEntry): void {
     this.logs.push(entry);
-    
-    // Keep only the most recent logs
-    if (this.logs.length > this.maxLogSize) {
-      this.logs = this.logs.slice(-this.maxLogSize);
+
+    if (this.logs.length > this.MAX_LOG_SIZE) {
+      this.evictLRU();
     }
 
-    // Check for suspicious patterns
+    if (!this.evictionWarningIssued && this.logs.length > this.MAX_LOG_SIZE * this.EVICTION_THRESHOLD) {
+      console.warn(
+        `[AuditLogger] Log storage at ${Math.round((this.logs.length / this.MAX_LOG_SIZE) * 100)}% capacity. Eviction will begin at ${this.MAX_LOG_SIZE} entries.`
+      );
+      this.evictionWarningIssued = true;
+    }
+
     this.checkForSuspiciousPatterns(entry);
+  }
+
+  /**
+   * Evicts oldest entries (LRU-by-time) and exports them before removal
+   */
+  private evictLRU(): void {
+    const excess = this.logs.length - Math.floor(this.MAX_LOG_SIZE * 0.7);
+    const toEvict = this.logs.splice(0, excess);
+    this.evictionCount += toEvict.length;
+
+    this.exportToRemoteSink(toEvict).catch(() => {
+      console.warn('[AuditLogger] Remote export failed during eviction');
+    });
+
+    if (this.evictionCount % 1000 === 0) {
+      console.warn(`[AuditLogger] ${this.evictionCount} total log entries evicted`);
+    }
+  }
+
+  /**
+   * Exports log entries to a remote sink before eviction
+   */
+  private async exportToRemoteSink(entries: AuditLogEntry[]): Promise<void> {
+    const exportUrl = process.env.NEXT_PUBLIC_AUDIT_EXPORT_URL;
+    if (!exportUrl) return;
+    try {
+      await fetch(exportUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries, sessionId: this.sessionId, exportedAt: Date.now() }),
+      });
+    } catch {
+      // Silently fail - export is best-effort
+    }
   }
 
   /**
@@ -574,12 +624,19 @@ export class SecurityAuditLogger {
   }
 
   /**
-   * Cleans up old logs
+   * Cleans up old logs based on retention period
    */
   private cleanupOldLogs(): void {
-    const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-    this.logs = this.logs.filter(log => log.timestamp > oneWeekAgo);
-    this.alerts = this.alerts.filter(alert => alert.timestamp > oneWeekAgo);
+    const cutoff = Date.now() - this.RETENTION_PERIOD_MS;
+    const oldLogs = this.logs.filter(log => log.timestamp <= cutoff);
+    const oldAlerts = this.alerts.filter(alert => alert.timestamp <= cutoff);
+
+    if (oldLogs.length > 0) {
+      this.exportToRemoteSink(oldLogs).catch(() => {});
+    }
+
+    this.logs = this.logs.filter(log => log.timestamp > cutoff);
+    this.alerts = this.alerts.filter(alert => alert.timestamp > cutoff);
   }
 
   /**
