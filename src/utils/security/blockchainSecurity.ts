@@ -1,4 +1,5 @@
-import { logger } from '@/utils/logger';
+import { parseEther } from 'viem';
+
 export interface SecurityServiceConfig {
   apiKey?: string;
   baseUrl: string;
@@ -36,6 +37,86 @@ export interface SecurityAlert {
   source: string;
   /** Unix timestamp of when the alert was generated */
   timestamp: number;
+}
+
+/**
+ * Normalises a transaction value string into a BigInt.
+ * Handles hex strings (0x-prefixed), scientific notation, and decimal strings.
+ * Throws a typed error for unparseable values.
+ */
+function normalizeToBigInt(value: string): bigint {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new BlockchainSecurityError(
+      'Invalid value: must be a non-empty string',
+      'INVALID_VALUE'
+    );
+  }
+
+  let normalised = value.trim();
+
+  // Handle hex (0x-prefixed) — viem-style wei values
+  if (normalised.startsWith('0x') || normalised.startsWith('0X')) {
+    try {
+      return BigInt(normalised);
+    } catch {
+      throw new BlockchainSecurityError(
+        `Unable to parse hex value: "${normalised}"`,
+        'INVALID_HEX_VALUE'
+      );
+    }
+  }
+
+  // Handle scientific notation (e.g. "1e18", "1.5e-3")
+  if (/[eE]/.test(normalised)) {
+    const asNumber = Number(normalised);
+    if (!Number.isFinite(asNumber)) {
+      throw new BlockchainSecurityError(
+        `Scientific notation overflow: "${normalised}"`,
+        'VALUE_OVERFLOW'
+      );
+    }
+    // Convert to a whole-number string suitable for BigInt
+    try {
+      return BigInt(Math.round(asNumber));
+    } catch {
+      throw new BlockchainSecurityError(
+        `Unable to parse scientific notation: "${normalised}"`,
+        'INVALID_SCI_VALUE'
+      );
+    }
+  }
+
+  // Handle fractional decimal (e.g. "1.5" — treat as ether value)
+  if (normalised.includes('.')) {
+    try {
+      return parseEther(normalised as `${number}`);
+    } catch {
+      throw new BlockchainSecurityError(
+        `Unable to parse decimal ether value: "${normalised}"`,
+        'INVALID_ETHER_VALUE'
+      );
+    }
+  }
+
+  // Plain decimal string (wei)
+  try {
+    return BigInt(normalised);
+  } catch {
+    throw new BlockchainSecurityError(
+      `Unable to parse value: "${normalised}"`,
+      'INVALID_VALUE'
+    );
+  }
+}
+
+export class BlockchainSecurityError extends Error {
+  public readonly code: string;
+
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'BlockchainSecurityError';
+    this.code = code;
+  }
 }
 
 export class BlockchainSecurityService {
@@ -259,9 +340,9 @@ export class BlockchainSecurityService {
         blocks.push('Recipient address is on sanctions list');
       }
 
-      // BigInt comparison: 1 ETH = 10^18 wei; flag high-value sends to risky recipients
-      const valueBN = BigInt(value);
-      if (valueBN >= BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // >= 1 ETH
+      // Check for high-value transaction to risky address
+      const valueBN = normalizeToBigInt(value);
+      if (valueBN > BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // > 1 ETH
         warnings.push('High-value transaction to risky address');
       }
 

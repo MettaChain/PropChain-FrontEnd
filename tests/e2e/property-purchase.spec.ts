@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupWalletMock } from './wallet-fixture';
 
 test.describe('Property Purchase Flow', () => {
   test.beforeEach(async ({ page, context }) => {
@@ -14,31 +15,7 @@ test.describe('Property Purchase Flow', () => {
       });
     });
 
-    // Mock wallet connection for property purchase tests
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        isMetaMask: true,
-        request: async ({ method, params }: { method: string; params?: any[] }) => {
-          if (method === 'eth_requestAccounts') {
-            return ['0x1234567890123456789012345678901234567890'];
-          }
-          if (method === 'eth_chainId') {
-            return '0x1';
-          }
-          if (method === 'eth_getBalance') {
-            return '0x56BC75E2D630E8000'; // 100 ETH in wei
-          }
-          if (method === 'eth_sendTransaction') {
-            // Mock successful transaction
-            return '0x1234567890123456789012345678901234567890123456789012345678901234';
-          }
-          return null;
-        },
-        on: () => {},
-        removeListener: () => {},
-        isConnected: () => true,
-      };
-    });
+    await setupWalletMock(page);
 
     // Mock API responses directly in the page context
     await page.route('**/api/properties*', async (route) => {
@@ -357,27 +334,7 @@ test.describe('Property Purchase Flow', () => {
   });
 
   test('should handle insufficient balance', async ({ page }) => {
-    // Mock wallet with low balance
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        isMetaMask: true,
-        request: async ({ method }: { method: string }) => {
-          if (method === 'eth_requestAccounts') {
-            return ['0x1234567890123456789012345678901234567890'];
-          }
-          if (method === 'eth_chainId') {
-            return '0x1';
-          }
-          if (method === 'eth_getBalance') {
-            return '0x152D02C7E14AF6800000'; // 0.001 ETH (low balance)
-          }
-          return null;
-        },
-        on: () => {},
-        removeListener: () => {},
-        isConnected: () => true,
-      };
-    });
+    await setupWalletMock(page, { balance: '0x152D02C7E14AF6800000' });
 
     await page.goto('/properties');
     

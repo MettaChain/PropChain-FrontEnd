@@ -36,6 +36,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export const YieldChart = () => {
+  const highestYield = [...yieldData].sort((a, b) => b.yield - a.yield)[0];
+  const ariaLabel = `Bar chart: Annual yield per property. Highest yield: ${highestYield.name} at ${highestYield.yield}%. Properties shown: ${yieldData.map(d => `${d.name} ${d.yield}%`).join(', ')}.`;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -48,7 +51,7 @@ export const YieldChart = () => {
         <p className="text-sm text-muted-foreground mt-1">Annual ROI breakdown by asset</p>
       </div>
 
-      <div className="h-[250px]">
+      <div className="h-[250px]" role="img" aria-label={ariaLabel}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={yieldData}

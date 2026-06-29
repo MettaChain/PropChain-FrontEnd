@@ -223,7 +223,7 @@ export class PhishingProtection {
       }
 
     } catch (error) {
-      // URL constructor throws on malformed URLs — treat as suspicious
+      logger.warn('Invalid URL format detected in phishing check:', error);
       warnings.push('Invalid URL format');
       riskScore += 20;
     }
@@ -268,6 +268,7 @@ export class PhishingProtection {
       decodedData = messageAnalysis.decodedData;
 
     } catch (error) {
+      logger.warn('Invalid signature format:', error);
       return {
         isValid: false,
         isMalicious: true,
@@ -326,6 +327,7 @@ export class PhishingProtection {
         }
 
       } catch (error) {
+        logger.warn('Unable to decode transaction data:', error);
         warnings.push('Unable to decode transaction data');
       }
     }
@@ -516,6 +518,7 @@ export class PhishingProtection {
       }
 
     } catch {
+      logger.warn('Failed to parse message as JSON, analyzing as text');
       // Not JSON, analyze as text
       if (this.containsSensitiveOperations(message)) {
         warnings.push('Message contains sensitive operations');
@@ -555,6 +558,7 @@ export class PhishingProtection {
         decoded: false // Would need ABI for full decoding
       };
     } catch {
+      logger.warn('Failed to decode transaction data');
       return null;
     }
   }

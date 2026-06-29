@@ -188,43 +188,61 @@ export const OfflinePropertyCache = ({
     setDownloadProgress((prev) => ({ ...prev, [property.id]: 0 }));
 
     try {
-      // Simulate downloading property data and images
-      const totalSteps = property.images.length + 1;
-      let completedSteps = 0;
+      const urls = property.images ?? [];
+      const total = urls.length + 1; // +1 for the property data step
+      let done = 0;
 
-      // Download property data
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      completedSteps++;
-      setDownloadProgress((prev) => ({
-        ...prev,
-        [property.id]: (completedSteps / totalSteps) * 100,
-      }));
+      // Fetch property data (non-image resource counted as one step)
+      const dataUrl = `/api/properties/${property.id}`;
+      const dataRes = await fetch(dataUrl);
+      if (!dataRes.ok) throw new Error(`Failed to fetch property data: ${dataRes.status}`);
+      done++;
+      setDownloadProgress((prev) => ({ ...prev, [property.id]: (done / total) * 100 }));
 
-      // Download images
-      for (const _image of property.images) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        completedSteps++;
-        setDownloadProgress((prev) => ({
-          ...prev,
-          [property.id]: (completedSteps / totalSteps) * 100,
-        }));
+      // Fetch each image with streaming progress
+      for (const imageUrl of urls) {
+        const res = await fetch(imageUrl);
+        if (!res.ok || !res.body) {
+          // Still count the step even if individual image fails
+          done++;
+          setDownloadProgress((prev) => ({ ...prev, [property.id]: (done / total) * 100 }));
+          continue;
+        }
+
+        const contentLength = Number(res.headers.get("content-length") ?? 0);
+        const reader = res.body.getReader();
+        let received = 0;
+
+        while (true) {
+          const { done: streamDone, value } = await reader.read();
+          if (streamDone) break;
+          received += value.byteLength;
+          if (contentLength > 0) {
+            // Partial progress within this image's share of the total
+            const imageShare = 1 / total;
+            const imageProgress = received / contentLength;
+            const overallProgress = ((done + imageProgress) / total) * 100;
+            setDownloadProgress((prev) => ({ ...prev, [property.id]: overallProgress }));
+          }
+        }
+
+        done++;
+        setDownloadProgress((prev) => ({ ...prev, [property.id]: (done / total) * 100 }));
       }
 
-      // Cache the property
       await setCachedMobileProperty(property);
-      
       logger.info(`Property ${property.id} cached successfully`);
     } catch (error) {
       logger.error("Error downloading property:", error);
     } finally {
       setIsDownloading((prev) => ({ ...prev, [property.id]: false }));
       setDownloadProgress((prev) => ({ ...prev, [property.id]: 100 }));
-
+      // Clear progress bar after a short display window
       setTimeout(() => {
         setDownloadProgress((prev) => {
-          const newProgress = { ...prev };
-          delete newProgress[property.id];
-          return newProgress;
+          const next = { ...prev };
+          delete next[property.id];
+          return next;
         });
       }, 2000);
     }
@@ -340,9 +358,9 @@ export const OfflinePropertyCache = ({
                 Cache Health Issues
               </h4>
               <ul className="mt-1 space-y-1">
-                {healthIssues.map((issue, index) => (
+                {healthIssues.map((issue) => (
                   <li
-                    key={index}
+                    key={issue}
                     className="text-sm text-orange-700 dark:text-orange-300"
                   >
                     {issue}
