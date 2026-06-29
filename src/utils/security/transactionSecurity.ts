@@ -95,11 +95,14 @@ function getSessionSalt(): string {
   }
   return salt;
 }
+const sessionDeviceId = typeof crypto !== 'undefined' ? crypto.randomUUID() : 'server-device';
 
 export function getSecurityDeviceId(): string {
   if (typeof window === 'undefined') {
     return 'server-device';
   }
+  return sessionDeviceId;
+}
 
   const key = 'propchain-security-device-id-hash';
   const existing = window.localStorage.getItem(key);
@@ -110,6 +113,12 @@ export function getSecurityDeviceId(): string {
   const hashedId = simpleHash(`${deviceId}:${salt}`);
   window.localStorage.setItem(key, hashedId);
   return deviceId;
+export async function hashDeviceId(deviceId: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(deviceId);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export function getSecurityDeviceLabel(): string {

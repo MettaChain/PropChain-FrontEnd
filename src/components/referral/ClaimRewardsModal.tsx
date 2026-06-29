@@ -6,6 +6,7 @@ import { useReferralStore, useReferralStats } from '@/store/referralStore';
 import { referralService } from '@/lib/referralService';
 import { createWalletAddress } from '@/types/referral';
 import { formatUnits } from 'viem';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 
 const SUPPORTED_CHAIN_NAMES: Record<number, string> = {
   1: 'Ethereum',
@@ -37,6 +38,7 @@ export default function ClaimRewardsModal({
   const [step, setStep] = useState<'confirm' | 'claiming' | 'success' | 'error'>(
     'confirm'
   );
+  const { setTimeoutSafe } = useSafeTimeout();
 
   const { setIsClaimingRewards, setNotification } = useReferralStore();
   const stats = useReferralStats();
@@ -81,7 +83,7 @@ export default function ClaimRewardsModal({
       setNotification('Rewards claimed successfully!', 'success');
 
       // Close modal after 3 seconds
-      setTimeout(onClose, 3000);
+      setTimeoutSafe(onClose, 3000);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to claim rewards';

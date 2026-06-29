@@ -1,9 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useId } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 
 interface DataRefreshWrapperProps {
   children: ReactNode;
@@ -21,8 +22,15 @@ export const DataRefreshWrapper = ({
 }: DataRefreshWrapperProps) => {
   const [refreshState, setRefreshState] = useState<RefreshState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   const handleRefresh = useCallback(async () => {
+    // Cancel any pending success timeout from a previous refresh
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+
     setRefreshState("loading");
     setError(null);
 
@@ -31,7 +39,8 @@ export const DataRefreshWrapper = ({
       await new Promise((resolve, reject) => {
         setTimeout(() => {
           // 90% success rate for demo
-          if (Math.random() > 0.1) {
+          const randomValue = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
+          if (randomValue > 0.1) {
             resolve(true);
           } else {
             reject(new Error("Failed to fetch latest data"));
@@ -44,7 +53,7 @@ export const DataRefreshWrapper = ({
       }
 
       setRefreshState("success");
-      setTimeout(() => setRefreshState("idle"), 2000);
+      setTimeoutSafe(() => setRefreshState("idle"), 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setRefreshState("error");
@@ -122,7 +131,7 @@ export const DataRefreshWrapper = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div
-                    key={i}
+                    key={`${id}-skeleton-card-${i}`}
                     className="glass-card rounded-xl p-6 border border-border/50 bg-white/60 dark:bg-gray-900/40"
                   >
                     <div className="flex items-start justify-between gap-4">
