@@ -26,6 +26,7 @@ import {
   isCacheAvailable,
   initPropertyCache,
 } from './propertyCache';
+import { genId } from '@/utils/genId';
 
 // Version migration handlers
 type VersionMigration = (data: unknown) => unknown;
@@ -266,7 +267,7 @@ export const addToSyncQueue = (
 
     const newItem: SyncQueueItem = {
       // Combine timestamp with random base-36 string for a unique, sortable ID
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: genId(`${Date.now()}`),
       type,
       payload,
       timestamp: Date.now(),

@@ -1,5 +1,6 @@
 'use client';
 import { logger } from '@/utils/logger';
+import { genId } from '@/utils/genId';
 
 import { useState, useEffect } from 'react';
 
@@ -35,7 +36,7 @@ export const useSearchHistory = () => {
     if (!query.trim()) return;
 
     const newItem: SearchHistoryItem = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: genId(`${Date.now()}`),
       query: query.trim(),
       timestamp: new Date().toISOString(),
       type,

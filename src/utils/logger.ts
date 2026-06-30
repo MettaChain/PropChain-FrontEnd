@@ -1,6 +1,7 @@
 'use client';
 
 import { getErrorMessage } from './typeGuards';
+import { genId } from '@/utils/genId';
 
 // ============================================================================
 // Log Levels
@@ -102,8 +103,7 @@ let globalConfig = getDefaultConfig();
 // Correlation ID
 // ============================================================================
 
-const generateCorrelationId = (): string =>
-  `corr-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 15)}`;
+const generateCorrelationId = (): string => genId(`corr-${Date.now().toString(36)}`);
 
 class CorrelationIdManager {
   private static instance: CorrelationIdManager;
@@ -120,7 +120,7 @@ class CorrelationIdManager {
   setId(id: string): void { this.id = id; }
   reset(): void { this.id = generateCorrelationId(); }
   fork(): string { return generateCorrelationId(); }
-  createChild(): string { return `${this.id}-${Math.random().toString(36).substring(2, 8)}`; }
+  createChild(): string { return genId(this.id); }
 }
 
 // ============================================================================
