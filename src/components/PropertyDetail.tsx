@@ -6,8 +6,8 @@ import { usePropertyQuery } from '@/hooks/usePropertySearchQuery';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShoppingCart, Plus, Share2, Heart, ExternalLink, Bell } from 'lucide-react';
-import { formatPrice, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
+import { ShoppingCart, Plus, Share2, Heart, ExternalLink, Bell, Star, CheckCircle2 } from 'lucide-react';
+import { formatPrice, formatROI, getBlockchainColor } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS, type PriceAlertType } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
 import { useNotificationStore } from '@/store/notificationStore';
@@ -129,12 +129,14 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
             <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
               {property.featured && (
                 <Badge className="bg-yellow-500 text-white">
-                  ⭐ Featured
+                  <Star className="w-3 h-3 mr-1 inline" aria-hidden="true" />
+                  Featured
                 </Badge>
               )}
               {property.verified && (
                 <Badge className="bg-green-500 text-white">
-                  ✓ Verified
+                  <CheckCircle2 className="w-3 h-3 mr-1 inline" aria-hidden="true" />
+                  Verified
                 </Badge>
               )}
             </div>
@@ -158,7 +160,6 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
           {/* Title and Location */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">{getPropertyTypeIcon(property.propertyType)}</span>
               <Badge variant="secondary">
                 {PROPERTY_TYPE_LABELS[property.propertyType]}
               </Badge>

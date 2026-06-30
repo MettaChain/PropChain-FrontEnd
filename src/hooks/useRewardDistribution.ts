@@ -3,10 +3,11 @@
  * Handles smart contract interactions for distributing referral rewards
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits } from 'viem';
 import { useReferralStore } from '@/store/referralStore';
+import { generateMockTxHash } from '@/utils/secureId';
 
 /**
  * Reward distribution hook interface
@@ -198,7 +199,7 @@ export function useClaimRewards() {
 
         // In a real scenario, this would call a smart contract
         // For now, we'll simulate the transaction
-        const mockTxHash = `0x${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
+        const mockTxHash = generateMockTxHash();
 
         return {
           transactionHash: mockTxHash,
@@ -302,6 +303,3 @@ export function useRewardDistributionValidator() {
 
   return { validateRewardClaim };
 }
-
-// Import useEffect for the status tracking hook
-import { useEffect } from 'react';

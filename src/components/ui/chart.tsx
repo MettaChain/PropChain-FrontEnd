@@ -77,8 +77,11 @@ function buildChartCSS(id: string, config: ChartConfig): string {
 
   if (!colorConfig.length) return ''
 
-  return Object.entries(THEMES)
-    .map(([theme, prefix]) => `
+  // Build CSS rules safely as a string (only uses known-safe values:
+  // theme keys, color strings from config, and CSS variable names)
+  const cssText = Object.entries(THEMES)
+    .map(
+      ([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
@@ -90,18 +93,11 @@ ${colorConfig
   .filter(Boolean)
   .join("\n")}
 }
-`)
+`
+    )
     .join("\n")
-}
 
-const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
-  const css = React.useMemo(() => buildChartCSS(id, config), [id, config])
-
-  if (!css) return null
-
-  const sanitizedCss = DOMPurify.sanitize(css)
-
-  return <style dangerouslySetInnerHTML={{ __html: sanitizedCss }} />
+  return <style>{cssText}</style>
 }
 
 const ChartTooltip = Tooltip

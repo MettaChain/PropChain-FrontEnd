@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useTransactionStore } from '@/store/transactionStore';
 import type { Transaction } from '@/store/transactionStore';
 import { CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
+import { notifiedTxKey } from '@/lib/storageKeys';
 
 export const NotificationSystem: React.FC = () => {
   const { transactions } = useTransactionStore();
@@ -81,7 +82,7 @@ export const NotificationSystem: React.FC = () => {
       // For now, we'll show notifications for all transactions with final states
       if (transaction.status === 'confirmed' || transaction.status === 'failed' || transaction.status === 'cancelled') {
         // Check if we haven't notified about this transaction yet
-        const notifiedKey = `notified_${transaction.id}`;
+        const notifiedKey = notifiedTxKey(transaction.id);
         if (!localStorage.getItem(notifiedKey)) {
           handleTransactionUpdate(transaction);
           localStorage.setItem(notifiedKey, 'true');

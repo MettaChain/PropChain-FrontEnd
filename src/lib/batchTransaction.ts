@@ -1,15 +1,7 @@
 import type { CartItem } from '@/types/cart';
 import type { BatchTransactionResult } from '@/types/cart';
 import { logger } from '@/utils/logger';
-import { createPublicClient, http } from 'viem';
-import { mainnet } from 'viem/chains';
-
-const IS_DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_TX === 'true';
-
-const publicClient = createPublicClient({
-  chain: mainnet,
-  transport: http(),
-});
+import { generateMockTxHash } from '@/utils/secureId';
 
 export class BatchTransactionService {
 
@@ -38,17 +30,10 @@ export class BatchTransactionService {
       if (IS_DEMO_MODE) {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Generate mock transaction hash
-      const txHashBytes = new Uint8Array(32);
-      crypto.getRandomValues(txHashBytes);
-      const transactionHash = '0x' + Array.from(txHashBytes, (b) => b.toString(16).padStart(2, '0')).join('');
+      // Generate mock transaction hash using secure random values
+      const transactionHash = generateMockTxHash();
 
-      // Simulate individual transaction results
-      const results = items.map(item => {
-        const rand1 = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
-        const rand2 = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
-        const rand3 = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
-        return {
+        const results = items.map(item => ({
           propertyId: item.property.id,
           success: rand1 > 0.1, // 90% success rate for demo
           transactionHash: rand2 > 0.1 ? transactionHash : undefined,

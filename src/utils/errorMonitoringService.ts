@@ -3,6 +3,7 @@
 import { errorReporting } from './errorReporting';
 import { logger } from './logger';
 import { ErrorCategory, ErrorSeverity, type AppError } from '@/types/errors';
+import { generateAlertId } from './secureId';
 
 // ============================================================================
 // Error Monitoring Service
@@ -165,7 +166,7 @@ class ErrorMonitoringService {
 
   private createAlert(error: AppError): void {
     const alert: ErrorAlert = {
-      id: `alert_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`,
+      id: generateAlertId(),
       error,
       timestamp: new Date(),
       severity: error.severity,

@@ -1,4 +1,5 @@
 import type { SecondaryMarketListing, OrderBookEntry, BlockchainNetwork } from '@/types/property';
+import { generateSecureId, generateMockTxHash } from '@/utils/secureId';
 
 /**
  * Secondary Market Service
@@ -82,7 +83,7 @@ export const secondaryMarketService = {
     
     const newListing: SecondaryMarketListing = {
       ...data,
-      id: `sec-${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`,
+      id: generateSecureId('sec'),
       listedDate: new Date().toISOString(),
     };
     
@@ -97,7 +98,7 @@ export const secondaryMarketService = {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     return {
-      transactionHash: `0x${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`
+      transactionHash: generateMockTxHash()
     };
   }
 };
