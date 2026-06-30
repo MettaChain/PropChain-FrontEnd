@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { WalletConnector } from "@/components/WalletConnector";
 import { TransactionQueue } from "@/components/TransactionQueue";
@@ -70,13 +70,28 @@ const Index = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { profile } = useKycStore();
 
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState) {
+      setSidebarCollapsed(JSON.parse(savedState));
+    }
+  }, []);
+
+  const handleToggleCollapse = () => {
+    setSidebarCollapsed((prev) => {
+      const newState = !prev;
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+      return newState;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background flex w-full">
       <Sidebar
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
         onClose={() => setSidebarOpen(false)}
-        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        onToggleCollapse={handleToggleCollapse}
       />
       <div className="flex-1 flex flex-col min-w-0">
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
