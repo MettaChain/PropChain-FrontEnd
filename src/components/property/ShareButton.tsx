@@ -19,6 +19,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import {
+  buildPropertyShareUrl,
+  buildShareText,
+  buildTwitterShareUrl,
+  buildLinkedInShareUrl,
+  buildEmailShareUrl,
+} from '@/utils/security/shareUrl';
 
 interface ShareButtonProps {
   property: {
@@ -51,13 +58,11 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
   const [copied, setCopied] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const propertyUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/properties/${property.id}`;
+  const propertyUrl = buildPropertyShareUrl(property);
+  const shareText = buildShareText(property);
   
-  const shareText = `Check out this property: ${property.name} in ${property.location.city}, ${property.location.state}. ${property.metrics.roi}% ROI - ${property.price.total} ETH total value.`;
-  
-  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(propertyUrl)}`;
-  
-  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(propertyUrl)}`;
+  const twitterUrl = propertyUrl ? buildTwitterShareUrl(propertyUrl, shareText) : '';
+  const linkedinUrl = propertyUrl ? buildLinkedInShareUrl(propertyUrl) : '';
 
   const handleNativeShare = async () => {
     if (navigator.share) {
@@ -106,9 +111,8 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
   };
 
   const handleEmailShare = () => {
-    const subject = encodeURIComponent(`Check out this property: ${property.name}`);
-    const body = encodeURIComponent(`I found this interesting property and thought you might like it:\n\n${shareText}\n\nView it here: ${propertyUrl}`);
-    window.open(`mailto:?subject=${subject}&body=${body}`);
+    const mailtoUrl = buildEmailShareUrl(property.name, shareText, propertyUrl);
+    window.open(mailtoUrl);
     toast.success('Opening email client...');
   };
 

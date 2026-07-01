@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { 
   X, 
   ShieldCheck, 
@@ -9,7 +10,8 @@ import {
   Wallet,
   ArrowRight,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Home
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -57,6 +59,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   const [lockPeriod, setLockPeriod] = useState<number>(3); // months
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedToken, setSelectedToken] = useState(token || mockAvailableTokens[0]);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   useEffect(() => {
     if (isOpen) {
@@ -89,7 +92,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   const handleClose = () => {
     onClose();
     // Small delay to reset state after animation
-    setTimeout(() => setStep('input'), 300);
+    setTimeoutSafe(() => setStep('input'), 300);
   };
 
   const apyMultiplier = 1 + (lockPeriod / 12) * 0.5; // Simple mock formula
@@ -127,7 +130,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-xl">🏠</span>
+                          <Home className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
                           <div className="text-left">
                             <p className="text-sm font-semibold">{t.name}</p>
                             <p className="text-xs text-muted-foreground">{t.balance} {t.symbol} available</p>

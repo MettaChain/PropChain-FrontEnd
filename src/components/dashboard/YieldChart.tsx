@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import type { TooltipProps } from "recharts";
 
 const yieldData = [
   { name: "Manhattan Luxury", yield: 12.5, color: "hsl(160, 84%, 39%)" },
@@ -21,7 +22,7 @@ const yieldData = [
   { name: "Chicago Ind.", yield: 6.5, color: "hsl(20, 90%, 60%)" },
 ];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="glass-card rounded-lg p-3 shadow-lg border border-border">
@@ -36,6 +37,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export const YieldChart = () => {
+  const highestYield = [...yieldData].sort((a, b) => b.yield - a.yield)[0];
+  const ariaLabel = `Bar chart: Annual yield per property. Highest yield: ${highestYield.name} at ${highestYield.yield}%. Properties shown: ${yieldData.map(d => `${d.name} ${d.yield}%`).join(', ')}.`;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -48,7 +52,7 @@ export const YieldChart = () => {
         <p className="text-sm text-muted-foreground mt-1">Annual ROI breakdown by asset</p>
       </div>
 
-      <div className="h-[250px]">
+      <div className="h-[250px]" role="img" aria-label={ariaLabel}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={yieldData}

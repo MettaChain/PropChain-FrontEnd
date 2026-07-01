@@ -1,6 +1,7 @@
 'use client';
 
 import { getErrorMessage } from './typeGuards';
+import { generateCorrelationId, generateChildId } from './secureId';
 
 // ============================================================================
 // Log Levels
@@ -102,9 +103,6 @@ let globalConfig = getDefaultConfig();
 // Correlation ID
 // ============================================================================
 
-const generateCorrelationId = (): string =>
-  `corr-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 15)}`;
-
 class CorrelationIdManager {
   private static instance: CorrelationIdManager;
   private id: string = generateCorrelationId();
@@ -116,11 +114,27 @@ class CorrelationIdManager {
     return CorrelationIdManager.instance;
   }
 
-  getId(): string { return this.id; }
-  setId(id: string): void { this.id = id; }
-  reset(): void { this.id = generateCorrelationId(); }
-  fork(): string { return generateCorrelationId(); }
-  createChild(): string { return `${this.id}-${Math.random().toString(36).substring(2, 8)}`; }
+  getId(): string {
+    return this.correlationId;
+  }
+
+  setId(id: string): void {
+    this.correlationStack.push(this.correlationId);
+    this.correlationId = id;
+  }
+
+  reset(): void {
+    this.correlationId = generateCorrelationId();
+  }
+
+  createChild(): string {
+    return generateChildId(this.correlationId);
+  }
+
+  // For async operations - returns a new correlation ID
+  fork(): string {
+    return generateCorrelationId();
+  }
 }
 
 // ============================================================================
