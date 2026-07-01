@@ -95,7 +95,6 @@ function getSessionSalt(): string {
   }
   return salt;
 }
-const sessionDeviceId = typeof crypto !== 'undefined' ? crypto.randomUUID() : 'server-device';
 
 export function getSecurityDeviceId(): string {
   if (typeof window === 'undefined') {
