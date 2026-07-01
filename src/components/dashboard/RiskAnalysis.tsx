@@ -135,25 +135,25 @@ export const RiskAnalysis = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Risk Metrics */}
-        <div className="space-y-5">
+        <div className="space-y-5" role="group" aria-label="Risk metrics">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-4 h-4 text-primary" />
             <h4 className="font-medium">Risk Metrics</h4>
           </div>
-          {riskMetrics.map((metric, index) => (
-            <RiskMeter key={index} metric={metric} />
+          {riskMetrics.map((metric) => (
+            <RiskMeter key={metric.label} metric={metric} />
           ))}
         </div>
 
         {/* Concentration Analysis */}
-        <div>
+        <div role="group" aria-label="Portfolio concentration analysis">
           <div className="flex items-center gap-2 mb-4">
             <PieChart className="w-4 h-4 text-primary" />
             <h4 className="font-medium">Top Holdings Concentration</h4>
           </div>
           <div className="glass-card rounded-lg p-4">
-            {concentrationData.map((item, index) => (
-              <ConcentrationItem key={index} {...item} />
+            {concentrationData.map((item) => (
+              <ConcentrationItem key={item.name} {...item} />
             ))}
           </div>
           <div className="mt-4 p-3 rounded-lg bg-warning/10 border border-warning/20">
@@ -172,7 +172,14 @@ export const RiskAnalysis = () => {
 
       {/* Overall Risk Score */}
       <div className="mt-6 pt-6 border-t border-border">
-        <div className="flex items-center justify-between">
+        <div
+          className="flex items-center justify-between"
+          role="meter"
+          aria-label={`Overall portfolio risk score: ${overallRiskScore} out of 100 — ${riskLevel.level} Risk`}
+          aria-valuenow={overallRiskScore}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div>
             <p className="text-sm text-muted-foreground">Overall Risk Score</p>
             <p className="text-2xl font-bold">{overallRiskScore}/100</p>

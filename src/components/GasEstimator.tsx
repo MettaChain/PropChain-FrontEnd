@@ -18,7 +18,46 @@ interface GasEstimatorProps {
 
 type GasSpeed = 'slow' | 'standard' | 'fast';
 
-const ETH_PRICE_USD = 2500; // Mock ETH price
+type GasConfidence = {
+  label: "High" | "Medium" | "Low";
+  variance: string;
+};
+
+const getGasConfidence = (
+  gasPrice?: bigint
+): GasConfidence => {
+  if (!gasPrice) {
+    return {
+      label: "Low",
+      variance: "±20%",
+    };
+  }
+
+  const gwei = Number(formatUnits(gasPrice, 9));
+
+  if (gwei < 30) {
+    return {
+      label: "High",
+      variance: "±5%",
+    };
+  }
+
+  if (gwei < 80) {
+    return {
+      label: "Medium",
+      variance: "±10%",
+    };
+  }
+
+  return {
+    label: "Low",
+    variance: "±20%",
+  };
+};
+
+const confidence = getGasConfidence(adjustedGasPrice);
+
+const ESTIMATED_ETH_PRICE_USD = 2500; // Mock ETH price
 
 export const GasEstimator: React.FC<GasEstimatorProps> = ({
   to,
@@ -28,7 +67,7 @@ export const GasEstimator: React.FC<GasEstimatorProps> = ({
 }) => {
   const [selectedSpeed, setSelectedSpeed] = useState<GasSpeed>('standard');
   const [estimatedGas, setEstimatedGas] = useState<bigint | null>(null);
-  
+
   const { data: baseGasPrice, isLoading: isGasPriceLoading } = useGasPrice();
   const { data: gasEstimate, isLoading: isGasEstimateLoading } = useEstimateGas({
     to: to as `0x${string}`,
@@ -62,7 +101,7 @@ export const GasEstimator: React.FC<GasEstimatorProps> = ({
   const totalCostWei = estimatedGas && adjustedGasPrice ? estimatedGas * adjustedGasPrice : null;
   const totalCostEth = totalCostWei ? formatUnits(totalCostWei, 18) : null;
   const totalCostUsd = totalCostEth ? (parseFloat(totalCostEth) * ETH_PRICE_USD).toFixed(2) : null;
-  
+
   const isHighGas = adjustedGasPrice ? adjustedGasPrice > parseUnits('100', 9) : false;
 
   return (
@@ -73,9 +112,9 @@ export const GasEstimator: React.FC<GasEstimatorProps> = ({
             <Gauge className="h-4 w-4 text-blue-500" />
             Gas Fee Estimator
           </CardTitle>
-          <a 
-            href="https://etherscan.io/gastracker" 
-            target="_blank" 
+          <a
+            href="https://etherscan.io/gastracker"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-blue-500 hover:underline flex items-center gap-1"
           >
@@ -117,8 +156,18 @@ export const GasEstimator: React.FC<GasEstimatorProps> = ({
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground font-medium">Estimated Cost</span>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-gray-900 dark:text-white">
-                    ${totalCostUsd || '0.00'}
+                  <div className="text-lg font-bold">
+                    ≈ ${totalCostUsd || "0.00"}
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    Approximate USD value
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    {totalCostEth
+                      ? parseFloat(totalCostEth).toFixed(6)
+                      : "0"} ETH
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {totalCostEth ? parseFloat(totalCostEth).toFixed(6) : '0'} ETH
@@ -136,6 +185,23 @@ export const GasEstimator: React.FC<GasEstimatorProps> = ({
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-muted-foreground">Gas Limit</span>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">
+                    Confidence
+                  </span>
+
+                  <Badge
+                    variant={
+                      confidence.label === "High"
+                        ? "default"
+                        : confidence.label === "Medium"
+                          ? "secondary"
+                          : "destructive"
+                    }
+                  >
+                    {confidence.label} ({confidence.variance})
+                  </Badge>
+                </div>
                 <span className="font-mono">{estimatedGas?.toString() || '0'}</span>
               </div>
             </div>

@@ -6,9 +6,7 @@ import { publicClient } from '@/lib/viem-client';
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_TX === 'true';
 
 export class BatchTransactionService {
-  /**
-   * Execute batch token purchase using multicall
-   */
+
   static async executeBatchPurchase(
     items: CartItem[],
     walletAddress: string
@@ -16,7 +14,6 @@ export class BatchTransactionService {
     try {
       logger.info('Starting batch transaction', { items: items.length, walletAddress });
 
-      // Validate all items before proceeding
       const validationResults = items.map(item => ({
         propertyId: item.property.id,
         success: this.validatePurchase(item),
@@ -95,9 +92,6 @@ export class BatchTransactionService {
     return BASE_GAS + (items.length * GAS_PER_TRANSACTION);
   }
 
-  /**
-   * Validate if purchase can be executed
-   */
   private static validatePurchase(item: CartItem): boolean {
     return item.quantity > 0 &&
            item.quantity <= item.property.tokenInfo.available &&

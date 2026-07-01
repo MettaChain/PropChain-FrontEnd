@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+. "$(dirname "$0")/_/husky.sh"
+
+echo "=========================================================="
+echo "🚀 Husky Gatekeeper: Running pre-push typecheck & tests..."
+echo "=========================================================="
+
+# 1. Execute strict compile-time type verification across the frontend workspace
+echo "📦 Validating frontend type-safety compliance..."
+cd frontend && npm run typecheck
+if [ $? -ne 0 ]; then
+  echo "❌ Error: TypeScript compilation compilation targets failed. Push blocked."
+  exit 1
+fi
+cd ..
+
+# 2. Execute local unit test suites to guard against regression breaks
+echo "🧪 Running localized unit tests..."
+npm run test -- --watchAll=false --passWithNoTests
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Unit testing suite encountered failures. Push blocked."
+  exit 1
+fi
+
+echo "✅ Success: All gates cleared. Safe to push upstream."
+exit 0

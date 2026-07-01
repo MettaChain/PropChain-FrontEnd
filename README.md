@@ -190,6 +190,73 @@ PropChain-FrontEnd/
 
 ---
 
+## 📝 Logging
+
+All application code MUST log through the **canonical logger** at
+`@/utils/logger`:
+
+```ts
+import { logger } from '@/utils/logger';
+
+logger.debug('…');
+logger.info('…');
+logger.warn('…');
+logger.error('…', errorObject);
+```
+
+### Why a single import path?
+
+- One canonical implementation owns redaction, correlation IDs, JSON output,
+  environment-aware levels, and singleton config (`configureLogger`).
+- The legacy `@/utils/structuredLogger` module is kept as a thin
+  backwards-compat wrapper (re-exports + a domain-specific `StructuredLogger`
+  class with batching/remote delivery). It is marked **`@deprecated`** and an
+  ESLint `no-restricted-imports` rule blocks new imports outside the wrapper
+  itself. New code MUST NOT import from it.
+- Direct `console.*` calls are blocked by ESLint for everything except
+  `src/utils/earlyErrorSuppression.ts`, which intentionally operates on the
+  raw global `console` because it runs **before** `logger` is initialised to
+  silence noisy browser-extension errors.
+
+### Backwards compatibility
+
+`@/utils/structuredLogger` re-exports `logger`, `createLogger`, `LogLevel`,
+etc. from the canonical module so existing call sites continue to work
+without changes. The wrapper itself (`StructuredLogger`, `logNetworkRequest`,
+`logWeb3Activity`, `logTransaction`) is preserved for callers that rely on
+its batching/remote-send semantics.
+
+---
+
+## 📊 Build stats plugin
+
+`next.config.ts` includes a small `BuildStatsPlugin` that writes a JSON
+snapshot of webpack output to `.next/build-stats.json` for local inspection.
+
+To keep production builds lean and quiet, the plugin is gated by **two**
+conditions:
+
+| Condition               | Value                                          |
+|-------------------------|------------------------------------------------|
+| `process.env.ANALYZE`   | MUST be set to `'true'`                        |
+| `process.env.NODE_ENV`  | MUST NOT be `production`                       |
+| Server-side build?      | Plugin is client-only — skipped on `isServer`  |
+
+In other words:
+
+```bash
+# Quiet (default for `next build` in production)
+npm run build
+
+# Opt-in to the JSON build-stats snapshot — local dev only
+ANALYZE=true npm run dev    # or: ANALYZE=true next build
+```
+
+Production CI MUST NOT pass `ANALYZE=true`; if it does the plugin is still
+disabled by the `NODE_ENV === 'production'` guard.
+
+---
+
 ## 📄 License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for complete details.
@@ -220,3 +287,16 @@ We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md
 Made with ❤️ by the PropChain Team
 
 </div>
+
+## 🛠️ Local Development Guardrails (Git Hooks)
+
+To maximize code reliability and streamline PR review cycles, this project uses **Husky** to enforce local quality validation checks prior to remote integration.
+
+### Active Git Hook Safeguards
+* **Pre-Commit Hook:** Triggered automatically upon running `git commit`. Performs light syntax linting on modified files.
+* **Pre-Push Hook:** Triggered automatically when executing `git push`. This gate forces an application-wide compile verification check (`tsc --noEmit`) and runs all matching unit tests. If compilation faults are surfaced or unit assertions fail, the push is safely aborted locally, keeping broken code off the remote origin branch.
+
+### Bypassing in Emergencies
+If you must explicitly push an intermediate draft up to a private backup branch without running validations, you can bypass Husky checks by appending the `--no-verify` flag:
+```bash
+git push origin feature/my-branch --no-verify

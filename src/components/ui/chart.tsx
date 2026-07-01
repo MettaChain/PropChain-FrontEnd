@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { ResponsiveContainer, Tooltip, Legend, type LegendProps } from "recharts"
+import DOMPurify from "dompurify"
 
 import { cn } from "@/lib/utils"
 
@@ -69,14 +70,12 @@ function ChartContainer({
   )
 }
 
-const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+function buildChartCSS(id: string, config: ChartConfig): string {
   const colorConfig = Object.entries(config).filter(
-    ([, config]) => config.theme || config.color
+    ([, cfg]) => cfg.theme || cfg.color
   )
 
-  if (!colorConfig.length) {
-    return null
-  }
+  if (!colorConfig.length) return ''
 
   const cssContent = Object.entries(THEMES)
     .map(([theme, prefix]) => {
