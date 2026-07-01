@@ -118,7 +118,7 @@ describe('WalletModal', () => {
 
       render(<WalletModal isOpen={true} onClose={mockOnClose} />);
       
-      expect(screen.getByText('✓ Installed')).toBeInTheDocument();
+      expect(screen.getByText('Installed')).toBeInTheDocument();
     });
 
     it('shows installed badge for Coinbase Wallet when detected', () => {
@@ -129,7 +129,7 @@ describe('WalletModal', () => {
 
       render(<WalletModal isOpen={true} onClose={mockOnClose} />);
       
-      expect(screen.getByText('✓ Installed')).toBeInTheDocument();
+      expect(screen.getByText('Installed')).toBeInTheDocument();
     });
 
     it('shows install link for non-installed wallets', () => {
@@ -154,7 +154,7 @@ describe('WalletModal', () => {
       
       const walletButtons = screen.getAllByRole('button');
       const firstWallet = walletButtons[0];
-      expect(firstWallet.textContent).toContain('✓ Installed');
+      expect(firstWallet.textContent).toContain('Installed');
     });
   });
 

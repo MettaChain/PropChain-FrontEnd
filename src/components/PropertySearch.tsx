@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePropertyAutocompleteQuery } from '@/hooks/usePropertySearchQuery';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
@@ -24,6 +24,7 @@ export const PropertySearch = ({
   const [showHistory, setShowHistory] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
 
   const { saveToHistory } = useSearchHistory();
 
@@ -112,6 +113,8 @@ export const PropertySearch = ({
   };
 
   const showDropdown = isFocused && (suggestions.length > 0 || isLoading || showHistory);
+  const activeOptionId = selectedIndex >= 0 ? `${listboxId}-option-${selectedIndex}` : undefined;
+  // Keep the input and suggestion list in sync for assistive technologies.
 
   return (
     <div className="relative w-full">
@@ -141,6 +144,12 @@ export const PropertySearch = ({
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls={showDropdown ? listboxId : undefined}
+          aria-expanded={showDropdown}
+          aria-activedescendant={activeOptionId}
+          aria-haspopup="listbox"
           data-tour="browse-properties"
           className="w-full pl-12 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
         />
@@ -166,6 +175,8 @@ export const PropertySearch = ({
       {showDropdown && (
         <div
           ref={dropdownRef}
+          id={listboxId}
+          role="listbox"
           className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto"
         >
           {showHistory && !isLoading && suggestions.length === 0 ? (
@@ -185,6 +196,9 @@ export const PropertySearch = ({
               {suggestions.map((suggestion, index) => (
                 <button
                   key={`${suggestion.type}-${suggestion.value}-${index}`}
+                  id={`${listboxId}-option-${index}`}
+                  role="option"
+                  aria-selected={index === selectedIndex}
                   onClick={() => handleSuggestionClick(suggestion)}
                   className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                     index === selectedIndex ? 'bg-gray-100 dark:bg-gray-700' : ''

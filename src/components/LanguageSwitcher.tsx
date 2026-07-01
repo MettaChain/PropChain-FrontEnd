@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Globe } from 'lucide-react';
-import { structuredLogger } from '@/utils/structuredLogger';
+import { logger } from '@/utils/logger';
 
 const languages = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -40,7 +40,9 @@ export function LanguageSwitcher() {
       html.dir = 'ltr';
     }
 
-    structuredLogger.component('LanguageSwitcher', 'changeLanguage', {
+    logger.info('Component: LanguageSwitcher - changeLanguage', {
+      component: 'LanguageSwitcher',
+      action: 'changeLanguage',
       metadata: { languageCode, rtl: ['ar', 'he'].includes(languageCode) },
     });
   };

@@ -346,6 +346,101 @@ We use a consistent design system based on:
 
 ## 🌐 Web3 Development
 
+### Adding a New Wallet Connector
+
+PropChain uses lazy-loaded wallet connector modules to keep the initial bundle small (~178 KB savings). To add support for a new wallet (e.g. Trust Wallet, Rainbow, Phantom), follow this step-by-step guide.
+
+#### Step 1: Create the connector module
+
+Create `src/lib/walletConnectors/<walletname>.ts`. Every connector must export two functions:
+
+```typescript
+// src/lib/walletConnectors/<walletname>.ts
+
+export interface WalletNameConnectorResult {
+  address: string;   // 0x-prefixed hex address
+  chainId: number;   // decimal chain ID
+}
+
+/** Connect to the wallet. Must throw descriptive user-facing errors. */
+export const connectWalletNameWallet = async (): Promise<WalletNameConnectorResult> => {
+  // 1. DETECTION — check if the wallet is available
+  // 2. CONNECTION — request accounts via the provider
+  // 3. VALIDATION — verify the returned address and chainId
+  // 4. RETURN the result
+};
+
+/** Synchronous check: is the wallet installed and ready? */
+export const isWalletNameAvailable = (): boolean => {
+  // Return true only if the provider object is present and the wallet flag is set
+};
+```
+
+#### Step 2: Detection
+
+Before attempting connection, verify the wallet provider is present:
+
+- **Injected wallets** (MetaMask, Coinbase, Rainbow): check `window.ethereum` and the wallet-specific flag (`isMetaMask`, `isCoinbaseWallet`, `isRainbow`).
+- **Mobile / deep-link wallets** (Trust Wallet, Phantom): check `window.ethereum` or the wallet's own injected namespace.
+- **QR-code wallets** (WalletConnect): check that the required environment variable (`NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`) is configured.
+
+Throw a descriptive error if the wallet is not found:
+
+```typescript
+if (!window.ethereum?.isWalletName) {
+  throw new Error(
+    'WalletName is not installed. Please install the WalletName extension or app to continue.'
+  );
+}
+```
+
+#### Step 3: Validation
+
+Always validate the response from the wallet before returning:
+
+```typescript
+const accounts = await provider.request({ method: 'eth_requestAccounts' });
+
+// Validate the response shape
+if (!Array.isArray(accounts) || accounts.length === 0) {
+  throw new Error('No accounts returned from WalletName');
+}
+
+const address = accounts[0];
+if (typeof address !== 'string' || !address.startsWith('0x')) {
+  throw new Error('Invalid account address received from WalletName');
+}
+
+const chainIdHex = await provider.request({ method: 'eth_chainId' });
+if (typeof chainIdHex !== 'string') {
+  throw new Error('Invalid chain ID received from WalletName');
+}
+```
+
+#### Step 4: Error messages
+
+All errors thrown by the connector MUST be user-friendly. Handle these standard cases:
+
+| Error code | Meaning | User-facing message |
+|---|---|---|
+| `4001` | User rejected the request | `"You rejected the connection request. Please try again."` |
+| `-32002` | Request already pending | `"Connection request is already pending. Please check your wallet."` |
+| Provider missing | Wallet not installed | `"<WalletName> is not installed. Please install the extension."` |
+| Network error | RPC timeout or offline | `"Network error. Please check your connection and try again."` |
+
+Use `getErrorCode(error)` from `@/utils/typeGuards` to safely extract numeric error codes.
+
+#### Step 5: Register the connector
+
+1. **Add to `useWalletConnector.ts`**: Import the new connector and add a case for it in the `connectWallet` function.
+2. **Add to `WalletModal.tsx`**: Add a button/option for the new wallet in the wallet selection UI.
+3. **Add tests**: Create a test file under `src/lib/walletConnectors/__tests__/` that mocks the provider and covers connection, rejection, and missing-provider scenarios.
+4. **Update this guide**: Add the new connector to the table in `src/lib/walletConnectors/README.md`.
+
+#### Template connector
+
+A minimal starting point is available at `src/lib/walletConnectors/README.md#adding-new-wallets`.
+
 ### Wallet Integration
 
 When working with Web3 features:

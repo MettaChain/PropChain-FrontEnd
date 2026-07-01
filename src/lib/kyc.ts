@@ -1,3 +1,5 @@
+import { generateTimestampedId } from '@/utils/secureId';
+
 export const DEFAULT_KYC_THRESHOLD_ETH = 10;
 
 const WEI_IN_ETH = BigInt('1000000000000000000');
@@ -23,5 +25,5 @@ export function shouldRequireKyc(valueWei: string | undefined, thresholdEth: num
 }
 
 export function createComplianceId(prefix: string): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return generateTimestampedId(prefix);
 }

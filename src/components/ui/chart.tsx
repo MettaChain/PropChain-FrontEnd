@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { ResponsiveContainer, Tooltip, Legend, type LegendProps } from "recharts"
+import DOMPurify from "dompurify"
 
 import { cn } from "@/lib/utils"
 
@@ -69,37 +70,34 @@ function ChartContainer({
   )
 }
 
-const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+function buildChartCSS(id: string, config: ChartConfig): string {
   const colorConfig = Object.entries(config).filter(
-    ([, config]) => config.theme || config.color
+    ([, cfg]) => cfg.theme || cfg.color
   )
 
-  if (!colorConfig.length) {
-    return null
-  }
+  if (!colorConfig.length) return ''
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
+  // Build CSS rules safely as a string (only uses known-safe values:
+  // theme keys, color strings from config, and CSS variable names)
+  const cssText = Object.entries(THEMES)
+    .map(
+      ([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+    return color ? `  --color-${encodeURIComponent(key)}: ${color};` : null
   })
+  .filter(Boolean)
   .join("\n")}
 }
 `
-          )
-          .join("\n"),
-      }}
-    />
-  )
+    )
+    .join("\n")
+
+  return <style>{cssText}</style>
 }
 
 const ChartTooltip = Tooltip
