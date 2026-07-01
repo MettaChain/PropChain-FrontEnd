@@ -41,6 +41,7 @@ import { logger, createLogger, LogLevel } from './logger';
 import { errorReporting } from './errorReporting';
 import { ErrorCategory, ErrorSeverity } from '@/types/errors';
 import type { AppError } from '@/types/errors';
+import { generateSessionId, generateErrorId } from './secureId';
 
 // ============================================================================
 // Extended entry shape (superset of LogEntry)
@@ -100,6 +101,10 @@ class StructuredLogger {
     this.startFlushTimer();
   }
 
+  private generateSessionId(): string {
+    return generateSessionId();
+  }
+
   private startFlushTimer(): void {
     if (this.flushTimer) clearInterval(this.flushTimer);
     this.flushTimer = setInterval(() => this.flushLogs(), this.cfg.flushInterval);
@@ -148,11 +153,11 @@ class StructuredLogger {
   private reportError(entry: StructuredLogEntry): void {
     if (!entry.error) return;
     const appError: AppError = {
-      id: `error_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`,
-      message: entry.error.message,
-      category: entry.category ?? ErrorCategory.UI,
-      severity: entry.severity ?? ErrorSeverity.MEDIUM,
-      timestamp: new Date(entry.timestamp),
+      id: generateErrorId(),
+      message: log.error.message,
+      category: log.category || ErrorCategory.UI,
+      severity: log.severity || ErrorSeverity.MEDIUM,
+      timestamp: new Date(log.timestamp),
       isRecoverable: false,
       shouldReport: true,
       context: {
@@ -288,8 +293,12 @@ class StructuredLogger {
 
 export const structuredLogger = new StructuredLogger();
 
-export const createStructuredLogger = (config?: Partial<StructuredLoggerConfig>) =>
-  new StructuredLogger(config);
+// Note: structuredLogger.destroy() should be called manually for cleanup
+// in test teardowns or before recreating the singleton.
+
+// ============================================================================
+// Performance Monitoring Helper
+// ============================================================================
 
 export const createPerformanceTracker = (operation: string, metadata?: Partial<StructuredLogEntry>) => {
   const start = performance.now();

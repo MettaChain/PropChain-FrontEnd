@@ -9,6 +9,7 @@
 
 import { logger } from "@/utils/logger";
 import { genId } from "@/utils/genId";
+import { generateSecureId } from '@/utils/secureId';
 
 export type QueuedTransactionStatus = "pending" | "retrying" | "failed";
 
@@ -106,6 +107,7 @@ export const enqueueTransaction = async (
 ): Promise<QueuedTransaction> => {
   const item: QueuedTransaction = {
     id: input.id ?? genId(`tx-${Date.now()}`),
+    id: input.id ?? generateSecureId('tx'),
     type: input.type,
     payload: input.payload,
     description: input.description,

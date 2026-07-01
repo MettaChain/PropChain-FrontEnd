@@ -1,6 +1,7 @@
 import { type AppError, ErrorCategory, ErrorSeverity, type ErrorReportingData, type ErrorMetrics } from '@/types/errors';
 import { logger } from './logger';
 import { genId } from '@/utils/genId';
+import { generateSessionId } from './secureId';
 
 class ErrorReportingService {
   private static instance: ErrorReportingService;
@@ -29,6 +30,7 @@ class ErrorReportingService {
 
   private generateSessionId(): string {
     return genId(`session_${Date.now()}`);
+    return generateSessionId();
   }
 
   private initializeMetrics(): void {

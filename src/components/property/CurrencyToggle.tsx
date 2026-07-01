@@ -3,6 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 interface CurrencyToggleProps {
   ethAmount: number;
@@ -18,7 +19,7 @@ export const CurrencyToggle: React.FC<CurrencyToggleProps> = ({
 
   // Load saved preference from localStorage
   React.useEffect(() => {
-    const saved = localStorage.getItem('currencyPreference');
+    const saved = localStorage.getItem(STORAGE_KEYS.CURRENCY_PREFERENCE.key);
     if (saved === 'ETH' || saved === 'USD') {
       setCurrency(saved);
     }
@@ -27,7 +28,7 @@ export const CurrencyToggle: React.FC<CurrencyToggleProps> = ({
   const handleToggle = () => {
     const newCurrency = currency === 'ETH' ? 'USD' : 'ETH';
     setCurrency(newCurrency);
-    localStorage.setItem('currencyPreference', newCurrency);
+    localStorage.setItem(STORAGE_KEYS.CURRENCY_PREFERENCE.key, newCurrency);
   };
 
   if (isLoading) {

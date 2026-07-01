@@ -2,6 +2,7 @@
 
 import { getErrorMessage } from './typeGuards';
 import { genId } from '@/utils/genId';
+import { generateCorrelationId, generateChildId } from './secureId';
 
 // ============================================================================
 // Log Levels
@@ -116,11 +117,27 @@ class CorrelationIdManager {
     return CorrelationIdManager.instance;
   }
 
-  getId(): string { return this.id; }
-  setId(id: string): void { this.id = id; }
-  reset(): void { this.id = generateCorrelationId(); }
-  fork(): string { return generateCorrelationId(); }
-  createChild(): string { return genId(this.id); }
+  getId(): string {
+    return this.correlationId;
+  }
+
+  setId(id: string): void {
+    this.correlationStack.push(this.correlationId);
+    this.correlationId = id;
+  }
+
+  reset(): void {
+    this.correlationId = generateCorrelationId();
+  }
+
+  createChild(): string {
+    return generateChildId(this.correlationId);
+  }
+
+  // For async operations - returns a new correlation ID
+  fork(): string {
+    return generateCorrelationId();
+  }
 }
 
 // ============================================================================

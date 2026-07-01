@@ -27,8 +27,10 @@ import {
   cacheSearchResult,
 } from './propertyCache';
 import { isNetworkOnline } from './cacheManager';
+import { generateSecureId } from '@/utils/secureId';
 import { redisCacheService } from './redisCache';
 import { genId } from '@/utils/genId';
+import { savedSearchesKey } from './storageKeys';
 
 /**
  * Property Service
@@ -287,7 +289,7 @@ class PropertyService {
     await this.delay(200);
     
     // Get from localStorage
-    const saved = localStorage.getItem(`propchain-saved-searches-${userId}`);
+    const saved = localStorage.getItem(savedSearchesKey(userId));
     return parseSavedSearches(saved);
   }
 
@@ -320,7 +322,7 @@ class PropertyService {
 
     const existing = await this.getSavedSearches(userId);
     const updated = [...existing, savedSearch];
-    localStorage.setItem(`propchain-saved-searches-${userId}`, JSON.stringify(updated));
+    localStorage.setItem(savedSearchesKey(userId), JSON.stringify(updated));
 
     return savedSearch;
   }
@@ -333,7 +335,7 @@ class PropertyService {
 
     const existing = await this.getSavedSearches(userId);
     const updated = existing.filter(s => s.id !== searchId);
-    localStorage.setItem(`propchain-saved-searches-${userId}`, JSON.stringify(updated));
+    localStorage.setItem(savedSearchesKey(userId), JSON.stringify(updated));
   }
 
   /**
@@ -462,6 +464,7 @@ class PropertyService {
    */
   private generateId(): string {
     return genId(`${Date.now()}`);
+    return generateSecureId();
   }
 }
 

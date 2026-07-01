@@ -20,20 +20,45 @@ interface RateLimitResult {
 const ipStore: RateLimitStore = {};
 const walletStore: RateLimitStore = {};
 
-// Clean up expired entries periodically
-setInterval(() => {
-  const now = Date.now();
-  Object.keys(ipStore).forEach(key => {
-    if (ipStore[key].resetTime <= now) {
-      delete ipStore[key];
-    }
-  });
-  Object.keys(walletStore).forEach(key => {
-    if (walletStore[key].resetTime <= now) {
-      delete walletStore[key];
-    }
-  });
-}, 60000); // Clean up every minute
+// Interval handle for cleanup timer
+let cleanupIntervalHandle: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Start the periodic cleanup of expired rate-limit entries.
+ * Safe to call multiple times — clears any existing interval first.
+ */
+function startCleanupTimer(): void {
+  if (cleanupIntervalHandle !== null) {
+    clearInterval(cleanupIntervalHandle);
+  }
+
+  cleanupIntervalHandle = setInterval(() => {
+    const now = Date.now();
+    Object.keys(ipStore).forEach(key => {
+      if (ipStore[key].resetTime <= now) {
+        delete ipStore[key];
+      }
+    });
+    Object.keys(walletStore).forEach(key => {
+      if (walletStore[key].resetTime <= now) {
+        delete walletStore[key];
+      }
+    });
+  }, 60000); // Clean up every minute
+}
+
+// Start the cleanup timer on module load
+startCleanupTimer();
+
+/**
+ * Stops the cleanup timer. Useful for tests and HMR teardown.
+ */
+export function stopRateLimitCleanup(): void {
+  if (cleanupIntervalHandle !== null) {
+    clearInterval(cleanupIntervalHandle);
+    cleanupIntervalHandle = null;
+  }
+}
 
 function getRateLimitData(store: RateLimitStore, key: string, windowMs: number): {
   count: number;
@@ -67,7 +92,7 @@ export function rateLimitByIP(request: NextRequest): RateLimitResult {
   const windowMs = env.RATE_LIMIT_WINDOW_MS;
   const maxRequests = env.RATE_LIMIT_MAX_REQUESTS;
   
-  const ip = (request as any).ip || 
+  const ip = (request as NextRequest & { ip?: string }).ip || 
     request.headers.get('x-forwarded-for')?.split(',')[0] || 
     request.headers.get('x-real-ip') || 
     'unknown';

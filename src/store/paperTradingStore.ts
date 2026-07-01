@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { genId } from '@/utils/genId';
+import { generateSecureId } from '@/utils/secureId';
 
 export interface PaperPosition {
   propertyId: string;
@@ -82,6 +83,7 @@ export const usePaperTradingStore = create<PaperTradingStore>()(
 
         const tx: PaperTransaction = {
           id: genId(`pt-${Date.now()}`),
+          id: generateSecureId('pt'),
           type: 'buy',
           propertyId,
           propertyName,
@@ -129,6 +131,7 @@ export const usePaperTradingStore = create<PaperTradingStore>()(
         const proceeds = tokens * pricePerToken;
         const tx: PaperTransaction = {
           id: genId(`pt-${Date.now()}`),
+          id: generateSecureId('pt'),
           type: 'sell',
           propertyId,
           propertyName: position.propertyName,

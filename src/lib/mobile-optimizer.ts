@@ -1,6 +1,32 @@
 "use client";
 import { logger } from '@/utils/logger';
 
+/** Network Information API (not yet in lib.dom.d.ts) */
+interface NetworkInformation {
+  type?: string;
+  effectiveType?: string;
+  downlink?: number;
+  rtt?: number;
+}
+const lazyLoadObservers = new WeakMap<HTMLElement, IntersectionObserver>();
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkInformation;
+  mozConnection?: NetworkInformation;
+  webkitConnection?: NetworkInformation;
+}
+
+/** Minimal typed shapes for Performance API entries not in lib.dom.d.ts */
+interface LargestContentfulPaintEntry extends PerformanceEntry {
+  renderTime: number;
+  loadTime: number;
+}
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput: boolean;
+  value: number;
+}
+interface FirstInputEntry extends PerformanceEntry {
+  processingStart: number;
+}
 /**
  * Mobile Optimizer Module
  * 
@@ -88,9 +114,8 @@ function getConnectionSpeed(): 'slow-2g' | '2g' | '3g' | '4g' | 'unknown' {
     }
 
     // Check for Network Information API
-    const connection = (navigator as any).connection || 
-                      (navigator as any).mozConnection || 
-                      (navigator as any).webkitConnection;
+    const nav = navigator as NavigatorWithConnection;
+    const connection = nav.connection || nav.mozConnection || nav.webkitConnection;
 
     if (!connection) {
       return 'unknown';
@@ -340,7 +365,7 @@ export function setupLazyLoading(container: HTMLElement): void {
     });
 
     // Store observer on container for cleanup
-    (container as any).__lazyLoadObserver = observer;
+    lazyLoadObservers.set(container, observer);
   } catch (error) {
     logger.error('Failed to setup lazy loading:', error);
   }
@@ -351,10 +376,10 @@ export function setupLazyLoading(container: HTMLElement): void {
  */
 export function cleanupLazyLoading(container: HTMLElement): void {
   try {
-    const observer = (container as any).__lazyLoadObserver;
+    const observer = lazyLoadObservers.get(container);
     if (observer) {
       observer.disconnect();
-      delete (container as any).__lazyLoadObserver;
+      lazyLoadObservers.delete(container);
     }
   } catch (error) {
     logger.error('Failed to cleanup lazy loading:', error);
@@ -428,7 +453,7 @@ function calculateTBT(): number {
     }
 
     // Long Task API entries — each represents a task that blocked the main thread > 50ms
-    const longTasks = performance.getEntriesByType('longtask') as any[];
+    const longTasks = performance.getEntriesByType('longtask') as PerformanceEntry[];
     
     // Sum only the blocking portion (time beyond the 50ms "acceptable" threshold)
     // e.g. a 120ms task contributes 70ms of blocking time
@@ -501,9 +526,8 @@ function getNetworkMetrics(): {
       return { connectionType: 'unknown', effectiveType: 'unknown', downlink: 0, rtt: 0 };
     }
 
-    const connection = (navigator as any).connection || 
-                      (navigator as any).mozConnection || 
-                      (navigator as any).webkitConnection;
+    const nav = navigator as NavigatorWithConnection;
+    const connection = nav.connection || nav.mozConnection || nav.webkitConnection;
 
     if (!connection) {
       return { connectionType: 'unknown', effectiveType: 'unknown', downlink: 0, rtt: 0 };
@@ -577,14 +601,14 @@ export function getPerformanceMetrics(): PerformanceMetrics {
     // This is a simplified version that gets the last LCP entry
     const lcpEntries = performance.getEntriesByType('largest-contentful-paint');
     if (lcpEntries.length > 0) {
-      const lastLCP = lcpEntries[lcpEntries.length - 1] as any;
+      const lastLCP = lcpEntries[lcpEntries.length - 1] as LargestContentfulPaintEntry;
       metrics.lcp = lastLCP.renderTime || lastLCP.loadTime || 0;
     }
 
     // Get Cumulative Layout Shift (CLS)
     // Note: CLS requires PerformanceObserver for accurate measurement
     // This is a simplified version
-    const layoutShiftEntries = performance.getEntriesByType('layout-shift') as any[];
+    const layoutShiftEntries = performance.getEntriesByType('layout-shift') as LayoutShiftEntry[];
     metrics.cls = layoutShiftEntries.reduce((sum, entry) => {
       // Only count layout shifts without recent user input
       if (!entry.hadRecentInput) {
@@ -596,7 +620,7 @@ export function getPerformanceMetrics(): PerformanceMetrics {
     // Get First Input Delay (FID)
     // Note: FID requires PerformanceObserver and actual user interaction
     // This is a placeholder - real FID measurement requires event timing API
-    const firstInputEntries = performance.getEntriesByType('first-input') as any[];
+    const firstInputEntries = performance.getEntriesByType('first-input') as FirstInputEntry[];
     if (firstInputEntries.length > 0) {
       const firstInput = firstInputEntries[0];
       metrics.fid = firstInput.processingStart - firstInput.startTime;
@@ -710,7 +734,7 @@ export function setupPerformanceMonitoring(
     // Observe LCP
     const lcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      const lastEntry = entries[entries.length - 1] as any;
+      const lastEntry = entries[entries.length - 1] as LargestContentfulPaintEntry;
       metrics.lcp = lastEntry.renderTime || lastEntry.loadTime || 0;
       updateMetrics();
     });
@@ -718,7 +742,7 @@ export function setupPerformanceMonitoring(
 
     // Observe layout shifts (CLS)
     const clsObserver = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries() as any[]) {
+      for (const entry of list.getEntries() as LayoutShiftEntry[]) {
         if (!entry.hadRecentInput) {
           metrics.cls += entry.value;
           updateMetrics();
@@ -729,7 +753,7 @@ export function setupPerformanceMonitoring(
 
     // Observe first input (FID)
     const fidObserver = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries() as any[]) {
+      for (const entry of list.getEntries() as FirstInputEntry[]) {
         metrics.fid = entry.processingStart - entry.startTime;
         updateMetrics();
       }

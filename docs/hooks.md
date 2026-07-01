@@ -122,9 +122,9 @@ function TransactionForm() {
 
 ## `usePropertySearch`
 
-**File**: `src/hooks/usePropertySearch.ts`
+**File**: `src/hooks/usePropertySearchQuery.ts` (React Query implementation)
 
-Combines the search store, property API calls, and URL synchronization into a single hook. Automatically initializes filters from URL query parameters on mount and keeps the URL in sync as filters change.
+Combines the Zustand search store, React Query caching, and URL synchronization into a single hook. Reads filters/sort/page from the store, delegates fetching to `usePropertySearchQuery` which uses `useQuery` under the hood for automatic caching, deduplication, and stale-while-revalidate behaviour.
 
 ### Returns
 
@@ -137,15 +137,27 @@ Combines the search store, property API calls, and URL synchronization into a si
 | `properties` | `Property[]` | Current page of search results |
 | `totalResults` | `number` | Total matching properties across all pages |
 | `totalPages` | `number` | Computed total page count |
-| `isLoading` | `boolean` | `true` while a fetch is in progress |
+| `isLoading` | `boolean` | `true` while a React Query fetch is pending or refetching |
 | `error` | `string \| null` | Error message from the last failed fetch |
-| `lastUpdated` | `number \| null` | Timestamp of the last successful fetch |
+| `lastUpdated` | `Date \| undefined` | Date of the last successful React Query fetch |
 | `setFilters` | `(filters: SearchFilters) => void` | Replace all filters at once |
 | `setFilter` | `(key, value) => void` | Update a single filter key |
 | `clearFilters` | `() => void` | Reset all filters to defaults |
 | `setSortBy` | `(sort: SortOption) => void` | Change the sort order |
 | `setPage` | `(page: number) => void` | Navigate to a page (also scrolls to top) |
-| `refetch` | `() => Promise<void>` | Manually trigger a fresh fetch |
+| `setResultsPerPage` | `(count: number) => void` | Change the number of results per page |
+| `loadMore` | `() => void` | Append the next page without scrolling to top |
+| `refetch` | `() => Promise<void>` | Manually trigger a fresh React Query refetch |
+
+### Edge cases
+
+- **Empty results**: `properties` is `[]`, `totalResults` is `0`, `totalPages` is `0`.
+- **Fetch error**: `error` receives the message; `properties` is cleared to `[]`.
+- **Rapid filter changes**: React Query deduplicates concurrent requests for the same query key.
+- **Stale data**: Cached results are served instantly for 5 minutes (`staleTime`); a background refetch updates silently.
+- **Window refocus**: Does NOT trigger a refetch (`refetchOnWindowFocus: false`).
+- **4xx errors**: Not retried. Network/5xx errors retried up to 3 times.
+- **URL sync**: The parent component is responsible for URL parameter synchronization (see `src/hooks/usePropertySearch.ts`).
 
 ### Example
 

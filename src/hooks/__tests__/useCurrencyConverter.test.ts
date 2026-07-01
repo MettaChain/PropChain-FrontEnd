@@ -1,5 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 // Mock logger
 jest.mock('@/utils/logger', () => ({
@@ -65,10 +66,10 @@ describe('useCurrencyConverter', () => {
       renderHook(() => useCurrencyConverter());
 
       await waitFor(() => {
-        expect(localStorage.getItem('ethToUsdRate')).toBe(mockEthPrice.toString());
+        expect(localStorage.getItem(STORAGE_KEYS.ETH_TO_USD_RATE.key)).toBe(mockEthPrice.toString());
       });
 
-      expect(localStorage.getItem('ethToUsdLastUpdated')).toBeTruthy();
+      expect(localStorage.getItem(STORAGE_KEYS.ETH_TO_USD_LAST_UPDATED.key)).toBeTruthy();
     });
   });
 
@@ -106,8 +107,8 @@ describe('useCurrencyConverter', () => {
 
     it('falls back to cached rate on network error when localStorage has data', async () => {
       // Pre-seed localStorage with cached data
-      localStorage.setItem('ethToUsdRate', mockEthPrice.toString());
-      localStorage.setItem('ethToUsdLastUpdated', new Date().toISOString());
+      localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_RATE.key, mockEthPrice.toString());
+      localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_LAST_UPDATED.key, new Date().toISOString());
 
       mockFetch.mockRejectedValueOnce(new Error('NetworkError'));
 
@@ -139,9 +140,9 @@ describe('useCurrencyConverter', () => {
   describe('Caching / Stale Data', () => {
     it('uses cached rate when less than 60 seconds old', async () => {
       // Pre-seed localStorage with recent cached data
-      localStorage.setItem('ethToUsdRate', mockEthPrice.toString());
+      localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_RATE.key, mockEthPrice.toString());
       const recentDate = new Date(Date.now() - 30 * 1000); // 30 seconds ago
-      localStorage.setItem('ethToUsdLastUpdated', recentDate.toISOString());
+      localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_LAST_UPDATED.key, recentDate.toISOString());
 
       const { result } = renderHook(() => useCurrencyConverter());
 
@@ -158,9 +159,9 @@ describe('useCurrencyConverter', () => {
 
     it('fetches fresh data when cache is older than 60 seconds', async () => {
       // Pre-seed localStorage with stale cached data
-      localStorage.setItem('ethToUsdRate', '3000');
+      localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_RATE.key, '3000');
       const staleDate = new Date(Date.now() - 120 * 1000); // 120 seconds ago
-      localStorage.setItem('ethToUsdLastUpdated', staleDate.toISOString());
+      localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_LAST_UPDATED.key, staleDate.toISOString());
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -183,8 +184,8 @@ describe('useCurrencyConverter', () => {
     it('re-hydrates rate from localStorage on mount', async () => {
       const cachedRate = 2500.50;
       const cachedDate = new Date(Date.now() - 30 * 1000).toISOString();
-      localStorage.setItem('ethToUsdRate', cachedRate.toString());
-      localStorage.setItem('ethToUsdLastUpdated', cachedDate);
+      localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_RATE.key, cachedRate.toString());
+      localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_LAST_UPDATED.key, cachedDate);
 
       const { result } = renderHook(() => useCurrencyConverter());
 
@@ -197,7 +198,7 @@ describe('useCurrencyConverter', () => {
     });
 
     it('handles missing cached date gracefully', async () => {
-      localStorage.setItem('ethToUsdRate', '2000');
+      localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_RATE.key, '2000');
 
       mockFetch.mockResolvedValueOnce({
         ok: true,

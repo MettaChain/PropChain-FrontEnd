@@ -91,6 +91,20 @@ ${colorConfig
   .join("\n")}
 }
 `)
+  const cssContent = Object.entries(THEMES)
+    .map(([theme, prefix]) => {
+      const rules = colorConfig
+        .map(([key, itemConfig]) => {
+          const color =
+            itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+            itemConfig.color
+          return color ? `  --color-${key}: ${color};` : null
+        })
+        .filter(Boolean)
+        .join("\n")
+      return rules ? `${prefix} [data-chart=${id}] {\n${rules}\n}` : ""
+    })
+    .filter(Boolean)
     .join("\n")
 }
 
@@ -102,6 +116,11 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const sanitizedCss = DOMPurify.sanitize(css)
 
   return <style dangerouslySetInnerHTML={{ __html: sanitizedCss }} />
+  if (!cssContent) {
+    return null
+  }
+
+  return <style>{cssContent}</style>
 }
 
 const ChartTooltip = Tooltip

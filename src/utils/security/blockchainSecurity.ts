@@ -1,4 +1,5 @@
-import { logger } from '@/utils/logger';
+import { parseEther } from 'viem';
+
 export interface SecurityServiceConfig {
   apiKey?: string;
   baseUrl: string;
@@ -38,6 +39,86 @@ export interface SecurityAlert {
   timestamp: number;
 }
 
+/**
+ * Normalises a transaction value string into a BigInt.
+ * Handles hex strings (0x-prefixed), scientific notation, and decimal strings.
+ * Throws a typed error for unparseable values.
+ */
+function normalizeToBigInt(value: string): bigint {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new BlockchainSecurityError(
+      'Invalid value: must be a non-empty string',
+      'INVALID_VALUE'
+    );
+  }
+
+  let normalised = value.trim();
+
+  // Handle hex (0x-prefixed) — viem-style wei values
+  if (normalised.startsWith('0x') || normalised.startsWith('0X')) {
+    try {
+      return BigInt(normalised);
+    } catch {
+      throw new BlockchainSecurityError(
+        `Unable to parse hex value: "${normalised}"`,
+        'INVALID_HEX_VALUE'
+      );
+    }
+  }
+
+  // Handle scientific notation (e.g. "1e18", "1.5e-3")
+  if (/[eE]/.test(normalised)) {
+    const asNumber = Number(normalised);
+    if (!Number.isFinite(asNumber)) {
+      throw new BlockchainSecurityError(
+        `Scientific notation overflow: "${normalised}"`,
+        'VALUE_OVERFLOW'
+      );
+    }
+    // Convert to a whole-number string suitable for BigInt
+    try {
+      return BigInt(Math.round(asNumber));
+    } catch {
+      throw new BlockchainSecurityError(
+        `Unable to parse scientific notation: "${normalised}"`,
+        'INVALID_SCI_VALUE'
+      );
+    }
+  }
+
+  // Handle fractional decimal (e.g. "1.5" — treat as ether value)
+  if (normalised.includes('.')) {
+    try {
+      return parseEther(normalised as `${number}`);
+    } catch {
+      throw new BlockchainSecurityError(
+        `Unable to parse decimal ether value: "${normalised}"`,
+        'INVALID_ETHER_VALUE'
+      );
+    }
+  }
+
+  // Plain decimal string (wei)
+  try {
+    return BigInt(normalised);
+  } catch {
+    throw new BlockchainSecurityError(
+      `Unable to parse value: "${normalised}"`,
+      'INVALID_VALUE'
+    );
+  }
+}
+
+export class BlockchainSecurityError extends Error {
+  public readonly code: string;
+
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'BlockchainSecurityError';
+    this.code = code;
+  }
+}
+
 export class BlockchainSecurityService {
   // Singleton instance — ensures only one service instance exists across the app
   private static instance: BlockchainSecurityService;
@@ -74,35 +155,42 @@ export class BlockchainSecurityService {
     if (cached) return cached;
 
     try {
-      // Try calling a remote API if available. If `fetch` returns a Promise
-      // (for example when tests mock it), await it and use the response.
-      // Otherwise, fall back to the local simulation to preserve test behavior.
-      const fetchResult = typeof fetch === 'function' ? (fetch as any)(`${this.config.baseUrl}/address/${address}`, {
-        headers: this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}
-      }) : null;
+      // Call the local API proxy route which securely holds the API key server-side.
+      // This avoids exposing the key in the client bundle.
+      const baseUrl = typeof window !== 'undefined'
+        ? window.location.origin
+        : this.config.baseUrl;
 
-      if (fetchResult && typeof fetchResult.then === 'function') {
-        const response = await fetchResult;
-        if (response && response.ok) {
-          const body = await response.json();
-          const score = typeof body.risk_score === 'number' ? body.risk_score : 50;
-          const categories = Array.isArray(body.categories) ? body.categories : [];
-          const result: AddressRiskScore = {
-            address,
-            riskScore: score,
-            riskLevel: this.getRiskLevel(score),
-            categories,
-            labels: Array.isArray(body.labels) ? body.labels : [],
-            description: body.description || ''
-          };
-          this.setCache(cacheKey, result);
-          return result;
-        }
-        // If response not ok, throw to be caught below and return default
-        throw new Error('Remote service returned non-OK response');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+
+      let response;
+      try {
+        response = await fetch(
+          `${baseUrl}/api/security/address-check?address=${encodeURIComponent(address)}`,
+          { signal: controller.signal }
+        );
+      } finally {
+        clearTimeout(timeoutId);
       }
 
-      // No remote fetch available — use the internal simulation
+      if (response && response.ok) {
+        const body = await response.json();
+        const score = typeof body.risk_score === 'number' ? body.risk_score : 50;
+        const categories = Array.isArray(body.categories) ? body.categories : [];
+        const result: AddressRiskScore = {
+          address,
+          riskScore: score,
+          riskLevel: this.getRiskLevel(score),
+          categories,
+          labels: Array.isArray(body.labels) ? body.labels : [],
+          description: body.description || ''
+        };
+        this.setCache(cacheKey, result);
+        return result;
+      }
+
+      // If the proxy returned an error or is unavailable, fall back to simulated check
       const riskScore = await this.simulateAddressRiskCheck(address);
 
       const result: AddressRiskScore = {
@@ -259,9 +347,9 @@ export class BlockchainSecurityService {
         blocks.push('Recipient address is on sanctions list');
       }
 
-      // BigInt comparison: 1 ETH = 10^18 wei; flag high-value sends to risky recipients
-      const valueBN = BigInt(value);
-      if (valueBN >= BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // >= 1 ETH
+      // Check for high-value transaction to risky address
+      const valueBN = normalizeToBigInt(value);
+      if (valueBN > BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // > 1 ETH
         warnings.push('High-value transaction to risky address');
       }
 
@@ -492,15 +580,14 @@ export class BlockchainSecurityService {
   }
 }
 
-// Server-side singleton (only use this on the server; the API key stays server-side)
-export function createServerSecurityService(config?: SecurityServiceConfig): BlockchainSecurityService {
-  const effectiveConfig = config ?? {
-    baseUrl: process.env.CHAINALYSIS_API_URL || 'https://api.chainalysis.com/api/v2',
-    timeout: 10000,
-    apiKey: process.env.CHAINALYSIS_API_KEY || undefined,
-  };
-  return BlockchainSecurityService.getInstance(effectiveConfig);
-}
+// Default configuration for development
+const defaultConfig: SecurityServiceConfig = {
+  baseUrl: 'http://localhost:3000',
+  timeout: 10000,
+  // API key is now configured only on the server side via CHAINALYSIS_API_KEY env var.
+  // The browser never has access to this key.
+  apiKey: undefined
+};
 
 // Client-side proxy: calls our own API endpoint so the API key never reaches the browser.
 export async function checkAddressRiskViaProxy(address: string): Promise<AddressRiskScore> {

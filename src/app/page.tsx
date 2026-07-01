@@ -8,6 +8,7 @@ import { setupExtensionErrorHandling } from "@/utils/extensionDetection";
 import { errorMonitoring } from "@/utils/errorMonitoringService";
 import { ErrorCategory, ErrorSeverity } from "@/types/errors";
 import { logger } from "@/utils/logger";
+import { generateErrorId } from "@/utils/secureId";
 import { WalletConnector } from "@/components/WalletConnector";
 import { genId } from "@/utils/genId";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -49,6 +50,7 @@ function HomeContent() {
       
       const appError = {
         id: genId(`error_${Date.now()}`),
+        id: generateErrorId(),
         category: ErrorCategory.UI,
         severity: ErrorSeverity.HIGH,
         message: event.message,
@@ -72,6 +74,7 @@ function HomeContent() {
       
       const appError = {
         id: genId(`error_${Date.now()}`),
+        id: generateErrorId(),
         category: ErrorCategory.NETWORK,
         severity: ErrorSeverity.MEDIUM,
         message: error.message,
