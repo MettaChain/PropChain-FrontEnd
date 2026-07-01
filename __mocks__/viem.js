@@ -1,44 +1,23 @@
-const asBigInt = (value) =>
-  typeof value === 'bigint' ? value : BigInt(value);
-
-const formatUnitsValue = (value, decimals = 18) => {
-  const unitDecimals = Number(decimals);
-  const raw = asBigInt(value);
-  const sign = raw < 0n ? '-' : '';
-  const abs = raw < 0n ? -raw : raw;
-  const base = 10n ** BigInt(unitDecimals);
-  const whole = abs / base;
-  const fraction = abs % base;
-
-  if (unitDecimals === 0 || fraction === 0n) {
-    return `${sign}${whole}`;
-  }
-
-  const fractionText = fraction
-    .toString()
-    .padStart(unitDecimals, '0')
-    .replace(/0+$/, '');
-
-  return `${sign}${whole}.${fractionText}`;
+const mockReceipt = {
+  status: 'success',
+  blockNumber: BigInt(18000000),
+  transactionHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  contractAddress: null,
+  cumulativeGasUsed: BigInt(100000),
+  gasUsed: BigInt(50000),
+  logs: [],
+  logsBloom: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  from: '0x0000000000000000000000000000000000000000',
+  to: '0x0000000000000000000000000000000000000000',
+  effectiveGasPrice: BigInt(20000000000),
+  type: 'eip1559',
 };
 
-const parseUnitsValue = (value, decimals = 18) => {
-  const unitDecimals = Number(decimals);
-  const text = String(value).trim();
-  const sign = text.startsWith('-') ? -1n : 1n;
-  const unsigned = text.replace(/^[+-]/, '');
-  const [whole = '0', fraction = ''] = unsigned.split('.');
-  const paddedFraction = fraction
-    .padEnd(unitDecimals, '0')
-    .slice(0, unitDecimals);
-  const normalized = `${whole || '0'}${paddedFraction || ''}`;
-  const parsed = BigInt(normalized || '0');
-
-  return sign * parsed;
+const mockClient = {
+  getTransactionReceipt: jest.fn().mockRejectedValue(new Error('receipt not found')),
+  waitForTransactionReceipt: jest.fn().mockRejectedValue(new Error('timeout')),
 };
-
-const isAddressValue = (value) =>
-  typeof value === 'string' && /^0x[a-fA-F0-9]{40}$/.test(value);
 
 module.exports = {
   createPublicClient: jest.fn((config = {}) => ({
@@ -66,4 +45,13 @@ module.exports = {
   parseEther: jest.fn((value) => parseUnitsValue(value, 18)),
   parseUnits: jest.fn(parseUnitsValue),
   recoverMessageAddress: jest.fn(() => Promise.resolve('0x123')),
+  createPublicClient: jest.fn(() => mockClient),
+  http: jest.fn(() => 'http://mock-transport'),
+  fallback: jest.fn((transports) => transports[0]),
+  isAddress: jest.fn((addr) => /^0x[a-fA-F0-9]{40}$/.test(addr)),
+  getAddress: jest.fn((addr) => addr),
+  isHex: jest.fn(() => true),
+  formatEther: jest.fn((wei) => Number(wei) / 1e18),
+  parseEther: jest.fn((eth) => BigInt(Math.floor(Number(eth) * 1e18))),
+  parseUnits: jest.fn((val, decimals) => BigInt(Number(val) * Math.pow(10, decimals))),
 };
