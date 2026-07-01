@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { logger } from '@/utils/logger';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 /**
  * UI-only view mode for listing screens.
@@ -13,7 +15,7 @@ import { useState, useEffect } from "react";
  */
 export type ViewMode = "grid" | "list";
 
-const STORAGE_KEY = "propchain:listing-view";
+const STORAGE_KEY = STORAGE_KEYS.VIEW_MODE.key;
 
 export const isValidViewMode = (v: unknown): v is ViewMode => v === "grid" || v === "list";
 
@@ -30,9 +32,7 @@ export function useViewMode() {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (isValidViewMode(stored)) return stored;
     } catch (err) {
-      // Swallow storage errors — fallback to default
-      // eslint-disable-next-line no-console
-      console.warn("useViewMode: localStorage unavailable, falling back to default view mode", err);
+      logger.warn("useViewMode: localStorage unavailable, falling back to default view mode", err);
     }
 
     return "grid";
@@ -41,8 +41,7 @@ export function useViewMode() {
   // Wrap setter to validate input before persisting
   const setMode = (v: ViewMode) => {
     if (!isValidViewMode(v)) {
-      // eslint-disable-next-line no-console
-      console.warn("useViewMode.setMode called with invalid mode:", v);
+      logger.warn("useViewMode.setMode called with invalid mode:", v);
       return;
     }
     setModeRaw(v);
@@ -52,9 +51,7 @@ export function useViewMode() {
     try {
       localStorage.setItem(STORAGE_KEY, mode);
     } catch (err) {
-      // Storage might be disabled; log and continue without throwing
-      // eslint-disable-next-line no-console
-      console.warn("useViewMode: failed to persist mode to localStorage", err);
+      logger.warn("useViewMode: failed to persist mode to localStorage", err);
     }
   }, [mode]);
 
@@ -80,11 +77,9 @@ export function ViewToggle({ mode, onChange }: ViewToggleProps) {
     if (!isValidViewMode(v)) return;
     try {
       if (typeof onChange === "function") onChange(v);
-      else console.warn("ViewToggle: onChange is not a function", onChange);
+      else logger.warn("ViewToggle: onChange is not a function", onChange);
     } catch (err) {
-      // Avoid bubbling UI errors — log instead
-      // eslint-disable-next-line no-console
-      console.error("ViewToggle: onChange handler threw an error", err);
+      logger.error("ViewToggle: onChange handler threw an error", err);
     }
   };
 

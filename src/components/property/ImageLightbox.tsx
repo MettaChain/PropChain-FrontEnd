@@ -152,7 +152,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 max-w-[90vw] overflow-x-auto px-4">
           {images.map((image, index) => (
             <button
-              key={index}
+              key={image}
               onClick={() => handleThumbnailClick(index)}
               className={`flex-shrink-0 relative rounded-lg overflow-hidden border-2 transition-all ${
                 index === currentIndex 

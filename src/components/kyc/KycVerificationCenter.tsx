@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { BadgeCheck, FileUp, ScanFace, ShieldAlert, ShieldCheck, UploadCloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,7 @@ export function KycVerificationCenter() {
     useKycStore();
   const [thresholdDraft, setThresholdDraft] = useState(String(profile.thresholdEth));
   const [notes, setNotes] = useState('');
+  const { setTimeoutSafe } = useSafeTimeout();
 
   const completion = useMemo(() => {
     const steps = [
@@ -48,7 +50,7 @@ export function KycVerificationCenter() {
 
   const handleLiveness = async () => {
     startLivenessCheck();
-    window.setTimeout(() => {
+    setTimeoutSafe(() => {
       completeLivenessCheck(true);
     }, 1200);
   };

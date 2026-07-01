@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     if (detailed && redisInfo) {
       // Add relevant Redis metrics
-      (response as any).redisMetrics = {
+      const redisMetrics = {
         usedMemory: redisInfo.used_memory_human,
         usedMemoryRss: redisInfo.used_memory_rss_human,
         usedMemoryPeak: redisInfo.used_memory_peak_human,
@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
         keyspaceMisses: redisInfo.keyspace_misses,
         uptimeInSeconds: redisInfo.uptime_in_seconds,
       };
+      return NextResponse.json({ ...response, redisMetrics });
     }
 
     return NextResponse.json(response);

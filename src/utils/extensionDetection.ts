@@ -15,19 +15,19 @@ export const detectWalletExtensions = (): WalletExtension[] => {
       name: 'MetaMask',
       id: 'metamask',
       isInstalled: typeof window !== 'undefined' && !!window.ethereum?.isMetaMask,
-      icon: '🦊',
+      icon: 'metamask',
     },
     {
       name: 'Coinbase Wallet',
       id: 'coinbase',
       isInstalled: typeof window !== 'undefined' && !!window.ethereum?.isCoinbaseWallet,
-      icon: '🔵',
+      icon: 'coinbase',
     },
     {
       name: 'WalletConnect',
       id: 'walletconnect',
       isInstalled: false, // WalletConnect is not a browser extension
-      icon: '🔗',
+      icon: 'walletconnect',
     },
   ];
 
@@ -36,7 +36,7 @@ export const detectWalletExtensions = (): WalletExtension[] => {
 
 export const getPreferredWallet = (): WalletExtension | null => {
   const extensions = detectWalletExtensions();
-  return extensions.find(ext => ext.isInstalled) || null;
+  return extensions.find((ext) => ext.isInstalled) || null;
 };
 
 const stringifyError = (value: unknown): string => {
@@ -45,19 +45,19 @@ const stringifyError = (value: unknown): string => {
   return String(value);
 };
 
+const EXTENSION_ERROR_PATTERNS: readonly string[] = [
+  'chrome-extension://',
+  'evmask.js',
+  'evmAsk.js',
+  'extension',
+  'web3 provider',
+];
+
 export const isExtensionError = (error: unknown): boolean => {
   if (!error) return false;
-  
+
   const errorString = stringifyError(error).toLowerCase();
-  const extensionErrorPatterns = [
-    'chrome-extension://',
-    'evmask.js',
-    'evmAsk.js',
-    'extension',
-    'web3 provider',
-  ];
-  
-  return extensionErrorPatterns.some(pattern => errorString.includes(pattern));
+  return EXTENSION_ERROR_PATTERNS.some((pattern) => errorString.includes(pattern));
 };
 
 export const sanitizeExtensionError = (error: unknown): string => {
@@ -67,18 +67,18 @@ export const sanitizeExtensionError = (error: unknown): string => {
     }
     return 'Unknown error occurred';
   }
-  
+
   // Provide user-friendly messages for extension errors
   const errorString = stringifyError(error);
 
   if (errorString.includes('evmAsk.js')) {
     return 'Wallet extension error. Please try refreshing the page or restarting your browser.';
   }
-  
+
   if (errorString.includes('chrome-extension://')) {
     return 'Browser extension conflict detected. Please disable other Web3 extensions and try again.';
   }
-  
+
   return 'Wallet extension error. Please check your extension settings and try again.';
 };
 
@@ -111,7 +111,7 @@ export const setupExtensionErrorHandling = () => {
   const handleError = (event: ErrorEvent) => {
     if (isExtensionError(event.error)) {
       event.preventDefault();
-      logger.warn('Extension error filtered:', sanitizeExtensionError(event.error));
+      logger.warn('Extension error filtered', sanitizeExtensionError(event.error));
     }
   };
   
@@ -123,7 +123,7 @@ export const setupExtensionErrorHandling = () => {
   const handleRejection = (event: PromiseRejectionEvent) => {
     if (isExtensionError(event.reason)) {
       event.preventDefault();
-      logger.warn('Extension promise rejection filtered:', sanitizeExtensionError(event.reason));
+      logger.warn('Extension promise rejection filtered', sanitizeExtensionError(event.reason));
     }
   };
 

@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 const stringifyArgs = (args: readonly unknown[]): string =>
   args.map((arg) => (typeof arg === 'string' ? arg : String(arg))).join(' ');
 
@@ -56,6 +58,7 @@ if (typeof window !== 'undefined') {
     if (shouldSuppress(event.reason)) {
       event.preventDefault();
       event.stopPropagation();
+      return;
     }
   };
   window.addEventListener('unhandledrejection', handleRejection);

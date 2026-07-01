@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 
 type ReportType = "full" | "tax" | "performance" | "transactions";
 
@@ -81,6 +82,7 @@ export const PortfolioReport = () => {
   const [year, setYear] = useState("2024");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   const generatePDF = async () => {
     setIsGenerating(true);
@@ -185,7 +187,7 @@ export const PortfolioReport = () => {
     setIsGenerating(false);
     setIsGenerated(true);
 
-    setTimeout(() => setIsGenerated(false), 3000);
+    setTimeoutSafe(() => setIsGenerated(false), 3000);
   };
 
   return (
@@ -267,9 +269,9 @@ export const PortfolioReport = () => {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {reportCards.map((item, index) => (
+        {reportCards.map((item) => (
           <div
-            key={index}
+            key={item.value}
             className="p-4 rounded-lg bg-muted/30 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
             onClick={() => setReportType(item.value)}
           >

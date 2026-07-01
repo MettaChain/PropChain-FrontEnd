@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupWalletMock } from './wallet-fixture';
 
 /**
  * Property Purchase Flow E2E Tests with MSW API Mocking
@@ -176,7 +177,7 @@ test.describe('Property Purchase Flow with MSW', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             success: true,
-            transactionHash: '0x' + Math.random().toString(16).substring(2, 66),
+            transactionHash: '0x' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, ''),
             amount: body.amount,
             totalCost: body.amount * 100,
             property: {
@@ -238,29 +239,7 @@ test.describe('Property Purchase Flow with MSW', () => {
     });
 
     // Mock wallet connection
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        isMetaMask: true,
-        request: async ({ method }: { method: string }) => {
-          if (method === 'eth_requestAccounts') {
-            return ['0x1234567890123456789012345678901234567890'];
-          }
-          if (method === 'eth_chainId') {
-            return '0x1';
-          }
-          if (method === 'eth_getBalance') {
-            return '0x56BC75E2D630E8000'; // 100 ETH
-          }
-          if (method === 'eth_sendTransaction') {
-            return '0x' + Math.random().toString(16).substring(2, 66);
-          }
-          return null;
-        },
-        on: () => {},
-        removeListener: () => {},
-        isConnected: () => true,
-      };
-    });
+    await setupWalletMock(page);
   });
 
   test('should display property listings with mocked API', async ({ page }) => {
