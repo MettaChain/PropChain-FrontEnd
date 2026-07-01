@@ -1,6 +1,15 @@
 import type { CartItem } from '@/types/cart';
 import type { BatchTransactionResult } from '@/types/cart';
 import { logger } from '@/utils/logger';
+import { createPublicClient, http } from 'viem';
+import { mainnet } from 'viem/chains';
+
+const IS_DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_TX === 'true';
+
+const publicClient = createPublicClient({
+  chain: mainnet,
+  transport: http(),
+});
 import { publicClient } from '@/lib/viem-client';
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_TX === 'true';
@@ -29,6 +38,29 @@ export class BatchTransactionService {
         };
       }
 
+      if (IS_DEMO_MODE) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        const transactionHash = `0x${Array.from({length: 64}, () =>
+          Math.floor(Math.random() * 16).toString(16)).join('')}`;
+
+        const results = items.map(item => ({
+          propertyId: item.property.id,
+          success: Math.random() > 0.1,
+          transactionHash: Math.random() > 0.1 ? transactionHash : undefined,
+          error: Math.random() > 0.1 ? undefined : 'Transaction failed: Insufficient gas'
+        }));
+
+        const allSuccessful = results.every(result => result.success);
+        const totalGasUsed = items.length * 0.0025 + 0.005;
+
+        return {
+          success: allSuccessful,
+          transactionHash: allSuccessful ? transactionHash : undefined,
+          results,
+          totalGasUsed,
+          error: allSuccessful ? undefined : 'Some transactions failed'
+        };
       if (DEMO_MODE) {
         return this.executeDemoBatchPurchase(items);
       }
@@ -106,6 +138,38 @@ export class BatchTransactionService {
     blockNumber?: number;
     confirmations?: number;
   }> {
+    if (IS_DEMO_MODE) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const random = Math.random();
+      if (random < 0.7) {
+        return {
+          status: 'confirmed',
+          blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
+          confirmations: Math.floor(Math.random() * 50) + 1
+        };
+      } else if (random < 0.9) {
+        return { status: 'pending' };
+      } else {
+        return { status: 'failed' };
+      }
+    }
+
+    try {
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: transactionHash as `0x${string}`,
+        timeout: 30_000,
+      });
+
+      if (receipt.status === 'success') {
+        return {
+          status: 'confirmed',
+          blockNumber: Number(receipt.blockNumber),
+          confirmations: 1,
+        };
+      }
+
+      return { status: 'failed' };
     try {
       const receipt = await publicClient.getTransactionReceipt({
         hash: transactionHash as `0x${string}`,

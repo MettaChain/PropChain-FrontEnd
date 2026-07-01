@@ -77,6 +77,20 @@ function buildChartCSS(id: string, config: ChartConfig): string {
 
   if (!colorConfig.length) return ''
 
+  return Object.entries(THEMES)
+    .map(([theme, prefix]) => `
+${prefix} [data-chart=${id}] {
+${colorConfig
+  .map(([key, itemConfig]) => {
+    const color =
+      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+      itemConfig.color
+    return color ? `  --color-${encodeURIComponent(key)}: ${color};` : null
+  })
+  .filter(Boolean)
+  .join("\n")}
+}
+`)
   const cssContent = Object.entries(THEMES)
     .map(([theme, prefix]) => {
       const rules = colorConfig
@@ -92,7 +106,16 @@ function buildChartCSS(id: string, config: ChartConfig): string {
     })
     .filter(Boolean)
     .join("\n")
+}
 
+const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+  const css = React.useMemo(() => buildChartCSS(id, config), [id, config])
+
+  if (!css) return null
+
+  const sanitizedCss = DOMPurify.sanitize(css)
+
+  return <style dangerouslySetInnerHTML={{ __html: sanitizedCss }} />
   if (!cssContent) {
     return null
   }

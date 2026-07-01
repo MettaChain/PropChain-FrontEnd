@@ -35,28 +35,24 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
   const compareLimitReached = selectedIds.length >= 3 && !isCompared;
   const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
 
-  const handleAddToCart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     addItem(property, 1);
   }, [addItem, property]);
 
-  const handleComparisonToggle = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleComparisonToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleProperty(property);
   }, [toggleProperty, property]);
 
-  const handleCompareToggle = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
-    e.preventDefault();
+  const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
     e.stopPropagation();
     if (!compareLimitReached) {
       togglePropertyId(property.id);
     }
   }, [compareLimitReached, togglePropertyId, property.id]);
 
-  const handleToggleFavorite = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isFavorite(property.id)) {
       removeFavorite(property.id);
@@ -196,12 +192,12 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* Title */}
-        <h3
-          id={`property-${property.id}-name`}
+        <Link
+          href={`/properties/${property.id}`}
           className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2"
         >
           {property.name}
-        </h3>
+        </Link>
 
         {/* Location */}
         <div className="flex items-start gap-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
@@ -293,7 +289,7 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
             </button>
             <Link
               href={`/properties/${property.id}`}
-              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 inline-flex items-center justify-center"
+              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center"
               aria-label={`View details for ${property.name}`}
             >
               View

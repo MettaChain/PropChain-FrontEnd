@@ -82,29 +82,60 @@ export const sanitizeExtensionError = (error: unknown): string => {
   return 'Wallet extension error. Please check your extension settings and try again.';
 };
 
-/**
- * Install global listeners that filter noisy wallet extension errors.
- *
- * We deliberately do NOT monkey-patch the global console API here. Overriding
- * those methods would recurse any logger that ultimately writes through the
- * global console and would silently lose correlation IDs / redaction. Instead
- * we route filtered events through the structured logger so they remain
- * visible to telemetry as low-severity warnings.
- */
-export const setupExtensionErrorHandling = (): void => {
+const extensionErrorListeners: Array<() => void> = [];
+
+export const setupExtensionErrorHandling = () => {
   if (typeof window === 'undefined') return;
 
-  window.addEventListener('error', (event) => {
+  cleanupExtensionErrorHandling();
+  
+  // Override console.error to filter out extension errors
+  const originalConsoleError = console.error;
+  console.error = (...args: unknown[]) => {
+    const errorString = args.map(stringifyError).join(' ').toLowerCase();
+    
+    // Filter out known extension errors that don't affect functionality
+    if (errorString.includes('chrome-extension://') || 
+        errorString.includes('evmask.js')) {
+      return; // Silently ignore these errors
+    }
+    
+    originalConsoleError.apply(console, args);
+  };
+
+  extensionErrorListeners.push(() => {
+    console.error = originalConsoleError;
+  });
+  
+  // Add global error handler for unhandled extension errors
+  const handleError = (event: ErrorEvent) => {
     if (isExtensionError(event.error)) {
       event.preventDefault();
       logger.warn('Extension error filtered', sanitizeExtensionError(event.error));
     }
+  };
+  
+  window.addEventListener('error', handleError);
+  extensionErrorListeners.push(() => {
+    window.removeEventListener('error', handleError);
   });
-
-  window.addEventListener('unhandledrejection', (event) => {
+  
+  const handleRejection = (event: PromiseRejectionEvent) => {
     if (isExtensionError(event.reason)) {
       event.preventDefault();
       logger.warn('Extension promise rejection filtered', sanitizeExtensionError(event.reason));
     }
+  };
+
+  window.addEventListener('unhandledrejection', handleRejection);
+  extensionErrorListeners.push(() => {
+    window.removeEventListener('unhandledrejection', handleRejection);
   });
+};
+
+export const cleanupExtensionErrorHandling = () => {
+  let fn: (() => void) | undefined;
+  while ((fn = extensionErrorListeners.pop()) !== undefined) {
+    fn();
+  }
 };
