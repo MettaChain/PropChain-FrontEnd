@@ -1,7 +1,9 @@
 import type { CartItem } from '@/types/cart';
 import type { BatchTransactionResult } from '@/types/cart';
 import { logger } from '@/utils/logger';
-import { generateMockTxHash } from '@/utils/secureId';
+import { publicClient } from '@/lib/viem-client';
+
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_TX === 'true';
 
 export class BatchTransactionService {
 
@@ -27,62 +29,14 @@ export class BatchTransactionService {
         };
       }
 
-      if (IS_DEMO_MODE) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Generate mock transaction hash using secure random values
-      const transactionHash = generateMockTxHash();
-
-        const results = items.map(item => ({
-          propertyId: item.property.id,
-          success: rand1 > 0.1, // 90% success rate for demo
-          transactionHash: rand2 > 0.1 ? transactionHash : undefined,
-          error: rand3 > 0.1 ? undefined : 'Transaction failed: Insufficient gas',
-        };
-      });
-
-        const allSuccessful = results.every(result => result.success);
-        const totalGasUsed = items.length * 0.0025 + 0.005;
-
-        return {
-          success: allSuccessful,
-          transactionHash: allSuccessful ? transactionHash : undefined,
-          results,
-          totalGasUsed,
-          error: allSuccessful ? undefined : 'Some transactions failed'
-        };
+      if (DEMO_MODE) {
+        return this.executeDemoBatchPurchase(items);
       }
 
-      const txPromises = items.map(async (item) => {
-        try {
-          const hash = `0x${Array.from({length: 64}, () =>
-            Math.floor(Math.random() * 16).toString(16)).join('')}`;
-
-          const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-          return {
-            propertyId: item.property.id,
-            success: receipt.status === 'success',
-            transactionHash: hash,
-            error: receipt.status !== 'success' ? 'Transaction reverted' : undefined,
-          };
-        } catch (err) {
-          return {
-            propertyId: item.property.id,
-            success: false,
-            error: err instanceof Error ? err.message : 'Transaction failed',
-          };
-        }
-      });
-
-      const results = await Promise.all(txPromises);
-      const allSuccessful = results.every(result => result.success);
-
-      return {
-        success: allSuccessful,
-        results,
-        error: allSuccessful ? undefined : 'Some transactions failed',
-      };
+      // In production, this would submit a multicall transaction to the contract
+      // and wait for the receipt using viem's waitForTransactionReceipt.
+      // The actual contract interaction is chain-specific and requires a wallet client.
+      throw new Error('Production batch execution requires a configured wallet client');
     } catch (error) {
       logger.error('Batch transaction failed:', error);
       return {
@@ -97,6 +51,41 @@ export class BatchTransactionService {
     }
   }
 
+  private static async executeDemoBatchPurchase(
+    items: CartItem[]
+  ): Promise<BatchTransactionResult> {
+    // Simulate blockchain transaction delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    const transactionHash = `0x${Array.from({length: 64}, () =>
+      Math.floor(Math.random() * 16).toString(16)).join('')}`;
+
+    const results = items.map(item => ({
+      propertyId: item.property.id,
+      success: true,
+      transactionHash,
+    }));
+
+    const totalGasUsed = items.length * 0.0025 + 0.005;
+
+    logger.info('Demo batch transaction completed', {
+      success: true,
+      transactionHash,
+      totalGasUsed,
+      itemsProcessed: items.length
+    });
+
+    return {
+      success: true,
+      transactionHash,
+      results,
+      totalGasUsed,
+    };
+  }
+
+  /**
+   * Estimate gas for batch transaction
+   */
   static estimateGas(items: CartItem[]): number {
     const BASE_GAS = 0.005;
     const GAS_PER_TRANSACTION = 0.0025;
@@ -109,36 +98,32 @@ export class BatchTransactionService {
            item.property.status === 'active';
   }
 
+  /**
+   * Get transaction status using viem publicClient
+   */
   static async getTransactionStatus(transactionHash: string): Promise<{
     status: 'pending' | 'confirmed' | 'failed';
     blockNumber?: number;
     confirmations?: number;
   }> {
-    // Mock transaction status check
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulate different statuses
-    const random = crypto.getRandomValues(new Uint8Array(1))[0] / 256;
-    if (random < 0.7) {
-      const blockBytes = crypto.getRandomValues(new Uint8Array(4));
-      const blockNumber = ((blockBytes[0] << 24) | (blockBytes[1] << 16) | (blockBytes[2] << 8) | blockBytes[3]) >>> 0;
-      const confirmBytes = crypto.getRandomValues(new Uint8Array(1))[0];
+    try {
+      const receipt = await publicClient.getTransactionReceipt({
+        hash: transactionHash as `0x${string}`,
+      });
+
       return {
-        status: 'confirmed',
-        blockNumber: (blockNumber % 1000000) + 18000000,
-        confirmations: (confirmBytes % 50) + 1
+        status: receipt.status === 'success' ? 'confirmed' : 'failed',
+        blockNumber: Number(receipt.blockNumber),
+        confirmations: 1,
       };
-    } else if (random < 0.9) {
-      return {
-        status: 'pending'
-      };
-    } else {
-      return {
-        status: 'failed'
-      };
+    } catch {
+      return { status: 'pending' };
     }
   }
 
+  /**
+   * Wait for transaction confirmation using viem's waitForTransactionReceipt
+   */
   static async waitForConfirmation(
     transactionHash: string,
     maxWaitTime: number = 300000
@@ -147,18 +132,18 @@ export class BatchTransactionService {
     blockNumber?: number;
     confirmations?: number;
   }> {
-    const startTime = Date.now();
+    try {
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: transactionHash as `0x${string}`,
+        timeout: maxWaitTime,
+      });
 
-    while (Date.now() - startTime < maxWaitTime) {
-      const status = await this.getTransactionStatus(transactionHash);
-
-      if (status.status === 'confirmed' || status.status === 'failed') {
-        return status;
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      return {
+        status: receipt.status === 'success' ? 'confirmed' : 'failed',
+        blockNumber: Number(receipt.blockNumber),
+      };
+    } catch {
+      return { status: 'timeout' };
     }
-
-    return { status: 'timeout' };
   }
 }
