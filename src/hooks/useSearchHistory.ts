@@ -1,5 +1,6 @@
 'use client';
 import { logger } from '@/utils/logger';
+import { genId } from '@/utils/genId';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 import { useState, useEffect } from 'react';
@@ -31,6 +32,7 @@ export const useSearchHistory = () => {
     if (!query.trim()) return;
 
     const newItem: SearchHistoryItem = {
+      id: genId(`${Date.now()}`),
       id: generateSecureId('search'),
       query: query.trim(),
       timestamp: new Date().toISOString(),

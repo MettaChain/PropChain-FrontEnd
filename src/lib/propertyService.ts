@@ -29,6 +29,7 @@ import {
 import { isNetworkOnline } from './cacheManager';
 import { generateSecureId } from '@/utils/secureId';
 import { redisCacheService } from './redisCache';
+import { genId } from '@/utils/genId';
 import { savedSearchesKey } from './storageKeys';
 
 /**
@@ -462,6 +463,7 @@ class PropertyService {
    * Generate unique ID
    */
   private generateId(): string {
+    return genId(`${Date.now()}`);
     return generateSecureId();
   }
 }

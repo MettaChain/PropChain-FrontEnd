@@ -26,6 +26,7 @@ import {
   isCacheAvailable,
   initPropertyCache,
 } from './propertyCache';
+import { genId } from '@/utils/genId';
 import { generateSecureId } from '@/utils/secureId';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
@@ -254,6 +255,8 @@ export const addToSyncQueue = (
     const queue = safeLocalStorage.getJSON<SyncQueueItem[]>(LOCAL_STORAGE_KEYS.SYNC_QUEUE, []);
 
     const newItem: SyncQueueItem = {
+      // Combine timestamp with random base-36 string for a unique, sortable ID
+      id: genId(`${Date.now()}`),
       id: generateSecureId('sync'),
       type,
       payload,

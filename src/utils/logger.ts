@@ -1,6 +1,7 @@
 'use client';
 
 import { getErrorMessage } from './typeGuards';
+import { genId } from '@/utils/genId';
 import { generateCorrelationId, generateChildId } from './secureId';
 
 // ============================================================================
@@ -102,6 +103,8 @@ let globalConfig = getDefaultConfig();
 // ============================================================================
 // Correlation ID
 // ============================================================================
+
+const generateCorrelationId = (): string => genId(`corr-${Date.now().toString(36)}`);
 
 class CorrelationIdManager {
   private static instance: CorrelationIdManager;
