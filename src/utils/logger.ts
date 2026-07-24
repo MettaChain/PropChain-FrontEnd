@@ -108,7 +108,8 @@ const generateCorrelationId = (): string => genId(`corr-${Date.now().toString(36
 
 class CorrelationIdManager {
   private static instance: CorrelationIdManager;
-  private id: string = generateCorrelationId();
+  private correlationId: string = generateCorrelationId();
+  private correlationStack: string[] = [];
 
   static getInstance(): CorrelationIdManager {
     if (!CorrelationIdManager.instance) {
@@ -128,6 +129,7 @@ class CorrelationIdManager {
 
   reset(): void {
     this.correlationId = generateCorrelationId();
+    this.correlationStack = [];
   }
 
   createChild(): string {
