@@ -293,6 +293,10 @@ class StructuredLogger {
 
 export const structuredLogger = new StructuredLogger();
 
+export const createStructuredLogger = (config?: Partial<StructuredLoggerConfig>): StructuredLogger => {
+  return new StructuredLogger(config);
+};
+
 // Note: structuredLogger.destroy() should be called manually for cleanup
 // in test teardowns or before recreating the singleton.
 
