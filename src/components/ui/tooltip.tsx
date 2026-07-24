@@ -1,61 +1,126 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
-
-function TooltipProvider({
-  delayDuration = 0,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
-  return (
-    <TooltipPrimitive.Provider
-      data-slot="tooltip-provider"
-      delayDuration={delayDuration}
-      {...props}
-    />
-  )
+interface TooltipProps {
+  content: React.ReactNode;
+  children: React.ReactNode;
+  position?: "top" | "bottom" | "left" | "right";
+  delay?: number;
+  className?: string;
+  contentClassName?: string;
 }
 
-function Tooltip({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return (
-    <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
-    </TooltipProvider>
-  )
-}
-
-function TooltipTrigger({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
-}
-
-function TooltipContent({
-  className,
-  sideOffset = 0,
+export function Tooltip({
+  content,
   children,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  position = "top",
+  delay = 300,
+  className,
+  contentClassName,
+}: TooltipProps) {
+  const [isVisible, setIsVisible] = React.useState(false);
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const showTooltip = React.useCallback(() => {
+    timeoutRef.current = setTimeout(() => {
+      setIsVisible(true);
+    }, delay);
+  }, [delay]);
+
+  const hideTooltip = React.useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setIsVisible(false);
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const positionStyles = {
+    top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
+    bottom: "top-full left-1/2 -translate-x-1/2 mt-2",
+    left: "right-full top-1/2 -translate-y-1/2 mr-2",
+    right: "left-full top-1/2 -translate-y-1/2 ml-2",
+  };
+
+  const animationStyles = {
+    top: "animate-in fade-in slide-in-from-bottom-2",
+    bottom: "animate-in fade-in slide-in-from-top-2",
+    left: "animate-in fade-in slide-in-from-right-2",
+    right: "animate-in fade-in slide-in-from-left-2",
+  };
+
   return (
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        data-slot="tooltip-content"
-        sideOffset={sideOffset}
-        className={cn(
-          "bg-foreground text-background animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md px-3 py-1.5 text-xs text-balance",
-          className
-        )}
-        {...props}
-      >
-        {children}
-        <TooltipPrimitive.Arrow className="bg-foreground fill-foreground z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
-  )
+    <div
+      className={cn("relative inline-flex", className)}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+    >
+      {children}
+      {isVisible && (
+        <div
+          className={cn(
+            "absolute z-50 px-3 py-1.5 text-sm rounded-md shadow-md",
+            "bg-gray-900 text-gray-50 dark:bg-gray-800 dark:text-gray-100",
+            "whitespace-nowrap pointer-events-none",
+            positionStyles[position],
+            animationStyles[position],
+            contentClassName
+          )}
+          role="tooltip"
+        >
+          {content}
+        </div>
+      )}
+    </div>
+  );
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+interface TooltipTriggerProps {
+  children: React.ReactNode;
+  tooltip: React.ReactNode;
+  position?: "top" | "bottom" | "left" | "right";
+  className?: string;
+}
+
+export function TooltipTrigger({
+  children,
+  tooltip,
+  position = "top",
+  className,
+}: TooltipTriggerProps) {
+  return (
+    <Tooltip content={tooltip} position={position} className={className}>
+      {children}
+    </Tooltip>
+  );
+}
+
+interface TooltipProviderProps {
+  children: React.ReactNode;
+  delayDuration?: number;
+}
+
+export function TooltipProvider({
+  children,
+  delayDuration = 300,
+}: TooltipProviderProps) {
+  return (
+    <div data-tooltip-delay={delayDuration}>
+      {children}
+    </div>
+  );
+}
+
+export { Tooltip as UITooltip };
