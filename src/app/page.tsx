@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
 import { useWalletPersistence } from "@/utils/walletPersistence";
-import { setupExtensionErrorHandling } from "@/utils/extensionDetection";
+import { setupExtensionErrorHandling, cleanupExtensionErrorHandling } from "@/utils/extensionDetection";
 import { errorMonitoring } from "@/utils/errorMonitoringService";
 import { ErrorCategory, ErrorSeverity } from "@/types/errors";
 import { logger } from "@/utils/logger";
@@ -94,6 +94,7 @@ function HomeContent() {
 
     // Cleanup function
     return () => {
+      cleanupExtensionErrorHandling();
       window.removeEventListener('error', handleUnhandledError);
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
