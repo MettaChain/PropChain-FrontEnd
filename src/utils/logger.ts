@@ -1,5 +1,3 @@
-'use client';
-
 import { getErrorMessage } from './typeGuards';
 import { genId } from '@/utils/genId';
 import { generateCorrelationId, generateChildId } from './secureId';
@@ -22,8 +20,12 @@ export enum LogLevel {
 
 type Environment = 'development' | 'production' | 'test';
 
-const getEnvironment = (): Environment =>
-  (process.env.NODE_ENV as Environment) || 'development';
+const getEnvironment = (): Environment => {
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV) {
+    return process.env.NODE_ENV as Environment;
+  }
+  return 'development';
+};
 
 // ============================================================================
 // Sensitive Data Redaction
