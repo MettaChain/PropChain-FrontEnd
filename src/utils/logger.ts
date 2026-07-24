@@ -209,7 +209,9 @@ class Logger {
         // Structured JSON line — single console.log so log aggregators get one line
         const line = JSON.stringify(entry);
         switch (level) {
-          case LogLevel.DEBUG: console.debug(line); break;
+          case LogLevel.DEBUG:
+            if (this.config.environment === 'development') console.debug(line);
+            break;
           case LogLevel.INFO:  console.info(line);  break;
           case LogLevel.WARN:  console.warn(line);  break;
           case LogLevel.ERROR: console.error(line); break;
