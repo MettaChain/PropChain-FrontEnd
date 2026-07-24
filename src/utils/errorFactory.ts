@@ -63,13 +63,13 @@ export class ErrorFactory {
     );
   }
 
-  static createARError(
+  static createUIError(
     message: string,
     userMessage: string,
     options: Partial<AppError> = {}
   ): AppError {
     return this.createError(
-      ErrorCategory.AR,
+      ErrorCategory.UI,
       ErrorSeverity.MEDIUM,
       message,
       userMessage,
@@ -247,8 +247,6 @@ export class ErrorFactory {
         return 'Blockchain operation failed. Please check your wallet connection and try again.';
       case ErrorCategory.NETWORK:
         return 'Network error occurred. Please check your internet connection.';
-      case ErrorCategory.AR:
-        return 'AR feature encountered an error. Please ensure your device supports AR.';
       case ErrorCategory.VALIDATION:
         return 'Invalid information provided. Please check your input and try again.';
       case ErrorCategory.AUTHENTICATION:
