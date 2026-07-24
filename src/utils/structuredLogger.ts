@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * structuredLogger — **deprecated** thin domain-specific layer on top of logger.
  *
@@ -97,7 +95,7 @@ class StructuredLogger {
       flushInterval: 5000,
       ...config,
     };
-    this.sessionId = `sess_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`;
+    this.sessionId = this.generateSessionId();
     this.startFlushTimer();
   }
 
@@ -154,10 +152,10 @@ class StructuredLogger {
     if (!entry.error) return;
     const appError: AppError = {
       id: generateErrorId(),
-      message: log.error.message,
-      category: log.category || ErrorCategory.UI,
-      severity: log.severity || ErrorSeverity.MEDIUM,
-      timestamp: new Date(log.timestamp),
+      message: entry.error.message,
+      category: entry.category || ErrorCategory.UI,
+      severity: entry.severity || ErrorSeverity.MEDIUM,
+      timestamp: new Date(entry.timestamp),
       isRecoverable: false,
       shouldReport: true,
       context: {
