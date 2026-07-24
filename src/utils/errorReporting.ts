@@ -1,6 +1,5 @@
 import { type AppError, ErrorCategory, ErrorSeverity, type ErrorReportingData, type ErrorMetrics } from '@/types/errors';
 import { logger } from './logger';
-import { genId } from '@/utils/genId';
 import { generateSessionId } from './secureId';
 
 class ErrorReportingService {
@@ -17,7 +16,7 @@ class ErrorReportingService {
   private retryAttempts: Map<string, number> = new Map();
 
   private constructor() {
-    this.sessionId = this.generateSessionId();
+    this.sessionId = generateSessionId();
     this.initializeMetrics();
   }
 
@@ -26,11 +25,6 @@ class ErrorReportingService {
       ErrorReportingService.instance = new ErrorReportingService();
     }
     return ErrorReportingService.instance;
-  }
-
-  private generateSessionId(): string {
-    return genId(`session_${Date.now()}`);
-    return generateSessionId();
   }
 
   private initializeMetrics(): void {
