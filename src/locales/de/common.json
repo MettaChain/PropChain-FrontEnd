@@ -292,9 +292,11 @@
     "invalidUrl": "QR-Code für diese URL kann nicht generiert werden",
     "securityWarning": "Teilen Sie nur URLs von vertrauenswürdigen PropChain-Domains",
     "ariaLabel": "QR-Code für Immobilienlink"
+  },
   "networkSwitcher": {
     "selectNetwork": "Netzwerk auswählen",
     "switchingNetwork": "Netzwerk wird gewechselt..."
+  },
   "referral": {
     "connectWallet": "Wallet Verbinden",
     "connectWalletPrompt": "Verbinde deine Wallet, um auf das Empfehlungsprogramm zuzugreifen",

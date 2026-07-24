@@ -292,9 +292,11 @@
     "invalidUrl": "לא ניתן ליצור QR Code עבור כתובת URL זו",
     "securityWarning": "שתף רק כתובות URL מדומיינים מהימנים של PropChain",
     "ariaLabel": "QR Code לקישור נכס"
+  },
   "networkSwitcher": {
     "selectNetwork": "בחר רשת",
     "switchingNetwork": "מחליף רשת..."
+  },
   "referral": {
     "connectWallet": "חבר ארנק",
     "connectWalletPrompt": "חבר את הארנק שלך כדי לגשת לתוכנית ההפניות",
