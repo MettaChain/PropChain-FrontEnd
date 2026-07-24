@@ -292,9 +292,11 @@
     "invalidUrl": "تعذّر إنشاء رمز QR لهذا الرابط",
     "securityWarning": "شارك فقط روابط من نطاقات PropChain الموثوقة",
     "ariaLabel": "رمز QR لرابط العقار"
+  },
   "networkSwitcher": {
     "selectNetwork": "اختر الشبكة",
     "switchingNetwork": "جارٍ تبديل الشبكة..."
+  },
   "referral": {
     "connectWallet": "ربط المحفظة",
     "connectWalletPrompt": "يرجى ربط محفظتك للوصول إلى برنامج الإحالة",

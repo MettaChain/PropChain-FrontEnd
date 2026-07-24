@@ -292,9 +292,11 @@
     "invalidUrl": "无法为此 URL 生成二维码",
     "securityWarning": "仅分享来自受信任 PropChain 域名的 URL",
     "ariaLabel": "房产链接二维码"
+  },
   "networkSwitcher": {
     "selectNetwork": "选择网络",
     "switchingNetwork": "正在切换网络..."
+  },
   "referral": {
     "connectWallet": "连接钱包",
     "connectWalletPrompt": "请连接您的钱包以访问推荐计划",
