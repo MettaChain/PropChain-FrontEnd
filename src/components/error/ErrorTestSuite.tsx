@@ -69,19 +69,19 @@ const TEST_SCENARIOS: TestScenario[] = [
     },
   },
   {
-    id: 'ar-camera',
-    name: 'AR Camera Error',
-    description: 'Simulates an AR camera permission error',
-    category: ErrorCategory.AR,
+    id: 'ui-error',
+    name: 'UI Error',
+    description: 'Simulates a UI component error',
+    category: ErrorCategory.UI,
     severity: ErrorSeverity.MEDIUM,
     icon: <Camera className="w-5 h-5" />,
     triggerError: () => {
-      throw ErrorFactory.createARError(
-        'Camera access denied',
-        'Camera permission is required for AR features. Please grant camera access to continue.',
+      throw ErrorFactory.createUIError(
+        'Component render failed',
+        'A UI component encountered an error. Please refresh the page.',
         {
-          context: { permission: 'camera', device: 'mobile' },
-          recoveryAction: ErrorRecoveryAction.GRANT_PERMISSION,
+          context: { component: 'TestComponent', action: 'render' },
+          recoveryAction: ErrorRecoveryAction.RETRY,
           isRecoverable: true,
         }
       );

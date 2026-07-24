@@ -52,7 +52,7 @@ export class ARErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    const appError = ErrorFactory.fromError(error, ErrorCategory.AR);
+    const appError = ErrorFactory.fromError(error, ErrorCategory.UI);
     return {
       hasError: true,
       error: appError,
@@ -61,7 +61,7 @@ export class ARErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    const appError = ErrorFactory.fromError(error, ErrorCategory.AR, {
+    const appError = ErrorFactory.fromError(error, ErrorCategory.UI, {
       componentStack: errorInfo.componentStack ?? undefined,
       context: {
         errorBoundary: "ARErrorBoundary",
