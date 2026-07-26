@@ -6,6 +6,8 @@
  * lazy TransactionAnalytics component (#506 split memoisation lives there).
  */
 
+import type { Transaction } from '@/store/transactionStore';
+
 // Capture the inner mock fns at jest.mock() factory evaluation time so the
 // tests can assert against them after the production code dynamically
 // imports the mocked xlsx module.
@@ -164,13 +166,12 @@ describe('TransactionHistory (#505 + #506)', () => {
     await waitFor(() => {
       // The captured inner mock fn from the top-level jest.mock factory
       // fires only if the production code's `await import('xlsx')` resolves
-      // to the mock.
       expect(xlsxJsonToSheet).toHaveBeenCalled();
       expect(xlsxBookAppendSheet).toHaveBeenCalled();
       expect(xlsxWrite).toHaveBeenCalled();
     });
-import { render, screen } from '@testing-library/react';
-import type { Transaction } from '@/store/transactionStore';
+  });
+});
 
 jest.mock('jspdf', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('jspdf-autotable', () => ({ __esModule: true, default: jest.fn() }));
