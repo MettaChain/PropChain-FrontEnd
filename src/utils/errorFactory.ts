@@ -1,4 +1,5 @@
 import { type AppError, ErrorCategory, ErrorSeverity, ErrorRecoveryAction } from '@/types/errors';
+import { generateErrorId as generateSecureErrorId } from './secureId';
 
 export class ErrorFactory {
   static createError(
@@ -196,18 +197,7 @@ export class ErrorFactory {
   }
 
   private static generateErrorId(category: ErrorCategory, message: string): string {
-    const hash = this.simpleHash(message + Date.now());
-    return `${category}_${hash}`;
-  }
-
-  private static simpleHash(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString(36);
+    return `${category}_${generateSecureErrorId()}`;
   }
 
   private static generateUserFriendlyMessage(error: Error | { message?: string }, category: ErrorCategory): string {
