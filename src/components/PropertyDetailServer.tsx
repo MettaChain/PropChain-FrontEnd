@@ -16,13 +16,7 @@ import {
 } from '@/types/propertyDetail';
 import { ImageGallery } from './property/ImageGallery';
 import { CurrencyToggle } from './property/CurrencyToggle';
-import { LazyChart } from '@/components/LazyChart';
-import dynamic from 'next/dynamic';
-
-const MortgageCalculator = dynamic(
-  () => import('./MortgageCalculator').then((mod) => mod.MortgageCalculator),
-  { ssr: false }
-);
+import { MortgageCalculator } from './MortgageCalculator';
 
 export type { PropertyDetailServerProps } from '@/types/propertyDetail';
 
@@ -253,12 +247,10 @@ export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ prop
       </div>
 
       <div id="calculator" className="mt-12">
-        <LazyChart>
-          <MortgageCalculator 
-            propertyPrice={calculatorDefaults.propertyPrice} 
-            defaultYield={calculatorDefaults.defaultYield} 
-          />
-        </LazyChart>
+        <MortgageCalculator 
+          propertyPrice={calculatorDefaults.propertyPrice} 
+          defaultYield={calculatorDefaults.defaultYield} 
+        />
       </div>
     </div>
   );

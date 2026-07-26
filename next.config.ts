@@ -143,7 +143,7 @@ const nextConfig: NextConfig = {
           charts: {
             name: "chart-vendors",
             test: /[\\/]node_modules[\\/](recharts|d3-.*)[\\/]/,
-            chunks: "async",
+            chunks: "all",
             priority: 25,
           },
         },

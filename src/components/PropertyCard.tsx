@@ -35,24 +35,24 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
   const compareLimitReached = selectedIds.length >= 3 && !isCompared;
   const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
 
-  const handleAddToCart = useCallback((e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     addItem(property, 1);
   }, [addItem, property]);
 
-  const handleComparisonToggle = useCallback((e: React.MouseEvent) => {
+  const handleComparisonToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleProperty(property);
   }, [toggleProperty, property]);
 
-  const handleCompareToggle = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
+  const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
     e.stopPropagation();
     if (!compareLimitReached) {
       togglePropertyId(property.id);
     }
   }, [compareLimitReached, togglePropertyId, property.id]);
 
-  const handleToggleFavorite = useCallback((e: React.MouseEvent) => {
+  const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isFavorite(property.id)) {
       removeFavorite(property.id);

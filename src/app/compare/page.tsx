@@ -212,6 +212,9 @@ function ComparePage() {
     const metricTh = doc.createElement('th');
     metricTh.textContent = 'Metric';
     headerRow.appendChild(metricTh);
+    properties.forEach(p => {
+      const th = doc.createElement('th');
+      th.textContent = p.name;
     properties.forEach(prop => {
       const th = doc.createElement('th');
       th.textContent = prop.name;
@@ -220,6 +223,17 @@ function ComparePage() {
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
+    const tbody = doc.createElement('tbody');
+    comparisonMetrics.forEach(metric => {
+      const row = doc.createElement('tr');
+      const labelTd = doc.createElement('td');
+      labelTd.textContent = metric.label;
+      row.appendChild(labelTd);
+      properties.forEach(p => {
+        const td = doc.createElement('td');
+        td.textContent = metric.format(getNestedValue(p, metric.key), p);
+        row.appendChild(td);
+    
     const tbody = doc.createElement('tbody');
     comparisonMetrics.forEach(metric => {
       const row = doc.createElement('tr');
@@ -234,6 +248,7 @@ function ComparePage() {
       tbody.appendChild(row);
     });
     table.appendChild(tbody);
+    doc.body.appendChild(table);
 
     // Close the document stream so browsers finish rendering before printing
     body.appendChild(table);

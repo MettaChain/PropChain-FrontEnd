@@ -1,45 +1,26 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose';
 
 // Define paths that require authentication
 const PROTECTED_ROUTES = ['/dashboard', '/portfolio', '/settings', '/invest'];
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Check if the current path is a protected route
   const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
 
   if (isProtectedRoute) {
+    // Look for the auth token in cookies
+    // This assumes your auth flow sets a cookie named 'auth-token'
     const token = request.cookies.get('auth-token')?.value;
-    let isValid = false;
 
-    if (token) {
-      try {
-        const secret = new TextEncoder().encode(process.env.AUTH_SECRET || 'default_secret_for_development_only');
-        await jwtVerify(token, secret, {
-          clockTolerance: 15, // 15 seconds clock skew tolerance
-        });
-        isValid = true;
-      } catch (error) {
-        // Token is invalid, expired, or tampered with
-        isValid = false;
-      }
-    }
-
-    if (!isValid) {
-      // Return 401 or redirect based on whether it's an API route or page route
-      if (pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      
+    if (!token) {
+      // Redirect to home or login page if no token is found
       const loginUrl = new URL('/', request.url);
+      // Optionally add a redirect parameter to return the user after login
       loginUrl.searchParams.set('callbackUrl', pathname);
-      // Clear the invalid token
-      const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete('auth-token');
-      return response;
+      return NextResponse.redirect(loginUrl);
     }
   }
 

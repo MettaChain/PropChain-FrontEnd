@@ -13,13 +13,7 @@ import { useCartStore } from '@/store/cartStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useRecentlyViewedStore } from '@/store/recentlyViewedStore';
 import { toast } from 'sonner';
-import { LazyChart } from '@/components/LazyChart';
-import dynamic from 'next/dynamic';
-
-const MortgageCalculator = dynamic(
-  () => import('@/components/MortgageCalculator').then((mod) => mod.MortgageCalculator),
-  { ssr: false }
-);
+import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { SetPriceAlertModal } from './property/SetPriceAlertModal';
@@ -407,12 +401,10 @@ export const PropertyDetail: React.FC<PropertyDetailProps> = ({ propertyId }) =>
       )}
       {/* Investment Calculator */}
       <div id="calculator" className="mt-12">
-        <LazyChart>
-          <MortgageCalculator 
-            propertyPrice={property.price.perToken} 
-            defaultYield={property.metrics.roi} 
-          />
-        </LazyChart>
+        <MortgageCalculator 
+          propertyPrice={property.price.perToken} 
+          defaultYield={property.metrics.roi} 
+        />
       </div>
 
       {/* QR Code for Print - Only visible when printing */}

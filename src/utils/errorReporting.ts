@@ -1,7 +1,6 @@
 import { type AppError, ErrorCategory, ErrorSeverity, type ErrorReportingData, type ErrorMetrics } from '@/types/errors';
 import { logger } from './logger';
 import { generateSessionId } from './secureId';
-import { redactValue } from './secretRedaction';
 
 class ErrorReportingService {
   private static instance: ErrorReportingService;
@@ -59,9 +58,7 @@ class ErrorReportingService {
 
     // Send to analytics service (in production)
     if (process.env.NODE_ENV === 'production' && error.shouldReport) {
-      // Redact sensitive data before sending
-      const redactedData = redactValue(reportingData) as ErrorReportingData;
-      this.sendToAnalytics(redactedData);
+      this.sendToAnalytics(reportingData);
     }
 
     // Log to console in development

@@ -27,7 +27,44 @@ const getEnvironment = (): Environment => {
   return 'development';
 };
 
-import { redactValue } from './secretRedaction';
+// ============================================================================
+// Sensitive Data Redaction
+// ============================================================================
+
+const SENSITIVE_KEYS = new Set([
+  'password', 'passwd', 'pwd', 'secret', 'apiKey', 'api_key',
+  'accessToken', 'access_token', 'refreshToken', 'refresh_token',
+  'privateKey', 'private_key', 'mnemonic', 'seedPhrase', 'seed_phrase',
+  'token', 'authorization', 'auth', 'sessionId', 'session_id',
+  'cookie', 'ssn', 'creditCard', 'credit_card', 'cvv',
+]);
+
+const SENSITIVE_PATTERNS: RegExp[] = [
+  /0x[a-fA-F0-9]{64}/g, // ETH private keys
+  /"(?:password|token|secret|authorization)"\s*:\s*"[^"]+"/gi,
+];
+
+const redactValue = (value: unknown): unknown => {
+  if (value === null || value === undefined) return value;
+
+  if (typeof value === 'string') {
+    let v = value.replace(/0x[a-fA-F0-9]{64}/g, '0x[REDACTED_PRIVATE_KEY]');
+    for (const p of SENSITIVE_PATTERNS) v = v.replace(p, '[REDACTED]');
+    return v;
+  }
+
+  if (Array.isArray(value)) return value.map(redactValue);
+
+  if (typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = SENSITIVE_KEYS.has(k.toLowerCase()) ? '[REDACTED]' : redactValue(v);
+    }
+    return out;
+  }
+
+  return value;
+};
 
 // ============================================================================
 // Configuration
