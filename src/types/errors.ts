@@ -64,6 +64,8 @@ export interface ErrorReportingData {
   context?: Record<string, any>;
   userId?: string;
   sessionId: string;
+  technicalDetails?: string;
+  stack?: string;
 }
 
 export interface ErrorMetrics {

@@ -19,14 +19,13 @@ import { Search, CalendarIcon, FileSpreadsheet, FileText, AlertCircle, ArrowUpDo
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { saveAs } from 'file-saver';
-import dynamic from 'next/dynamic';
+import { withLazyChart } from '@/components/LazyChart';
 
 // #505 + #506: recharts is heavy and only needed for the analytics tab.
 // Code-split the analytics view via next/dynamic, and lazy-load `xlsx` on
 // first export to keep the main bundle small.
-const TransactionAnalytics = dynamic(
-  () => import('@/components/TransactionAnalytics').then((m) => m.TransactionAnalytics),
-  { ssr: false, loading: () => null }
+const TransactionAnalytics = withLazyChart(
+  () => import('@/components/TransactionAnalytics')
 );
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -697,93 +696,6 @@ export const TransactionHistory: React.FC = () => {
               transactions={filteredTransactions}
               isLoading={isLoading}
             />
-            {!isLoading && filteredTransactions.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Status Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <PieChart className="h-5 w-5" />
-                      Transaction Status Distribution
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ChartContainer config={chartConfig} className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RechartsPieChart aria-label={`Pie chart: Transaction status distribution. ${analyticsData.statusChartData.map(d => `${d.name}: ${d.value}`).join(', ')}.`} role="img">
-                          <Pie
-                            data={analyticsData.statusChartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {analyticsData.statusChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={chartConfig[entry.name as keyof typeof chartConfig]?.color || '#8884d8'} />
-                            ))}
-                          </Pie>
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <ChartLegend content={<ChartLegendContent />} />
-                        </RechartsPieChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Type Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <BarChart3 className="h-5 w-5" />
-                      Transaction Type Distribution
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ChartContainer config={chartConfig} className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analyticsData.typeChartData} aria-label={`Bar chart: Transaction type distribution. ${analyticsData.typeChartData.map(d => `${d.name}: ${d.value}`).join(', ')}.`} role="img">
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Bar dataKey="value" fill="#3b82f6" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Volume Over Time */}
-                <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <TrendingUp className="h-5 w-5" />
-                      Transaction Volume Over Time (Last 30 Days)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ChartContainer config={chartConfig} className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={analyticsData.volumeChartData} aria-label="Line chart: Transaction volume over the last 30 days." role="img">
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <EmptyState
-                title="No Data Available"
-                description="Load transactions to view analytics"
-                icon={BarChart3}
-              />
-            )}
           </TabsContent>
         </Tabs>
 

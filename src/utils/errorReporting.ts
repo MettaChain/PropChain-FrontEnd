@@ -1,6 +1,7 @@
 import { type AppError, ErrorCategory, ErrorSeverity, type ErrorReportingData, type ErrorMetrics } from '@/types/errors';
 import { logger } from './logger';
 import { generateSessionId } from './secureId';
+import { redactSecrets } from './secretRedaction';
 
 class ErrorReportingService {
   private static instance: ErrorReportingService;
@@ -52,7 +53,9 @@ class ErrorReportingService {
       userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server',
       url: typeof window !== 'undefined' ? window.location.href : 'Unknown',
       timestamp: error.timestamp.toISOString(),
-      context: error.context,
+      context: redactSecrets(error.context),
+      technicalDetails: redactSecrets(error.technicalDetails),
+      stack: redactSecrets(error.stack),
       sessionId: this.sessionId
     };
 

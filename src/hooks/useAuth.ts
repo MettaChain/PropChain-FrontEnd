@@ -23,12 +23,32 @@ export function useAuth() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const hasToken = document.cookie.includes('auth-token=');
-        const expiresAt = hasToken ? Date.now() + SESSION_DURATION_MS : null;
+        const tokenMatch = document.cookie.match(/auth-token=([^;]+)/);
+        const token = tokenMatch ? tokenMatch[1] : null;
+        let isValid = false;
+        let expiresAt = null;
+        let address = null;
+
+        if (token) {
+          try {
+            const payloadBase64 = token.split('.')[1];
+            if (payloadBase64) {
+              const payload = JSON.parse(atob(payloadBase64));
+              if (payload.exp && payload.exp * 1000 > Date.now()) {
+                isValid = true;
+                expiresAt = payload.exp * 1000;
+                address = payload.address || '0x...';
+              }
+            }
+          } catch (e) {
+            // Invalid token format
+          }
+        }
+
         setAuthState({
-          isAuthenticated: hasToken,
+          isAuthenticated: isValid,
           isLoading: false,
-          userAddress: hasToken ? '0x...' : null,
+          userAddress: address,
           sessionExpiresAt: expiresAt,
         });
       } catch {
