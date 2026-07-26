@@ -1,7 +1,13 @@
-import { getAddress, isAddress, formatEther } from 'viem';
-import { logger } from '@/utils/logger';
-import { publicClient } from '@/lib/viem-client';
-import { useWalletStore } from '@/store/walletStore';
+import { getAddress, isAddress, formatEther } from "viem";
+import { logger } from "@/utils/logger";
+import { publicClient } from "@/lib/viem-client";
+import { useWalletStore } from "@/store/walletStore";
+
+interface EIP1193Provider {
+  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+  on(event: string, listener: (...args: unknown[]) => void): this;
+  removeListener(event: string, listener: (...args: unknown[]) => void): this;
+}
 
 /**
  * Validates and normalizes an Ethereum wallet address using EIP-55 checksum.
@@ -16,11 +22,13 @@ export function assertValidAddress(addr: string): string {
   const trimmed = addr.trim();
 
   if (!trimmed) {
-    throw new Error('Wallet address is required');
+    throw new Error("Wallet address is required");
   }
 
   if (!isAddress(trimmed)) {
-    throw new Error('Invalid wallet address format. Please check the address and try again.');
+    throw new Error(
+      "Invalid wallet address format. Please check the address and try again.",
+    );
   }
 
   try {
@@ -28,8 +36,8 @@ export function assertValidAddress(addr: string): string {
     const checksummed = getAddress(trimmed);
     return checksummed;
   } catch {
-    logger.warn('Failed to parse balance');
-    return '0.0000';
+    logger.warn("Failed to parse balance");
+    return "0.0000";
   }
 }
 
@@ -44,11 +52,13 @@ export async function fetchWalletBalance(address: string): Promise<bigint> {
   const validatedAddress = assertValidAddress(address);
 
   try {
-    const balance = await publicClient.getBalance({ address: validatedAddress as `0x${string}` });
+    const balance = await publicClient.getBalance({
+      address: validatedAddress as `0x${string}`,
+    });
     return balance;
   } catch (error) {
-    logger.error('Failed to fetch wallet balance:', error);
-    throw new Error('Unable to fetch wallet balance. Please try again later.');
+    logger.error("Failed to fetch wallet balance:", error);
+    throw new Error("Unable to fetch wallet balance. Please try again later.");
   }
 }
 
@@ -56,15 +66,18 @@ export async function fetchWalletBalance(address: string): Promise<bigint> {
  * Formats a wallet address for display: 0x1234...5678
  */
 export function formatAddress(address: string): string {
-  if (!address) return '';
+  if (!address) return "";
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
 }
 
 /**
  * Formats a balance string/number/bigint for display.
  */
-export function formatBalanceForDisplay(balance: string | number | bigint, decimals: number = 3): string {
-  if (balance === undefined || balance === null) return '0.000';
+export function formatBalanceForDisplay(
+  balance: string | number | bigint,
+  decimals: number = 3,
+): string {
+  if (balance === undefined || balance === null) return "0.000";
   const num = Number(balance);
   return num.toFixed(decimals);
 }
@@ -80,16 +93,16 @@ export function disconnectWallet(): void {
  * Fetches and updates the balance in the store.
  */
 export async function updateWalletBalance(
-  provider: any,
+  provider: EIP1193Provider,
   address: string,
-  setBalance: (balance: string) => void
+  setBalance: (balance: string) => void,
 ): Promise<void> {
   try {
     const rawBalance = await fetchWalletBalance(address);
     const formatted = formatEther(rawBalance);
     setBalance(formatted);
   } catch (error) {
-    logger.error('Failed to update wallet balance:', error);
-    setBalance('0.000');
+    logger.error("Failed to update wallet balance:", error);
+    setBalance("0.000");
   }
 }
