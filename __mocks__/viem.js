@@ -1,3 +1,7 @@
+const formatUnitsValue = (value, decimals) => String(Number(value) / Math.pow(10, decimals));
+const parseUnitsValue = (value, decimals) => BigInt(Math.floor(Number(value) * Math.pow(10, decimals)));
+const isAddressValue = (addr) => /^0x[a-fA-F0-9]{40}$/.test(addr);
+
 const mockReceipt = {
   status: 'success',
   blockNumber: BigInt(18000000),

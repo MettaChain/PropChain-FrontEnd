@@ -1,0 +1,55 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ErrorBoundary (visual) renders fallback UI and matches snapshot 1`] = `
+<div>
+  <div
+    class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900"
+  >
+    <div
+      class="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6"
+    >
+      <div
+        class="text-center"
+      >
+        <div
+          class="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <svg
+            class="w-8 h-8 text-red-600 dark:text-red-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+            />
+          </svg>
+        </div>
+        <h2
+          class="text-xl font-semibold text-gray-900 dark:text-white mb-2"
+        >
+          Something went wrong
+        </h2>
+        <p
+          class="text-gray-600 dark:text-gray-300 mb-6"
+        >
+          Visual snapshot test error
+        </p>
+        <button
+          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+        >
+          Reload Page
+        </button>
+        <button
+          class="ml-3 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+`;

@@ -293,7 +293,7 @@ html[dir="rtl"] .price {
 }
 
 /* RTL animations - reverse direction */
-html[dir="rtl"] @keyframes slideInLeft {
+@keyframes slideInLeft {
   from {
     transform: translateX(100%);
   }
@@ -302,7 +302,7 @@ html[dir="rtl"] @keyframes slideInLeft {
   }
 }
 
-html[dir="rtl"] @keyframes slideInRight {
+@keyframes slideInRight {
   from {
     transform: translateX(-100%);
   }
@@ -498,8 +498,8 @@ html[lang="ar"] {
     display: block !important;
   }
 
-  .property-detail .lg\\:col-span-2,
-  .property-detail .lg\\:col-span-3 {
+  .property-detail .lg\:col-span-2,
+  .property-detail .lg\:col-span-3 {
     width: 100% !important;
     margin-bottom: 1rem !important;
   }

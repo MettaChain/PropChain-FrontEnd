@@ -17,6 +17,15 @@ export interface WalletConnectConnectorResult {
  */
 export const connectWalletConnectWallet = async (): Promise<WalletConnectConnectorResult> => {
   try {
+    if (typeof window !== 'undefined' && (window as any).__MOCK_WALLETCONNECT__) {
+      const mockData = (window as any).__MOCK_WALLETCONNECT__;
+      logger.debug('Using mock WalletConnect connection for E2E tests');
+      return {
+        address: mockData.address || '0x1234567890123456789012345678901234567890',
+        chainId: mockData.chainId || 1,
+      };
+    }
+
     // Dynamically import WalletConnect provider only when needed
     // This avoids loading the library immediately on app start
     const WalletConnectProvider = (await import('@walletconnect/web3-provider')).default;

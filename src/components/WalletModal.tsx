@@ -193,6 +193,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     
     // WalletConnect is typically available through deep links or QR codes
     // We'll consider it "available" but not "installed" in the traditional sense
+    installed.add('walletconnect');
     
     return installed;
   }, []);
