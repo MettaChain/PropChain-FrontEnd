@@ -27,8 +27,7 @@
     "test:e2e:mock": "SKIP_WEBSERVER=true playwright test tests/e2e/property-purchase-flow.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:watch": "jest --watch",
-    "typecheck": "tsc --noEmit --incremental false",
-    "validate:env": "node scripts/validate-env.js"
+    "typecheck": "tsc --noEmit --incremental false"
   },
   "dependencies": {
     "@coinbase/wallet-sdk": "^4.3.7",
@@ -79,6 +78,7 @@
     "i18next-browser-languagedetector": "^8.2.1",
     "input-otp": "^1.4.2",
     "ioredis": "^5.3.2",
+    "jose": "^6.2.4",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "leaflet": "^1.9.4",

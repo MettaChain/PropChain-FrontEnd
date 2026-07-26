@@ -13,10 +13,10 @@ const isProd = process.env.NODE_ENV === "production";
 //   - Skip on server builds (this plugin is client-side only).
 // See README § "Build stats plugin" for details.
 
-const cspReportOnly = [
+const csp = [
   "default-src 'self'",
   `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https:",
   isDev
@@ -108,8 +108,8 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           {
-            key: "Content-Security-Policy-Report-Only",
-            value: cspReportOnly,
+            key: "Content-Security-Policy",
+            value: csp,
           },
         ],
       },

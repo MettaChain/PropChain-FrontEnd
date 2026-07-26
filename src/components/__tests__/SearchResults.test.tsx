@@ -25,6 +25,20 @@ jest.mock('@/components/SaveSearchButton', () => ({
   ),
 }));
 
+jest.mock('@/components/VirtualizedPropertyGrid', () => ({
+  VirtualizedPropertyGrid: ({ properties, viewMode }: { properties: any[]; viewMode: 'grid' | 'list' }) => (
+    <ul role="list" aria-label={`Property listings, ${properties.length} items`}>
+      {properties.map(p => (
+        <li key={p.id} role="article">
+          <div data-testid="property-card" data-property-id={p.id} data-view-mode={viewMode}>
+            {p.name}
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}));
+
 jest.mock('@/components/PropertyPagination', () => ({
   PropertyPagination: (props: {
     page: number;

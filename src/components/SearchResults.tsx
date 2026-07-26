@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
+import { VirtualizedPropertyGrid } from './VirtualizedPropertyGrid';
 import { SaveSearchButton } from './SaveSearchButton';
 import { PropertyPagination } from './PropertyPagination';
 import type { Property, ViewMode, SortOption, SearchFilters } from '@/types/property';
@@ -68,15 +69,6 @@ const SearchResultsInner: React.FC<SearchResultsProps> = ({
     window.addEventListener('resize', updateColumns);
     return () => window.removeEventListener('resize', updateColumns);
   }, [viewMode]);
-
-  const rowCount = Math.ceil(properties.length / columns);
-
-  const rowVirtualizer = useVirtualizer({
-    count: rowCount,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => (viewMode === 'grid' ? 450 : 200),
-    overscan: 5,
-  });
 
   if (error) {
     return (
@@ -191,28 +183,7 @@ const SearchResultsInner: React.FC<SearchResultsProps> = ({
       {/* Results Grid/List */}
       {!isLoading && properties.length > 0 && (
         <>
-          {/*
-           * Use a <ul role="list"> with <li role="article"> items so screen
-           * readers (VoiceOver/NVDA) announce the result count and surface
-           * each property as a discrete list item/article. role="list" is set
-           * on the <ul> because Tailwind's `list-none` resets the implicit
-           * role in some Safari builds.
-           */}
-          <ul
-            role="list"
-            aria-label={`Property listings, ${properties.length} ${properties.length === 1 ? 'item' : 'items'}`}
-            className={
-              viewMode === 'grid'
-                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 list-none p-0 m-0'
-                : 'flex flex-col gap-4 list-none p-0 m-0'
-            }
-          >
-            {properties.map((property) => (
-              <li key={property.id} role="article" aria-labelledby={`property-${property.id}-name`}>
-                <PropertyCard property={property} viewMode={viewMode} />
-              </li>
-            ))}
-          </ul>
+          <VirtualizedPropertyGrid properties={properties} viewMode={viewMode} />
 
           {/* Pagination */}
           <PropertyPagination

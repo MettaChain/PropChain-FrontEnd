@@ -16,7 +16,8 @@ import {
 } from '@/types/propertyDetail';
 import { ImageGallery } from './property/ImageGallery';
 import { CurrencyToggle } from './property/CurrencyToggle';
-import { MortgageCalculator } from './MortgageCalculator';
+import { withLazyChart } from './LazyChart';
+const MortgageCalculator = withLazyChart(() => import('./MortgageCalculator').then(m => ({ default: m.MortgageCalculator })));
 
 export type { PropertyDetailServerProps } from '@/types/propertyDetail';
 
