@@ -29,6 +29,7 @@ import {
 import { genId } from '@/utils/genId';
 import { generateSecureId } from '@/utils/secureId';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
+import { sha256, toUtf8Bytes } from 'ethers';
 
 // Version migration handlers
 type VersionMigration = (data: unknown) => unknown;
@@ -254,10 +255,21 @@ export const addToSyncQueue = (
   try {
     const queue = safeLocalStorage.getJSON<SyncQueueItem[]>(LOCAL_STORAGE_KEYS.SYNC_QUEUE, []);
 
+    const canonicalPayload = JSON.stringify(payload);
+    const itemHash = sha256(toUtf8Bytes(type + canonicalPayload));
+
+    const isDuplicate = queue.some((item) => {
+      const existingHash = sha256(toUtf8Bytes(item.type + JSON.stringify(item.payload)));
+      return existingHash === itemHash;
+    });
+
+    if (isDuplicate) {
+      logger.info(`Duplicate item rejected from sync queue: ${type}`);
+      return;
+    }
+
     const newItem: SyncQueueItem = {
-      // Combine timestamp with random base-36 string for a unique, sortable ID
-      id: genId(`${Date.now()}`),
-      id: generateSecureId('sync'),
+      id: crypto.randomUUID(),
       type,
       payload,
       timestamp: Date.now(),

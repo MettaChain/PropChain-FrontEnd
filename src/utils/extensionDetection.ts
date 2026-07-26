@@ -1,6 +1,7 @@
 'use client';
 import { isRecord } from './typeGuards';
 import { logger } from './logger';
+import { KNOWN_WALLET_PATTERN_REGISTRY, isVerboseExtensionErrorsEnabled } from '../config/wallets';
 
 export interface WalletExtension {
   name: string;
@@ -47,10 +48,9 @@ const stringifyError = (value: unknown): string => {
 
 const EXTENSION_ERROR_PATTERNS: readonly string[] = [
   'chrome-extension://',
-  'evmask.js',
-  'evmAsk.js',
   'extension',
   'web3 provider',
+  ...Object.values(KNOWN_WALLET_PATTERN_REGISTRY).flatMap(w => w.patterns.map(p => String(p)))
 ];
 
 export const isExtensionError = (error: unknown): boolean => {
@@ -94,10 +94,13 @@ export const setupExtensionErrorHandling = () => {
   console.error = (...args: unknown[]) => {
     const errorString = args.map(stringifyError).join(' ').toLowerCase();
     
-    // Filter out known extension errors that don't affect functionality
-    if (errorString.includes('chrome-extension://') || 
-        errorString.includes('evmask.js')) {
-      return; // Silently ignore these errors
+    const shouldSuppress = EXTENSION_ERROR_PATTERNS.some((pattern) => errorString.includes(pattern.toLowerCase()));
+    
+    if (shouldSuppress) {
+      if (isVerboseExtensionErrorsEnabled()) {
+        originalConsoleError.apply(console, ['[Verbose Extension Error]', ...args]);
+      }
+      return; // Silently ignore these errors normally
     }
     
     originalConsoleError.apply(console, args);

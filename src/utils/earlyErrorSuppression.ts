@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { KNOWN_WALLET_PATTERN_REGISTRY } from '../config/wallets';
 
 const stringifyArgs = (args: readonly unknown[]): string =>
   args.map((arg) => (typeof arg === 'string' ? arg : String(arg))).join(' ');
@@ -13,12 +14,17 @@ if (typeof window !== 'undefined') {
   const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;
   
-  const suppressPatterns = [
-    'bfnaelmomeimhlpmgjnjophhpkkoljpa',
-    'evmAsk.js',
-    'selectExtension',
-    'chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa',
-  ];
+  const suppressPatterns = Object.values(KNOWN_WALLET_PATTERN_REGISTRY)
+    .flatMap(w => w.patterns)
+    .map(p => String(p));
+  
+  if (process.env.NODE_ENV === 'development') {
+    let logged = false;
+    if (!logged) {
+      console.log('Active extension error suppression patterns:', suppressPatterns);
+      logged = true;
+    }
+  }
   
   const shouldSuppress = (...args: unknown[]): boolean => {
     const message = stringifyArgs(args).toLowerCase();
