@@ -40,6 +40,7 @@ import { errorReporting } from './errorReporting';
 import { ErrorCategory, ErrorSeverity } from '@/types/errors';
 import type { AppError } from '@/types/errors';
 import { generateSessionId, generateErrorId } from './secureId';
+import { getCsrfToken } from '@/lib/csrfClient';
 
 // ============================================================================
 // Extended entry shape (superset of LogEntry)
@@ -130,9 +131,18 @@ class StructuredLogger {
 
   private async sendBatch(logs: StructuredLogEntry[]): Promise<void> {
     try {
+      const csrfToken = await getCsrfToken().catch(() => '');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-Session-ID': this.sessionId,
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       await fetch(this.cfg.remoteUrl!, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Session-ID': this.sessionId },
+        headers,
         body: JSON.stringify({
           logs,
           metadata: {

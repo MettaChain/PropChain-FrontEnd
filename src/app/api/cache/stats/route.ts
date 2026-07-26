@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCsrf } from '@/lib/csrf';
 import { redisCacheService } from '@/lib/redisCache';
 import { getRedisInfo, testRedisConnection } from '@/lib/redis';
 import { logger } from '@/utils/logger';
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
 }
 
 // DELETE handler to clear cache statistics
-export async function DELETE(request: NextRequest) {
+export const DELETE = withCsrf(async function (request: NextRequest) {
   try {
     await redisCacheService.clearStats();
     
@@ -88,4 +89,5 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
+

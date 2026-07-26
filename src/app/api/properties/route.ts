@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCsrf } from '@/lib/csrf';
 import { propertyService } from '@/lib/propertyService';
 import { redisCacheService } from '@/lib/redisCache';
 import { logger } from '@/utils/logger';
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST handler for creating/updating properties (invalidates cache)
-export async function POST(request: NextRequest) {
+export const POST = withCsrf(async function (request: NextRequest) {
   try {
     const propertyData = await request.json();
     
@@ -115,4 +116,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
+

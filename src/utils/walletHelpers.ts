@@ -1,6 +1,7 @@
-import { getAddress, isAddress } from 'viem';
+import { getAddress, isAddress, formatEther } from 'viem';
 import { logger } from '@/utils/logger';
 import { publicClient } from '@/lib/viem-client';
+import { useWalletStore } from '@/store/walletStore';
 
 /**
  * Validates and normalizes an Ethereum wallet address using EIP-55 checksum.
@@ -48,5 +49,47 @@ export async function fetchWalletBalance(address: string): Promise<bigint> {
   } catch (error) {
     logger.error('Failed to fetch wallet balance:', error);
     throw new Error('Unable to fetch wallet balance. Please try again later.');
+  }
+}
+
+/**
+ * Formats a wallet address for display: 0x1234...5678
+ */
+export function formatAddress(address: string): string {
+  if (!address) return '';
+  return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+}
+
+/**
+ * Formats a balance string/number/bigint for display.
+ */
+export function formatBalanceForDisplay(balance: string | number | bigint, decimals: number = 3): string {
+  if (balance === undefined || balance === null) return '0.000';
+  const num = Number(balance);
+  return num.toFixed(decimals);
+}
+
+/**
+ * Disconnects the wallet in the store.
+ */
+export function disconnectWallet(): void {
+  useWalletStore.getState().setDisconnected();
+}
+
+/**
+ * Fetches and updates the balance in the store.
+ */
+export async function updateWalletBalance(
+  provider: any,
+  address: string,
+  setBalance: (balance: string) => void
+): Promise<void> {
+  try {
+    const rawBalance = await fetchWalletBalance(address);
+    const formatted = formatEther(rawBalance);
+    setBalance(formatted);
+  } catch (error) {
+    logger.error('Failed to update wallet balance:', error);
+    setBalance('0.000');
   }
 }

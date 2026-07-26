@@ -6,13 +6,13 @@
 
 # Test info
 
-- Name: wallet-connection.spec.ts >> Wallet Connection Flow >> should handle network switching
-- Location: tests/e2e/wallet-connection.spec.ts:184:7
+- Name: wallet-properties-integration.spec.ts >> Wallet + Properties Integration >> should display properties and show connected wallet status
+- Location: tests/e2e/wallet-properties-integration.spec.ts:4:3
 
 # Error details
 
 ```
-Error: browserType.launch: Executable doesn't exist at /home/codespace/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+Error: browserType.launch: Executable doesn't exist at /home/zakayola/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
 ╔════════════════════════════════════════════════════════════╗
 ║ Looks like Playwright was just installed or updated.       ║
 ║ Please run the following command to download new browsers: ║

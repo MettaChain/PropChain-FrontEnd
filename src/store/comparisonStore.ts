@@ -58,5 +58,4 @@ export const useComparisonStore = create<ComparisonState>()(
       partialize: (state) => ({ selectedProperties: state.selectedProperties }),
     }
   )
-);</content>
-<parameter name="filePath">/home/semicolon/Documents/Drip/PropChain-FrontEnd/src/store/comparisonStore.ts
+);

@@ -1,6 +1,7 @@
 import { getErrorMessage } from './typeGuards';
 import { genId } from '@/utils/genId';
-import { generateCorrelationId, generateChildId } from './secureId';
+import { generateChildId } from './secureId';
+import { getCsrfToken } from '@/lib/csrfClient';
 
 // ============================================================================
 // Log Levels
@@ -250,9 +251,17 @@ class Logger {
 
   private async sendToRemote(entry: LogEntry): Promise<void> {
     try {
+      const csrfToken = await getCsrfToken().catch(() => '');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       await fetch(this.config.remoteUrl!, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(entry),
         keepalive: true,
       });

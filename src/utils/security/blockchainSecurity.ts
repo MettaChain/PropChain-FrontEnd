@@ -612,3 +612,5 @@ export async function checkAddressRiskViaProxy(address: string): Promise<Address
     description: body.description ?? '',
   };
 }
+
+export const blockchainSecurity = BlockchainSecurityService.getInstance(defaultConfig);
