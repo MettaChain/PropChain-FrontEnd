@@ -8,6 +8,12 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Web3Tooltip } from '@/components/ui/Web3Tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface TransactionStep {
   id: string;
@@ -202,60 +208,30 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={onClose}
-          role="presentation"
-        >
-          <motion.div
-            ref={modalRef}
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="transaction-progress-title"
-            aria-describedby="transaction-progress-description"
-          >
-            <Card className="border-0 shadow-none">
-              <CardContent className="p-6">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 
-                      id="transaction-progress-title"
-                      className="text-lg font-semibold text-gray-900 dark:text-white"
-                    >
-                      Transaction in Progress
-                    </h3>
-                    {transactionHash && (
-                      <p 
-                        id="transaction-progress-description"
-                        className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-mono"
-                      >
-                        Transaction hash: {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    ref={closeButtonRef}
-                    variant="ghost"
-                    size="sm"
-                    onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600"
-                    aria-label="Close transaction progress"
-                  >
-                    <X className="w-5 h-5" aria-hidden="true" />
-                  </Button>
-                </div>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="sm:max-w-md" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Transaction in Progress</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 -mr-2"
+            >
+              ×
+            </Button>
+          </DialogTitle>
+          {transactionHash && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-mono">
+              {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
+            </p>
+          )}
+        </DialogHeader>
 
-              {/* Overall Progress */}
+        <Card className="border-0 shadow-none">
+          <CardContent className="px-0 py-2">
+            {/* Overall Progress */}
               <div className="mb-6">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-600 dark:text-gray-400">Overall Progress</span>
@@ -372,13 +348,12 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
                   {steps[steps.length - 1].status === 'completed' ? 'Close' : 'Processing...'}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+          </CardContent>
+        </Card>
+      </DialogContent>
+    </Dialog>
   );
-};
+});
 
 // Hook to use transaction progress
 export const useTransactionProgress = () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { type ReactNode } from 'react';
+import React, { type ReactNode, useMemo } from 'react';
 import { useChain } from '@/providers/ChainAwareProvider';
 import { useWalletStore } from '@/store/walletStore';
 import { logger } from '@/utils/logger';
@@ -33,23 +33,26 @@ export const ChainAware: React.FC<ChainAwareProps> = ({ children, fallback }) =>
   const { currentChain, chainConfig } = useChain();
   const { isConnected, address, balance } = useWalletStore();
 
+  // Memoize the render-prop argument so consumers receive a stable reference
+  // across renders and their own memoization can take effect (#503).
+  const childProps = useMemo<ChainAwareChildrenProps>(
+    () => ({
+      chainId: currentChain,
+      chainName: chainConfig.name,
+      chainSymbol: chainConfig.symbol,
+      chainColor: chainConfig.color,
+      isConnected,
+      address,
+      balance,
+    }),
+    [currentChain, chainConfig, isConnected, address, balance]
+  );
+
   if (!isConnected && fallback) {
     return <>{fallback}</>;
   }
 
-  return (
-    <>
-      {children({
-        chainId: currentChain,
-        chainName: chainConfig.name,
-        chainSymbol: chainConfig.symbol,
-        chainColor: chainConfig.color,
-        isConnected,
-        address,
-        balance,
-      })}
-    </>
-  );
+  return <>{children(childProps)}</>;
 };
 
 interface ChainSpecificProps {

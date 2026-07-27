@@ -6,7 +6,6 @@ import { ErrorCategory } from '@/types/errors';
 import type { AppError } from '@/types/errors';
 import { Web3ErrorBoundary } from './Web3ErrorBoundary';
 import { NetworkErrorBoundary } from './NetworkErrorBoundary';
-import { ARErrorBoundary } from './ARErrorBoundary';
 import { UIErrorBoundary } from './UIErrorBoundary';
 import { ErrorFactory } from '@/utils/errorFactory';
 
@@ -83,12 +82,6 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
             {children}
           </NetworkErrorBoundary>
         );
-      case ErrorCategory.AR:
-        return (
-          <ARErrorBoundary {...commonProps} onError={onError}>
-            {children}
-          </ARErrorBoundary>
-        );
       default:
         return (
           <UIErrorBoundary {...commonProps} onError={onError}>
@@ -138,10 +131,6 @@ export const ErrorBoundaryPresets = {
   
   network: (props: Omit<Props, 'category'>) => (
     <EnhancedErrorBoundary {...props} category={ErrorCategory.NETWORK} />
-  ),
-  
-  ar: (props: Omit<Props, 'category'>) => (
-    <EnhancedErrorBoundary {...props} category={ErrorCategory.AR} />
   ),
   
   ui: (props: Omit<Props, 'category'>) => (

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { logger } from '@/utils/logger';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 /**
  * UI-only view mode for listing screens.
@@ -14,7 +15,7 @@ import { logger } from '@/utils/logger';
  */
 export type ViewMode = "grid" | "list";
 
-const STORAGE_KEY = "propchain:listing-view";
+const STORAGE_KEY = STORAGE_KEYS.VIEW_MODE.key;
 
 export const isValidViewMode = (v: unknown): v is ViewMode => v === "grid" || v === "list";
 

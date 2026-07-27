@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * structuredLogger — **deprecated** thin domain-specific layer on top of logger.
  *
@@ -41,6 +39,8 @@ import { logger, createLogger, LogLevel } from './logger';
 import { errorReporting } from './errorReporting';
 import { ErrorCategory, ErrorSeverity } from '@/types/errors';
 import type { AppError } from '@/types/errors';
+import { generateSessionId, generateErrorId } from './secureId';
+import { getCsrfToken } from '@/lib/csrfClient';
 
 // ============================================================================
 // Extended entry shape (superset of LogEntry)
@@ -96,8 +96,12 @@ class StructuredLogger {
       flushInterval: 5000,
       ...config,
     };
-    this.sessionId = `sess_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`;
+    this.sessionId = this.generateSessionId();
     this.startFlushTimer();
+  }
+
+  private generateSessionId(): string {
+    return generateSessionId();
   }
 
   private startFlushTimer(): void {
@@ -127,9 +131,18 @@ class StructuredLogger {
 
   private async sendBatch(logs: StructuredLogEntry[]): Promise<void> {
     try {
+      const csrfToken = await getCsrfToken().catch(() => '');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-Session-ID': this.sessionId,
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       await fetch(this.cfg.remoteUrl!, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Session-ID': this.sessionId },
+        headers,
         body: JSON.stringify({
           logs,
           metadata: {
@@ -148,10 +161,10 @@ class StructuredLogger {
   private reportError(entry: StructuredLogEntry): void {
     if (!entry.error) return;
     const appError: AppError = {
-      id: `error_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`,
+      id: generateErrorId(),
       message: entry.error.message,
-      category: entry.category ?? ErrorCategory.UI,
-      severity: entry.severity ?? ErrorSeverity.MEDIUM,
+      category: entry.category || ErrorCategory.UI,
+      severity: entry.severity || ErrorSeverity.MEDIUM,
       timestamp: new Date(entry.timestamp),
       isRecoverable: false,
       shouldReport: true,
@@ -288,8 +301,16 @@ class StructuredLogger {
 
 export const structuredLogger = new StructuredLogger();
 
-export const createStructuredLogger = (config?: Partial<StructuredLoggerConfig>) =>
-  new StructuredLogger(config);
+export const createStructuredLogger = (config?: Partial<StructuredLoggerConfig>): StructuredLogger => {
+  return new StructuredLogger(config);
+};
+
+// Note: structuredLogger.destroy() should be called manually for cleanup
+// in test teardowns or before recreating the singleton.
+
+// ============================================================================
+// Performance Monitoring Helper
+// ============================================================================
 
 export const createPerformanceTracker = (operation: string, metadata?: Partial<StructuredLogEntry>) => {
   const start = performance.now();

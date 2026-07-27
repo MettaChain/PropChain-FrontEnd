@@ -1,5 +1,6 @@
 import { logger } from '@/utils/logger';
 import type { SignedTransaction } from '@/utils/eip712/eip712Types';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export interface AuditTrailEntry {
   id: string;
@@ -40,7 +41,7 @@ export interface AuditTrailStats {
 
 class TransactionAuditTrail {
   private entries: AuditTrailEntry[] = [];
-  private readonly STORAGE_KEY = 'propchain-transaction-audit';
+  private readonly STORAGE_KEY = STORAGE_KEYS.TRANSACTION_AUDIT.key;
 
   constructor() {
     this.loadFromStorage();

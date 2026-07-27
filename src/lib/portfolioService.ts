@@ -203,6 +203,41 @@ export class PortfolioService {
   }
 
   /**
+   * Fetch the full portfolio overview (portfolio, performance, gas prices,
+   * and bridge suggestions) concurrently. Issues the three independent
+   * network-bound calls in parallel via `Promise.all` (#504).
+   *
+   * Bridge suggestions are computed from the resolved portfolio result, so
+   * they are intentionally sequential after the parallel batch.
+   */
+  static async fetchPortfolioOverview(
+    address: string,
+    days: number = 30
+  ): Promise<{
+    portfolio: MultiChainPortfolio;
+    performance: Array<{ date: string; value: number }>;
+    gasPrices: Record<ChainId, { gasPrice: string; gasPriceUSD: number }>;
+    bridgeSuggestions: BridgeSuggestion[];
+  }> {
+    try {
+      logger.info('Fetching portfolio overview', { address, days });
+
+      const [portfolio, performance, gasPrices] = await Promise.all([
+        this.fetchMultiChainPortfolio(address),
+        this.getPortfolioPerformance(address, days),
+        this.getGasPrices(),
+      ]);
+
+      const bridgeSuggestions = this.calculateBridgeSuggestions(portfolio);
+
+      return { portfolio, performance, gasPrices, bridgeSuggestions };
+    } catch (error) {
+      logger.error('Failed to fetch portfolio overview:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get portfolio performance over time
    */
   static async getPortfolioPerformance(address: string, days: number = 30): Promise<{

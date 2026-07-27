@@ -1,6 +1,7 @@
-'use client';
-
 import { getErrorMessage } from './typeGuards';
+import { genId } from '@/utils/genId';
+import { generateChildId } from './secureId';
+import { getCsrfToken } from '@/lib/csrfClient';
 
 // ============================================================================
 // Log Levels
@@ -20,8 +21,12 @@ export enum LogLevel {
 
 type Environment = 'development' | 'production' | 'test';
 
-const getEnvironment = (): Environment =>
-  (process.env.NODE_ENV as Environment) || 'development';
+const getEnvironment = (): Environment => {
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV) {
+    return process.env.NODE_ENV as Environment;
+  }
+  return 'development';
+};
 
 // ============================================================================
 // Sensitive Data Redaction
@@ -102,12 +107,12 @@ let globalConfig = getDefaultConfig();
 // Correlation ID
 // ============================================================================
 
-const generateCorrelationId = (): string =>
-  `corr-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 15)}`;
+const generateCorrelationId = (): string => genId(`corr-${Date.now().toString(36)}`);
 
 class CorrelationIdManager {
   private static instance: CorrelationIdManager;
-  private id: string = generateCorrelationId();
+  private correlationId: string = generateCorrelationId();
+  private correlationStack: string[] = [];
 
   static getInstance(): CorrelationIdManager {
     if (!CorrelationIdManager.instance) {
@@ -116,11 +121,28 @@ class CorrelationIdManager {
     return CorrelationIdManager.instance;
   }
 
-  getId(): string { return this.id; }
-  setId(id: string): void { this.id = id; }
-  reset(): void { this.id = generateCorrelationId(); }
-  fork(): string { return generateCorrelationId(); }
-  createChild(): string { return `${this.id}-${Math.random().toString(36).substring(2, 8)}`; }
+  getId(): string {
+    return this.correlationId;
+  }
+
+  setId(id: string): void {
+    this.correlationStack.push(this.correlationId);
+    this.correlationId = id;
+  }
+
+  reset(): void {
+    this.correlationId = generateCorrelationId();
+    this.correlationStack = [];
+  }
+
+  createChild(): string {
+    return generateChildId(this.correlationId);
+  }
+
+  // For async operations - returns a new correlation ID
+  fork(): string {
+    return generateCorrelationId();
+  }
 }
 
 // ============================================================================
@@ -192,7 +214,9 @@ class Logger {
         // Structured JSON line — single console.log so log aggregators get one line
         const line = JSON.stringify(entry);
         switch (level) {
-          case LogLevel.DEBUG: console.debug(line); break;
+          case LogLevel.DEBUG:
+            if (this.config.environment === 'development') console.debug(line);
+            break;
           case LogLevel.INFO:  console.info(line);  break;
           case LogLevel.WARN:  console.warn(line);  break;
           case LogLevel.ERROR: console.error(line); break;
@@ -227,9 +251,17 @@ class Logger {
 
   private async sendToRemote(entry: LogEntry): Promise<void> {
     try {
+      const csrfToken = await getCsrfToken().catch(() => '');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       await fetch(this.config.remoteUrl!, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(entry),
         keepalive: true,
       });

@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create, type StateCreator } from 'zustand';
 import { persist, type PersistOptions } from 'zustand/middleware';
 
 // Base state interface for common properties
@@ -21,36 +21,61 @@ export interface BaseActions<T = {}> {
 export type BaseStore<T extends BaseState> = T & BaseActions;
 
 // Store configuration options
-export interface StoreConfig {
+export interface StoreConfig<S> {
   persist?: boolean;
-  persistOptions?: PersistOptions<any, any>;
+  persistOptions?: PersistOptions<S, Partial<S>>;
   name: string;
 }
 
-// Enhanced create function with base functionality
+/**
+ * Type-safe Zustand store factory.
+ *
+ * Usage:
+ *   const useMyStore = createTypedStore<MyState & MyActions>()(
+ *     (set, get) => ({ ...initialState, myAction: () => set({ … }) })
+ *   );
+ */
+export function createTypedStore<S>() {
+  return function (
+    stateCreator: StateCreator<S>,
+    config?: Pick<StoreConfig<S>, 'persist' | 'name' | 'persistOptions'>
+  ) {
+    if (config?.persist && config.name) {
+      return create<S>()(
+        persist(stateCreator, {
+          name: config.name,
+          ...config.persistOptions,
+        })
+      );
+    }
+    return create<S>()(stateCreator);
+  };
+}
+
+// Enhanced create function with base functionality (legacy — prefer createTypedStore)
 export const createBaseStore = <
   T extends BaseState,
   A extends BaseActions
 >(
   initialState: T,
-  actions: (set: any, get: any) => A,
-  config?: StoreConfig
+  actions: StateCreator<T & A, [], [], A>,
+  config?: StoreConfig<T & A>
 ) => {
-  const store = (set: any, get: any) => ({
+  const storeCreator: StateCreator<BaseStore<T> & A> = (set, get, api) => ({
     ...initialState,
-    ...actions(set, get),
+    ...(actions as StateCreator<BaseStore<T> & A>)(set, get, api),
   });
 
   if (config?.persist) {
     return create<BaseStore<T> & A>()(
-      persist(store, {
+      persist(storeCreator, {
         name: config.name,
         ...config.persistOptions,
       })
     );
   }
 
-  return create<BaseStore<T> & A>()(store);
+  return create<BaseStore<T> & A>()(storeCreator);
 };
 
 // Selector helpers for performance optimization
@@ -87,7 +112,7 @@ export const withAsyncAction = async <T>(
 
     setError(errorMessage);
     // Don't rethrow — return null so callers can continue.
-    return Promise.resolve(null as any);
+    return Promise.resolve(null as unknown as T);
   } finally {
     setLoading(false);
   }

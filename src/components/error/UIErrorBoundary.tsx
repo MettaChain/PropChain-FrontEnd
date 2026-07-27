@@ -153,7 +153,7 @@ export class UIErrorBoundary extends Component<Props, State> {
       case "medium":
         return "default";
       case "low":
-        return "secondary";
+        return "default";
       default:
         return "default";
     }
@@ -239,7 +239,7 @@ export class UIErrorBoundary extends Component<Props, State> {
               </div>
 
               {/* Error Message */}
-              <Alert variant={this.getErrorSeverity() as any} className="mb-6">
+              <Alert variant={this.getErrorSeverity()} className="mb-6">
                 <AlertDescription id="error-boundary-description" className="text-sm">
                   {this.state.error.userMessage ||
                     "An unexpected error occurred in the user interface."}

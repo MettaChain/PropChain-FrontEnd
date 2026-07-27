@@ -4,6 +4,15 @@ const isAnalyzeEnabled = process.env.ANALYZE === "true";
 const isDev = process.env.NODE_ENV === "development";
 const isProd = process.env.NODE_ENV === "production";
 
+// `BuildStatsPlugin` writes a JSON payload into `.next/` for on-demand
+// inspection.  It is ONLY meant for local development/debugging — production
+// builds must never emit it.
+//   - Gate on the explicit `ANALYZE=true` opt-in flag.
+//   - Hard-disable on production builds even if `ANALYZE=true` is set
+//     (e.g. misconfigured CI).
+//   - Skip on server builds (this plugin is client-side only).
+// See README § "Build stats plugin" for details.
+
 const csp = [
   "default-src 'self'",
   `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,

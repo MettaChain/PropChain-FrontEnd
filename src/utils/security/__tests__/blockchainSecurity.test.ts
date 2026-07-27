@@ -6,9 +6,9 @@ global.fetch = jest.fn();
 describe('BlockchainSecurityService', () => {
   let service: BlockchainSecurityService;
   const mockConfig: SecurityServiceConfig = {
-    baseUrl: 'https://api.test.com',
+    baseUrl: 'http://localhost:3000',
     timeout: 5000,
-    apiKey: 'test-api-key'
+    apiKey: undefined
   };
 
   beforeEach(() => {
@@ -89,8 +89,33 @@ describe('BlockchainSecurityService', () => {
       expect(result.riskScore).toBeGreaterThan(0);
     });
 
+    it('should call the local proxy endpoint', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ risk_score: 30, categories: ['low_risk'], labels: [], description: 'Normal' })
+      });
+
+      await service.checkAddressRisk(testAddress);
+
+      const fetchUrl = (global.fetch as jest.Mock).mock.calls[0][0];
+      expect(fetchUrl).toContain('/api/security/address-check');
+      expect(fetchUrl).toContain(encodeURIComponent(testAddress));
+    });
+
+    it('should fall back to simulation when proxy returns non-ok', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: async () => ({ error: 'Bad gateway' })
+      });
+
+      const result = await service.checkAddressRisk(testAddress);
+      expect(result.riskScore).toBeGreaterThanOrEqual(0);
+      expect(result.riskScore).toBeLessThanOrEqual(100);
+    });
+
     it('should return default risk score on API failure', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
       const result = await service.checkAddressRisk(testAddress);
       expect(result).toEqual({

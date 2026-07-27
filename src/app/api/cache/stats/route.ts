@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCsrf } from '@/lib/csrf';
 import { redisCacheService } from '@/lib/redisCache';
 import { getRedisInfo, testRedisConnection } from '@/lib/redis';
 import { logger } from '@/utils/logger';
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     if (detailed && redisInfo) {
       // Add relevant Redis metrics
-      (response as any).redisMetrics = {
+      const redisMetrics = {
         usedMemory: redisInfo.used_memory_human,
         usedMemoryRss: redisInfo.used_memory_rss_human,
         usedMemoryPeak: redisInfo.used_memory_peak_human,
@@ -57,6 +58,7 @@ export async function GET(request: NextRequest) {
         keyspaceMisses: redisInfo.keyspace_misses,
         uptimeInSeconds: redisInfo.uptime_in_seconds,
       };
+      return NextResponse.json({ ...response, redisMetrics });
     }
 
     return NextResponse.json(response);
@@ -70,7 +72,7 @@ export async function GET(request: NextRequest) {
 }
 
 // DELETE handler to clear cache statistics
-export async function DELETE(request: NextRequest) {
+export const DELETE = withCsrf(async function (request: NextRequest) {
   try {
     await redisCacheService.clearStats();
     
@@ -87,4 +89,5 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
+

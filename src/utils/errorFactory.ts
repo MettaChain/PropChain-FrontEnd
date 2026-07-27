@@ -1,4 +1,5 @@
 import { type AppError, ErrorCategory, ErrorSeverity, ErrorRecoveryAction } from '@/types/errors';
+import { generateErrorId as generateSecureErrorId } from './secureId';
 
 export class ErrorFactory {
   static createError(
@@ -63,13 +64,13 @@ export class ErrorFactory {
     );
   }
 
-  static createARError(
+  static createUIError(
     message: string,
     userMessage: string,
     options: Partial<AppError> = {}
   ): AppError {
     return this.createError(
-      ErrorCategory.AR,
+      ErrorCategory.UI,
       ErrorSeverity.MEDIUM,
       message,
       userMessage,
@@ -190,24 +191,13 @@ export class ErrorFactory {
       {
         ...options,
         stack: error?.stack,
-        technicalDetails: (error as any)?.technicalDetails || error?.toString(),
+        technicalDetails: (error as Error & { technicalDetails?: string })?.technicalDetails || error?.toString(),
       }
     );
   }
 
   private static generateErrorId(category: ErrorCategory, message: string): string {
-    const hash = this.simpleHash(message + Date.now());
-    return `${category}_${hash}`;
-  }
-
-  private static simpleHash(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString(36);
+    return `${category}_${generateSecureErrorId()}`;
   }
 
   private static generateUserFriendlyMessage(error: Error | { message?: string }, category: ErrorCategory): string {
@@ -247,8 +237,6 @@ export class ErrorFactory {
         return 'Blockchain operation failed. Please check your wallet connection and try again.';
       case ErrorCategory.NETWORK:
         return 'Network error occurred. Please check your internet connection.';
-      case ErrorCategory.AR:
-        return 'AR feature encountered an error. Please ensure your device supports AR.';
       case ErrorCategory.VALIDATION:
         return 'Invalid information provided. Please check your input and try again.';
       case ErrorCategory.AUTHENTICATION:

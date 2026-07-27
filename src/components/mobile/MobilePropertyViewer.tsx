@@ -169,6 +169,8 @@ export const MobilePropertyViewer = ({
         {/* Image Gallery */}
         <div
           ref={containerRef}
+          role="region"
+          aria-label={t("mobile.viewer.galleryLabel", { name: property.name })}
           className="relative w-full h-full overflow-hidden"
         >
           <motion.div
@@ -202,9 +204,10 @@ export const MobilePropertyViewer = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => setCurrentImageIndex((prev) => prev - 1)}
+                  aria-label={t("mobile.viewer.previousImage")}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeft className="w-6 h-6" aria-hidden="true" />
                 </Button>
               )}
 
@@ -213,9 +216,10 @@ export const MobilePropertyViewer = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => setCurrentImageIndex((prev) => prev + 1)}
+                  aria-label={t("mobile.viewer.nextImage")}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
                 >
-                  <ChevronRight className="w-6 h-6" />
+                  <ChevronRight className="w-6 h-6" aria-hidden="true" />
                 </Button>
               )}
             </>
@@ -243,7 +247,12 @@ export const MobilePropertyViewer = ({
         </div>
 
         {/* Image Counter */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="absolute top-20 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm"
+        >
           {t("mobile.viewer.imageCounter", {
             current: currentImageIndex + 1,
             total: property.images.length,

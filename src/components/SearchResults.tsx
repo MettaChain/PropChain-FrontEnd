@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
+import { VirtualizedPropertyGrid } from './VirtualizedPropertyGrid';
 import { SaveSearchButton } from './SaveSearchButton';
 import { PropertyPagination } from './PropertyPagination';
 import type { Property, ViewMode, SortOption, SearchFilters } from '@/types/property';
@@ -68,15 +69,6 @@ const SearchResultsInner: React.FC<SearchResultsProps> = ({
     window.addEventListener('resize', updateColumns);
     return () => window.removeEventListener('resize', updateColumns);
   }, [viewMode]);
-
-  const rowCount = Math.ceil(properties.length / columns);
-
-  const rowVirtualizer = useVirtualizer({
-    count: rowCount,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => (viewMode === 'grid' ? 450 : 200),
-    overscan: 5,
-  });
 
   if (error) {
     return (
@@ -191,17 +183,7 @@ const SearchResultsInner: React.FC<SearchResultsProps> = ({
       {/* Results Grid/List */}
       {!isLoading && properties.length > 0 && (
         <>
-          <div
-            className={
-              viewMode === 'grid'
-                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-                : 'flex flex-col gap-4'
-            }
-          >
-            {properties.map((property) => (
-              <PropertyCard key={property.id} property={property} viewMode={viewMode} />
-            ))}
-          </div>
+          <VirtualizedPropertyGrid properties={properties} viewMode={viewMode} />
 
           {/* Pagination */}
           <PropertyPagination

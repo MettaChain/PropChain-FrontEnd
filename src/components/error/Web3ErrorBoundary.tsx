@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { logger } from "@/utils/logger";
+import { STORAGE_KEYS } from "@/lib/storageKeys";
 import type {
   AppError,
   ErrorBoundaryState,
@@ -136,8 +137,8 @@ export class Web3ErrorBoundary extends Component<Props, State> {
   private handleReconnect = () => {
     // Clear local storage and reload
     if (typeof window !== "undefined") {
-      localStorage.removeItem("walletconnected");
-      localStorage.removeItem("wagmi.connected");
+      localStorage.removeItem(STORAGE_KEYS.WALLET_CONNECTED.key);
+      localStorage.removeItem(STORAGE_KEYS.WAGMI_CONNECTED.key);
     }
     window.location.reload();
   };

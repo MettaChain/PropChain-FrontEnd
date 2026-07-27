@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { walletFixture } from './tests/fixtures/wallet-msw';
 
 /**
  * @see https://playwright.dev/docs/test-configuration

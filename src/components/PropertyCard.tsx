@@ -73,14 +73,25 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
         isListView ? 'flex flex-row' : 'flex flex-col'
       }`}
     >
-      <div className={`relative overflow-hidden ${isListView ? 'w-64 flex-shrink-0' : 'w-full h-56'}`}>
-        <Image
-          src={property.images[0]}
-          alt={`${property.name} - ${PROPERTY_TYPE_LABELS[property.propertyType]} property in ${property.location.city}, ${property.location.state}`}
-          fill
-          className="object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-
+{/* Image */}
+        <div className={`relative overflow-hidden ${isListView ? 'w-64 flex-shrink-0' : 'w-full h-56'}`}>
+          <Image
+            src={property.images[0]}
+            alt={`${property.name} - ${PROPERTY_TYPE_LABELS[property.propertyType]} property in ${property.location.city}, ${property.location.state}`}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
+          />
+        
+{/* Badge Container */}
+        {/*
+         * Badge palette tuned for WCAG AA contrast (>=4.5:1) on both light
+         * and dark surfaces. Light mode: white text on saturated dark colour.
+         * Dark mode: white text on slightly lighter hue, still well above 4.5:1
+         * against the gray-800 card surface.
+         *   Featured:  bg-yellow-700/800   (>=4.7:1 vs white)
+         *   Verified:  bg-emerald-700/800 (>=4.7:1 vs white)
+         *   ROI:       bg-blue-700/800     (>=6:1 vs white)
+         */}
         <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 sm:gap-2">
           {property.featured && (
             <span className="bg-yellow-700 dark:bg-yellow-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-live="polite" aria-label="Featured property">
@@ -98,6 +109,7 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
           )}
         </div>
 
+        {/* ROI Badge */}
         <div className="absolute top-2 right-20 sm:top-3 sm:right-24" role="status" aria-live="polite" aria-label={`Return on investment: ${formatROI(property.metrics.roi)}`}>
           <div className="bg-blue-700 dark:bg-blue-800 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
             {formatROI(property.metrics.roi)} ROI

@@ -389,9 +389,19 @@ export const LocationBasedDiscovery = () => {
               {location && " nearby"}
             </p>
 
-            <div className="grid grid-cols-1 gap-4">
+            {/* #488 fix: explicit list/article semantics for near-by property cards */}
+            <ul
+              role="list"
+              aria-label={`Nearby properties, ${properties.length} ${properties.length === 1 ? 'item' : 'items'}`}
+              className="grid grid-cols-1 gap-4 list-none p-0 m-0"
+            >
               {properties.map((property, index) => (
-                <div key={property.id} className="relative">
+                <li
+                  key={property.id}
+                  role="article"
+                  aria-label={property.name}
+                  className="relative list-none"
+                >
                   <MobilePropertyCard property={property} index={index} />
 
                   {/* Distance Badge */}
@@ -406,9 +416,9 @@ export const LocationBasedDiscovery = () => {
                       </Badge>
                     </div>
                   )}
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
       </div>

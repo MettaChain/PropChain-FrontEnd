@@ -2,6 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { NotificationSystem } from '@/components/NotificationSystem';
 import { useTransactionStore } from '@/store/transactionStore';
+import { notifiedTxKey } from '@/lib/storageKeys';
 import type { Transaction } from '@/store/transactionStore';
 
 // Mock the transaction store
@@ -110,7 +111,7 @@ describe('NotificationSystem', () => {
   it('does not fire toast for an already-notified transaction', () => {
     const { toast } = require('sonner');
     const tx = buildTransaction({ id: 'tx-already', status: 'confirmed' });
-    localStorage.setItem('notified_tx-already', 'true');
+    localStorage.setItem(notifiedTxKey('tx-already'), 'true');
     mockUseTransactionStore.mockReturnValue({ transactions: [tx] } as ReturnType<typeof useTransactionStore>);
     render(<NotificationSystem />);
     expect(toast.success).not.toHaveBeenCalled();

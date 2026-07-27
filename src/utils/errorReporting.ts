@@ -1,5 +1,8 @@
 import { type AppError, ErrorCategory, ErrorSeverity, type ErrorReportingData, type ErrorMetrics } from '@/types/errors';
 import { logger } from './logger';
+import { generateSessionId } from './secureId';
+import { getCsrfToken } from '@/lib/csrfClient';
+import { redactSecrets } from './secretRedaction';
 
 class ErrorReportingService {
   private static instance: ErrorReportingService;
@@ -15,7 +18,7 @@ class ErrorReportingService {
   private retryAttempts: Map<string, number> = new Map();
 
   private constructor() {
-    this.sessionId = this.generateSessionId();
+    this.sessionId = generateSessionId();
     this.initializeMetrics();
   }
 
@@ -24,10 +27,6 @@ class ErrorReportingService {
       ErrorReportingService.instance = new ErrorReportingService();
     }
     return ErrorReportingService.instance;
-  }
-
-  private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   private initializeMetrics(): void {
@@ -55,7 +54,9 @@ class ErrorReportingService {
       userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server',
       url: typeof window !== 'undefined' ? window.location.href : 'Unknown',
       timestamp: error.timestamp.toISOString(),
-      context: error.context,
+      context: redactSecrets(error.context),
+      technicalDetails: redactSecrets(error.technicalDetails),
+      stack: redactSecrets(error.stack),
       sessionId: this.sessionId
     };
 
@@ -95,12 +96,18 @@ class ErrorReportingService {
 
   private async sendToAnalytics(data: ErrorReportingData): Promise<void> {
     try {
+      const csrfToken = await getCsrfToken().catch(() => '');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       // Integration with analytics service (e.g., Sentry, LogRocket, custom endpoint)
       await fetch('/api/errors', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       }).catch(err => {
         logger.warn('Failed to report error to analytics:', err);

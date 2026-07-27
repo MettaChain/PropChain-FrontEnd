@@ -85,15 +85,24 @@ function WatchlistContent() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/*
+             * Use a <ul role="list"> with <li role="article"> items so screen
+             * readers announce the watchlist as a semantic list of properties.
+             */}
+            <ul
+              role="list"
+              aria-label={`Watchlist, ${favorites.length} ${favorites.length === 1 ? 'item' : 'items'}`}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 list-none p-0 m-0"
+            >
               {favorites.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  viewMode="grid"
-                />
+                <li key={property.id} role="article" aria-labelledby={`property-${property.id}-name`}>
+                  <PropertyCard
+                    property={property}
+                    viewMode="grid"
+                  />
+                </li>
               ))}
-            </div>
+            </ul>
           </>
         )}
       </div>

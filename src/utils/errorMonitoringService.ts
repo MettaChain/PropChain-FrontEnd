@@ -3,6 +3,7 @@
 import { errorReporting } from './errorReporting';
 import { logger } from './logger';
 import { ErrorCategory, ErrorSeverity, type AppError } from '@/types/errors';
+import { generateAlertId } from './secureId';
 
 // ============================================================================
 // Error Monitoring Service
@@ -165,7 +166,7 @@ class ErrorMonitoringService {
 
   private createAlert(error: AppError): void {
     const alert: ErrorAlert = {
-      id: `alert_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`,
+      id: generateAlertId(),
       error,
       timestamp: new Date(),
       severity: error.severity,
@@ -192,7 +193,6 @@ class ErrorMonitoringService {
     const categoryMessages: Record<ErrorCategory, string> = {
       [ErrorCategory.WEB3]: 'Web3 connection issue detected',
       [ErrorCategory.NETWORK]: 'Network connectivity problem',
-      [ErrorCategory.AR]: 'Augmented reality feature unavailable',
       [ErrorCategory.UI]: 'Interface error occurred',
       [ErrorCategory.VALIDATION]: 'Input validation failed',
       [ErrorCategory.PERMISSION]: 'Permission required',
@@ -219,12 +219,6 @@ class ErrorMonitoringService {
         actions.push('Check internet connection');
         actions.push('Try refreshing the page');
         if (error.isRecoverable) actions.push('Retry the operation');
-        break;
-      
-      case ErrorCategory.AR:
-        actions.push('Ensure device supports AR');
-        actions.push('Grant camera permissions if prompted');
-        actions.push('Try in a well-lit environment');
         break;
       
       case ErrorCategory.PERMISSION:

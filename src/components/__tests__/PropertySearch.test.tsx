@@ -102,6 +102,28 @@ describe('PropertySearch', () => {
     });
   });
 
+  it('exposes combobox semantics for assistive tech while suggestions are shown', async () => {
+    usePropertyAutocompleteQuery.mockReturnValue({
+      data: [{ type: 'property', value: 'Sunset Villa', label: 'Sunset Villa' }],
+      isLoading: false,
+    });
+
+    render(<PropertySearch value="sun" onChange={jest.fn()} />);
+    const input = screen.getByPlaceholderText('Search properties, locations...');
+
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('role', 'combobox');
+      expect(input).toHaveAttribute('aria-autocomplete', 'list');
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toHaveAttribute('id', input.getAttribute('aria-controls'));
+    expect(screen.getByRole('option', { name: /Sunset Villa/i })).toHaveAttribute('aria-selected', 'false');
+  });
+
   it('calls onChange and saves history when a suggestion is clicked', async () => {
     const onChange = jest.fn();
     const { saveToHistory } = jest.requireMock('@/hooks/useSearchHistory').useSearchHistory();

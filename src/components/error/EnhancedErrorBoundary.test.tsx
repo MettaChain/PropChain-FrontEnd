@@ -136,16 +136,6 @@ describe('EnhancedErrorBoundary', () => {
     expect(screen.queryByTestId('UIErrorBoundary')).not.toBeInTheDocument();
   });
 
-  it('should delegate to ARErrorBoundary when category is AR', () => {
-    render(
-      <EnhancedErrorBoundary category={ErrorCategory.AR}>
-        <ThrowError />
-      </EnhancedErrorBoundary>
-    );
-    expect(screen.getByTestId('ARErrorBoundary')).toBeInTheDocument();
-    expect(screen.queryByTestId('UIErrorBoundary')).not.toBeInTheDocument();
-  });
-
   it('should delegate to UIErrorBoundary for various UI-related categories', () => {
     const uiCategories = [
       ErrorCategory.UI,

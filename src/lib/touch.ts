@@ -1,6 +1,9 @@
 "use client";
 import { logger } from '@/utils/logger';
 
+// WeakMaps to store per-element cleanup functions without polluting element properties
+const touchFeedbackCleanups = new WeakMap<HTMLElement, () => void>();
+const preventZoomCleanups = new WeakMap<HTMLElement, () => void>();
 /**
  * Touch Handler Module
  * 
@@ -187,13 +190,13 @@ export function addTouchFeedback(element: HTMLElement): void {
     element.addEventListener('touchend', handleTouchEnd, { passive: true });
     element.addEventListener('touchcancel', handleTouchCancel, { passive: true });
     
-    // Store cleanup function on element for later removal
-    (element as any).__touchFeedbackCleanup = () => {
+    // Store cleanup function for later removal
+    touchFeedbackCleanups.set(element, () => {
       element.removeEventListener('touchstart', handleTouchStart);
       element.removeEventListener('touchend', handleTouchEnd);
       element.removeEventListener('touchcancel', handleTouchCancel);
       element.classList.remove('touch-feedback');
-    };
+    });
   } catch (error) {
     logger.error('Failed to add touch feedback:', error);
   }
@@ -370,9 +373,10 @@ export function registerGestures(
       }
       
       // Clean up touch feedback
-      if ((element as any).__touchFeedbackCleanup) {
-        (element as any).__touchFeedbackCleanup();
-        delete (element as any).__touchFeedbackCleanup;
+      const touchCleanup = touchFeedbackCleanups.get(element);
+      if (touchCleanup) {
+        touchCleanup();
+        touchFeedbackCleanups.delete(element);
       }
     };
   } catch (error) {
@@ -405,10 +409,10 @@ export function preventDoubleTapZoom(element: HTMLElement): void {
     element.addEventListener('touchend', handleTouchEnd, { passive: false });
     
     // Store cleanup function
-    (element as any).__preventZoomCleanup = () => {
+    preventZoomCleanups.set(element, () => {
       element.removeEventListener('touchend', handleTouchEnd);
       element.style.touchAction = '';
-    };
+    });
   } catch (error) {
     logger.error('Failed to prevent double-tap zoom:', error);
   }

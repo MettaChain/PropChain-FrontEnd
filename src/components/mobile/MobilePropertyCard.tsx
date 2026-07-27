@@ -100,19 +100,23 @@ export const MobilePropertyCard = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleSave}
+                aria-pressed={isSaved}
+                aria-label={isSaved ? `Remove ${property.name} from saved` : `Save ${property.name}`}
                 className="w-8 h-8 p-0 bg-black/50 hover:bg-black/70 text-white"
               >
                 <Heart
                   className={`w-4 h-4 ${isSaved ? "fill-red-500 text-red-500" : ""}`}
+                  aria-hidden="true"
                 />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleShare}
+                aria-label={`Share ${property.name}`}
                 className="w-8 h-8 p-0 bg-black/50 hover:bg-black/70 text-white"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-4 h-4" aria-hidden="true" />
               </Button>
             </div>
           </div>

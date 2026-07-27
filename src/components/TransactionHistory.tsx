@@ -1,7 +1,8 @@
 'use client';
 import { logger } from '@/utils/logger';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, memo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { useTransactionHistory } from '@/hooks/useTransactionQuery';
 import type { Transaction, TransactionType, TransactionStatus } from '@/store/transactionStore';
@@ -14,11 +15,18 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, CalendarIcon, FileSpreadsheet, FileText, AlertCircle, ArrowUpDown, TrendingUp, PieChart, BarChart3, Eye } from 'lucide-react';
+import { Search, CalendarIcon, FileSpreadsheet, FileText, AlertCircle, ArrowUpDown, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { withLazyChart } from '@/components/LazyChart';
+
+// #505 + #506: recharts is heavy and only needed for the analytics tab.
+// Code-split the analytics view via next/dynamic, and lazy-load `xlsx` on
+// first export to keep the main bundle small.
+const TransactionAnalytics = withLazyChart(
+  () => import('@/components/TransactionAnalytics')
+);
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -33,8 +41,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line, ResponsiveContainer } from 'recharts';
 import { TableSkeleton } from '@/components/ui/LoadingSkeletons';
 
 const TRANSACTION_TYPES: TransactionType[] = ['purchase', 'transfer', 'management', 'other'];
@@ -45,6 +51,55 @@ const isTransactionType = (value: string): value is TransactionType =>
 
 const isTransactionStatus = (value: string): value is TransactionStatus =>
   TRANSACTION_STATUSES.includes(value as TransactionStatus);
+
+const TransactionRow = memo(function TransactionRow({
+  tx,
+  t,
+  onViewDetails,
+}: {
+  tx: Transaction;
+  t: ReturnType<typeof useTranslation<'common'>>['t'];
+  onViewDetails: (tx: Transaction) => void;
+}) {
+  return (
+    <TableRow key={tx.id} data-testid="transaction-item" className="hover:bg-muted/50">
+      <TableCell className="text-xs text-muted-foreground">
+        {format(new Date(tx.timestamp), 'MMM dd, HH:mm')}
+      </TableCell>
+      <TableCell className="font-mono text-xs">
+        {tx.hash.slice(0, 8)}…{tx.hash.slice(-6)}
+      </TableCell>
+      <TableCell className="capitalize">{tx.type}</TableCell>
+      <TableCell className="capitalize">
+        <Badge variant={tx.status === 'confirmed' ? 'default' : tx.status === 'failed' ? 'destructive' : 'secondary'}>
+          {tx.status}
+        </Badge>
+      </TableCell>
+      <TableCell className="hidden md:table-cell font-mono text-xs">
+        {tx.value || '0'}
+      </TableCell>
+      <TableCell className="hidden md:table-cell font-mono text-xs">
+        {tx.from.slice(0, 8)}…{tx.from.slice(-6)}
+      </TableCell>
+      <TableCell className="hidden md:table-cell font-mono text-xs">
+        {tx.to ? `${tx.to.slice(0, 8)}…${tx.to.slice(-6)}` : '-'}
+      </TableCell>
+      <TableCell className="hidden lg:table-cell font-mono text-xs">
+        {tx.gasUsed || '0'}
+      </TableCell>
+      <TableCell className="text-right">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onViewDetails(tx)}
+          className="h-8 w-8 p-0"
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+});
 
 export const TransactionHistory: React.FC = () => {
   const { t } = useTranslation('common');
@@ -136,6 +191,12 @@ export const TransactionHistory: React.FC = () => {
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
 
+  // Expose the current sort state to assistive tech through aria-sort.
+  const getSortAria = (field: 'timestamp' | 'value' | 'gasUsed') => {
+    if (sortBy !== field) return 'none';
+    return sortOrder === 'asc' ? 'ascending' : 'descending';
+  };
+
   const handleSort = (field: 'timestamp' | 'value' | 'gasUsed') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -148,45 +209,6 @@ export const TransactionHistory: React.FC = () => {
   const handleViewDetails = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setShowDetailsModal(true);
-  };
-
-  const analyticsData = useMemo(() => {
-    const statusCounts = filteredTransactions.reduce((acc, tx) => {
-      acc[tx.status] = (acc[tx.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const typeCounts = filteredTransactions.reduce((acc, tx) => {
-      acc[tx.type] = (acc[tx.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const dailyVolume = filteredTransactions.reduce((acc, tx) => {
-      const date = format(new Date(tx.timestamp), 'yyyy-MM-dd');
-      acc[date] = (acc[date] || 0) + parseFloat(tx.value || '0');
-      return acc;
-    }, {} as Record<string, number>);
-
-    const statusChartData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
-    const typeChartData = Object.entries(typeCounts).map(([name, value]) => ({ name, value }));
-    const volumeChartData = Object.entries(dailyVolume)
-      .map(([date, value]) => ({ date, value }))
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-30);
-
-    return { statusChartData, typeChartData, volumeChartData };
-  }, [filteredTransactions]);
-
-  const chartConfig = {
-    confirmed: { label: 'Confirmed', color: '#22c55e' },
-    pending: { label: 'Pending', color: '#eab308' },
-    processing: { label: 'Processing', color: '#3b82f6' },
-    failed: { label: 'Failed', color: '#ef4444' },
-    cancelled: { label: 'Cancelled', color: '#6b7280' },
-    purchase: { label: 'Purchase', color: '#3b82f6' },
-    transfer: { label: 'Transfer', color: '#8b5cf6' },
-    management: { label: 'Management', color: '#f97316' },
-    other: { label: 'Other', color: '#6b7280' },
   };
 
   const calculateRealizedGainsLosses = (transaction: Transaction): number => {
@@ -237,8 +259,13 @@ export const TransactionHistory: React.FC = () => {
     }
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     try {
+      // #505: dynamic-import xlsx (and its workbook helpers) only when the
+      // user actually requests an Excel export. Keeps the main bundle
+      // free of SheetJS (~250-500kB).
+      const XLSX = await import('xlsx');
+
       const data = prepareExportData();
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
@@ -260,7 +287,7 @@ export const TransactionHistory: React.FC = () => {
     }
   };
 
-  const handleExport = (fmt: 'csv' | 'excel') => {
+  const handleExport = async (fmt: 'csv' | 'excel') => {
     if (filteredTransactions.length === 0) {
       toast.warning('No transactions to export');
       return;
@@ -268,11 +295,20 @@ export const TransactionHistory: React.FC = () => {
     if (fmt === 'csv') {
       exportToCSV();
     } else {
-      exportToExcel();
+      await exportToExcel();
     }
   };
 
   const rowsToRender = isLoading ? [] : paginatedTransactions;
+
+  // Virtualizer for large paginated lists
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: rowsToRender.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 48,
+    overscan: 5,
+  });
 
   return (
     <Card className="w-full" data-testid="transaction-list">
@@ -301,7 +337,7 @@ export const TransactionHistory: React.FC = () => {
               <FileText className="h-4 w-4 mr-2" />
               {t('transactions.exportCsv')}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => handleExport('excel')}>
+            <Button variant="outline" size="sm" onClick={() => { void handleExport('excel'); }}>
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               {t('transactions.exportExcel')}
             </Button>
@@ -494,11 +530,11 @@ export const TransactionHistory: React.FC = () => {
             )}
             {/* Transaction Table */}
             <div className="rounded-lg border border-border overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto max-h-[480px]" ref={tableContainerRef}>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('timestamp')}>
+                      <TableHead className="cursor-pointer hover:bg-muted/50" aria-sort={getSortAria('timestamp')} onClick={() => handleSort('timestamp')}>
                         <div className="flex items-center gap-1">
                           {t('transactions.time')}
                           {sortBy === 'timestamp' && <ArrowUpDown className="h-3 w-3" />}
@@ -507,7 +543,7 @@ export const TransactionHistory: React.FC = () => {
                       <TableHead>{t('transactions.hash')}</TableHead>
                       <TableHead>{t('transactions.type')}</TableHead>
                       <TableHead>{t('transactions.status')}</TableHead>
-                      <TableHead className="hidden md:table-cell cursor-pointer hover:bg-muted/50" onClick={() => handleSort('value')}>
+                      <TableHead className="hidden md:table-cell cursor-pointer hover:bg-muted/50" aria-sort={getSortAria('value')} onClick={() => handleSort('value')}>
                         <div className="flex items-center gap-1">
                           {t('transactions.value')}
                           {sortBy === 'value' && <ArrowUpDown className="h-3 w-3" />}
@@ -515,7 +551,7 @@ export const TransactionHistory: React.FC = () => {
                       </TableHead>
                       <TableHead className="hidden md:table-cell">{t('transactions.from')}</TableHead>
                       <TableHead className="hidden md:table-cell">{t('transactions.to')}</TableHead>
-                      <TableHead className="hidden lg:table-cell cursor-pointer hover:bg-muted/50" onClick={() => handleSort('gasUsed')}>
+                      <TableHead className="hidden lg:table-cell cursor-pointer hover:bg-muted/50" aria-sort={getSortAria('gasUsed')} onClick={() => handleSort('gasUsed')}>
                         <div className="flex items-center gap-1">
                           Gas
                           {sortBy === 'gasUsed' && <ArrowUpDown className="h-3 w-3" />}
@@ -555,44 +591,32 @@ export const TransactionHistory: React.FC = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      rowsToRender.map((tx) => (
-                        <TableRow key={tx.id} data-testid="transaction-item" className="hover:bg-muted/50">
-                          <TableCell className="text-xs text-muted-foreground">
-                            {format(new Date(tx.timestamp), 'MMM dd, HH:mm')}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {tx.hash.slice(0, 8)}…{tx.hash.slice(-6)}
-                          </TableCell>
-                          <TableCell className="capitalize">{tx.type}</TableCell>
-                          <TableCell className="capitalize">
-                            <Badge variant={tx.status === 'confirmed' ? 'default' : tx.status === 'failed' ? 'destructive' : 'secondary'}>
-                              {tx.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell font-mono text-xs">
-                            {tx.value || '0'}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell font-mono text-xs">
-                            {tx.from.slice(0, 8)}…{tx.from.slice(-6)}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell font-mono text-xs">
-                            {tx.to ? `${tx.to.slice(0, 8)}…${tx.to.slice(-6)}` : '-'}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell font-mono text-xs">
-                            {tx.gasUsed || '0'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewDetails(tx)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      <>
+                        {rowVirtualizer.getTotalSize() > 0 && (
+                          <tr aria-hidden style={{ height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0 }} />
+                        )}
+                        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                          const tx = rowsToRender[virtualRow.index];
+                          return (
+                            <TransactionRow
+                              key={tx.id}
+                              tx={tx}
+                              t={t}
+                              onViewDetails={handleViewDetails}
+                            />
+                          );
+                        })}
+                        {rowVirtualizer.getTotalSize() > 0 && (
+                          <tr
+                            aria-hidden
+                            style={{
+                              height:
+                                rowVirtualizer.getTotalSize() -
+                                (rowVirtualizer.getVirtualItems().at(-1)?.end ?? 0),
+                            }}
+                          />
+                        )}
+                      </>
                     )}
                   </TableBody>
                 </Table>
@@ -668,93 +692,10 @@ export const TransactionHistory: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            {!isLoading && filteredTransactions.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Status Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <PieChart className="h-5 w-5" />
-                      Transaction Status Distribution
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ChartContainer config={chartConfig} className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RechartsPieChart>
-                          <Pie
-                            data={analyticsData.statusChartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {analyticsData.statusChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={chartConfig[entry.name as keyof typeof chartConfig]?.color || '#8884d8'} />
-                            ))}
-                          </Pie>
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <ChartLegend content={<ChartLegendContent />} />
-                        </RechartsPieChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Type Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <BarChart3 className="h-5 w-5" />
-                      Transaction Type Distribution
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ChartContainer config={chartConfig} className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analyticsData.typeChartData}>
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Bar dataKey="value" fill="#3b82f6" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Volume Over Time */}
-                <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <TrendingUp className="h-5 w-5" />
-                      Transaction Volume Over Time (Last 30 Days)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ChartContainer config={chartConfig} className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={analyticsData.volumeChartData}>
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <EmptyState
-                title="No Data Available"
-                description="Load transactions to view analytics"
-                icon={BarChart3}
-              />
-            )}
+            <TransactionAnalytics
+              transactions={filteredTransactions}
+              isLoading={isLoading}
+            />
           </TabsContent>
         </Tabs>
 

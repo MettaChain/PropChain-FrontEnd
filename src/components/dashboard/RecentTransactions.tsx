@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowDownLeft, Clock, ExternalLink } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, Clock, ExternalLink, CheckCircle2 } from "lucide-react";
 
 interface Transaction {
   id: string;
@@ -140,7 +140,17 @@ const TransactionRow = ({ transaction, index }: { transaction: Transaction; inde
           <span className={`text-xs ${
             transaction.status === "completed" ? "text-success" : "text-warning"
           }`}>
-            {transaction.status === "completed" ? "✓ Completed" : "⏳ Pending"}
+            {transaction.status === "completed" ? (
+              <span className="text-success text-xs flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                Completed
+              </span>
+            ) : (
+              <span className="text-warning text-xs flex items-center gap-1">
+                <Clock className="w-3 h-3" aria-hidden="true" />
+                Pending
+              </span>
+            )}
           </span>
         </div>
 

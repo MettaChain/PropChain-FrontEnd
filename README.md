@@ -287,3 +287,16 @@ We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md
 Made with ❤️ by the PropChain Team
 
 </div>
+
+## 🛠️ Local Development Guardrails (Git Hooks)
+
+To maximize code reliability and streamline PR review cycles, this project uses **Husky** to enforce local quality validation checks prior to remote integration.
+
+### Active Git Hook Safeguards
+* **Pre-Commit Hook:** Triggered automatically upon running `git commit`. Performs light syntax linting on modified files.
+* **Pre-Push Hook:** Triggered automatically when executing `git push`. This gate forces an application-wide compile verification check (`tsc --noEmit`) and runs all matching unit tests. If compilation faults are surfaced or unit assertions fail, the push is safely aborted locally, keeping broken code off the remote origin branch.
+
+### Bypassing in Emergencies
+If you must explicitly push an intermediate draft up to a private backup branch without running validations, you can bypass Husky checks by appending the `--no-verify` flag:
+```bash
+git push origin feature/my-branch --no-verify

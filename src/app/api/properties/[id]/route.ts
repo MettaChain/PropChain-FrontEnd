@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { withCsrf } from '@/lib/csrf';
 import { propertyService } from '@/lib/propertyService';
 import { redisCacheService } from '@/lib/redisCache';
 import { logger } from '@/utils/logger';
@@ -84,7 +85,7 @@ export async function GET(
 }
 
 // PUT handler for updating property (invalidates cache)
-export async function PUT(
+export const PUT = withCsrf(async function (
   request: NextRequest,
   { params }: RouteParams
 ) {
@@ -119,10 +120,10 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+});
 
 // DELETE handler for deleting property (invalidates cache)
-export async function DELETE(
+export const DELETE = withCsrf(async function (
   request: NextRequest,
   { params }: RouteParams
 ) {
@@ -156,4 +157,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+});
