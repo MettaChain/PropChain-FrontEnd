@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { errorReporting } from './errorReporting';
-import { logger } from './logger';
-import { ErrorCategory, ErrorSeverity, type AppError } from '@/types/errors';
-import { generateAlertId } from './secureId';
+import { errorReporting } from "./errorReporting";
+import { logger } from "./logger";
+import { ErrorCategory, ErrorSeverity, type AppError } from "@/types/errors";
+import { generateAlertId } from "./secureId";
 
 // ============================================================================
 // Error Monitoring Service
@@ -35,7 +35,7 @@ export interface ErrorAlert {
 export interface UserFeedback {
   errorId: string;
   userId?: string;
-  feedback: 'helpful' | 'not_helpful' | 'resolved' | 'still_broken';
+  feedback: "helpful" | "not_helpful" | "resolved" | "still_broken";
   comment?: string;
   timestamp: Date;
 }
@@ -58,7 +58,7 @@ class ErrorMonitoringService {
       enablePerformanceMonitoring: true,
       performanceThreshold: 100, // ms
       enableUserFeedback: true,
-      feedbackEndpoint: '/api/error-feedback',
+      feedbackEndpoint: "/api/error-feedback",
     };
   }
 
@@ -105,7 +105,7 @@ class ErrorMonitoringService {
   // Public method for external recovery attempts
   public async attemptRecovery(error: AppError): Promise<boolean> {
     const attempts = this.retryAttempts.get(error.id) || 0;
-    
+
     if (attempts >= this.config.maxRetryAttempts) {
       logger.warn(`Max retry attempts reached for error: ${error.id}`);
       return false;
@@ -114,18 +114,20 @@ class ErrorMonitoringService {
     this.retryAttempts.set(error.id, attempts + 1);
 
     // Wait before retry
-    await new Promise(resolve => setTimeout(resolve, this.config.retryDelay * Math.pow(2, attempts)));
+    await new Promise((resolve) =>
+      setTimeout(resolve, this.config.retryDelay * Math.pow(2, attempts)),
+    );
 
     try {
       const recovered = await errorReporting.attemptRecovery(error);
-      
+
       if (recovered) {
         // Clear retry attempts on success
         this.retryAttempts.delete(error.id);
-        
+
         // Remove alert if exists
         const alert = Array.from(this.activeAlerts.values()).find(
-          a => a.error.id === error.id
+          (a) => a.error.id === error.id,
         );
         if (alert) {
           this.activeAlerts.delete(alert.id);
@@ -139,7 +141,7 @@ class ErrorMonitoringService {
         return true;
       }
     } catch (recoveryError) {
-      logger.warn('Error recovery attempt failed:', recoveryError);
+      logger.warn("Error recovery attempt failed:", recoveryError);
     }
 
     return false;
@@ -152,13 +154,16 @@ class ErrorMonitoringService {
     }
 
     // Don't create alerts for expected errors (validation, etc.)
-    if (error.category === ErrorCategory.VALIDATION || error.category === ErrorCategory.UI) {
+    if (
+      error.category === ErrorCategory.VALIDATION ||
+      error.category === ErrorCategory.UI
+    ) {
       return false;
     }
 
     // Check if we already have an active alert for this error type
     const existingAlert = Array.from(this.activeAlerts.values()).find(
-      alert => alert.error.message === error.message
+      (alert) => alert.error.message === error.message,
     );
 
     return !existingAlert;
@@ -172,7 +177,9 @@ class ErrorMonitoringService {
       severity: error.severity,
       message: this.generateAlertMessage(error),
       suggestedActions: this.generateSuggestedActions(error),
-      canRetry: error.isRecoverable && (this.retryAttempts.get(error.id) || 0) < this.config.maxRetryAttempts,
+      canRetry:
+        error.isRecoverable &&
+        (this.retryAttempts.get(error.id) || 0) < this.config.maxRetryAttempts,
       canIgnore: error.severity !== ErrorSeverity.CRITICAL,
     };
 
@@ -191,17 +198,17 @@ class ErrorMonitoringService {
 
   private generateAlertMessage(error: AppError): string {
     const categoryMessages: Record<ErrorCategory, string> = {
-      [ErrorCategory.WEB3]: 'Web3 connection issue detected',
-      [ErrorCategory.NETWORK]: 'Network connectivity problem',
-      [ErrorCategory.UI]: 'Interface error occurred',
-      [ErrorCategory.VALIDATION]: 'Input validation failed',
-      [ErrorCategory.PERMISSION]: 'Permission required',
-      [ErrorCategory.RESOURCE]: 'Resource not available',
-      [ErrorCategory.AUTHENTICATION]: 'Authentication required',
-      [ErrorCategory.UNKNOWN]: 'Unknown error occurred',
+      [ErrorCategory.WEB3]: "Web3 connection issue detected",
+      [ErrorCategory.NETWORK]: "Network connectivity problem",
+      [ErrorCategory.UI]: "Interface error occurred",
+      [ErrorCategory.VALIDATION]: "Input validation failed",
+      [ErrorCategory.PERMISSION]: "Permission required",
+      [ErrorCategory.RESOURCE]: "Resource not available",
+      [ErrorCategory.AUTHENTICATION]: "Authentication required",
+      [ErrorCategory.UNKNOWN]: "Unknown error occurred",
     };
 
-    const baseMessage = categoryMessages[error.category] || 'An error occurred';
+    const baseMessage = categoryMessages[error.category] || "An error occurred";
     return `${baseMessage}: ${error.message}`;
   }
 
@@ -210,30 +217,30 @@ class ErrorMonitoringService {
 
     switch (error.category) {
       case ErrorCategory.WEB3:
-        actions.push('Check wallet connection');
-        actions.push('Ensure correct network is selected');
-        if (error.isRecoverable) actions.push('Try reconnecting wallet');
+        actions.push("Check wallet connection");
+        actions.push("Ensure correct network is selected");
+        if (error.isRecoverable) actions.push("Try reconnecting wallet");
         break;
-      
+
       case ErrorCategory.NETWORK:
-        actions.push('Check internet connection');
-        actions.push('Try refreshing the page');
-        if (error.isRecoverable) actions.push('Retry the operation');
+        actions.push("Check internet connection");
+        actions.push("Try refreshing the page");
+        if (error.isRecoverable) actions.push("Retry the operation");
         break;
-      
+
       case ErrorCategory.PERMISSION:
-        actions.push('Grant requested permissions');
-        actions.push('Check browser settings');
+        actions.push("Grant requested permissions");
+        actions.push("Check browser settings");
         break;
-      
+
       case ErrorCategory.AUTHENTICATION:
-        actions.push('Log in again');
-        actions.push('Check session status');
+        actions.push("Log in again");
+        actions.push("Check session status");
         break;
-      
+
       default:
-        actions.push('Try refreshing the page');
-        if (error.isRecoverable) actions.push('Retry the operation');
+        actions.push("Try refreshing the page");
+        if (error.isRecoverable) actions.push("Retry the operation");
         break;
     }
 
@@ -242,7 +249,7 @@ class ErrorMonitoringService {
 
   private notifyUser(alert: ErrorAlert): void {
     // Dispatch custom event for UI components to handle
-    const event = new CustomEvent('errorAlert', {
+    const event = new CustomEvent("errorAlert", {
       detail: {
         id: alert.id,
         message: alert.message,
@@ -257,8 +264,10 @@ class ErrorMonitoringService {
   }
 
   private consoleAlert(alert: ErrorAlert): void {
-    const consoleMethod = alert.severity === ErrorSeverity.CRITICAL ? 'error' : 'warn';
-    console[consoleMethod](
+    const consoleMethod =
+      alert.severity === ErrorSeverity.CRITICAL ? "error" : "warn";
+
+    const logArgs = [
       `🚨 Error Alert [${alert.severity.toUpperCase()}]: ${alert.message}`,
       {
         errorId: alert.id,
@@ -266,11 +275,19 @@ class ErrorMonitoringService {
         suggestedActions: alert.suggestedActions,
         canRetry: alert.canRetry,
         timestamp: alert.timestamp,
-      }
-    );
+      },
+    ];
+
+    switch (consoleMethod) {
+      case "error":
+        console.error(...logArgs);
+        break;
+      case "warn":
+        console.warn(...logArgs);
+        break;
+    }
   }
 
-  
   // Performance monitoring
   monitorPerformance(operation: string, duration: number): void {
     if (!this.config.enablePerformanceMonitoring) return;
@@ -279,7 +296,7 @@ class ErrorMonitoringService {
     if (!this.performanceMetrics.has(operation)) {
       this.performanceMetrics.set(operation, []);
     }
-    
+
     const metrics = this.performanceMetrics.get(operation)!;
     metrics.push(duration);
 
@@ -301,8 +318,14 @@ class ErrorMonitoringService {
     }
   }
 
-  getPerformanceMetrics(): Record<string, { average: number; min: number; max: number; count: number }> {
-    const result: Record<string, { average: number; min: number; max: number; count: number }> = {};
+  getPerformanceMetrics(): Record<
+    string,
+    { average: number; min: number; max: number; count: number }
+  > {
+    const result: Record<
+      string,
+      { average: number; min: number; max: number; count: number }
+    > = {};
 
     for (const [operation, metrics] of this.performanceMetrics.entries()) {
       if (metrics.length > 0) {
@@ -337,7 +360,7 @@ class ErrorMonitoringService {
   }
 
   // User feedback
-  submitFeedback(feedback: Omit<UserFeedback, 'timestamp'>): void {
+  submitFeedback(feedback: Omit<UserFeedback, "timestamp">): void {
     const fullFeedback: UserFeedback = {
       ...feedback,
       timestamp: new Date(),
@@ -364,14 +387,14 @@ class ErrorMonitoringService {
   private async sendFeedbackToServer(feedback: UserFeedback): Promise<void> {
     try {
       await fetch(this.config.feedbackEndpoint!, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(feedback),
       });
     } catch (error) {
-      logger.warn('Failed to send user feedback to server:', error);
+      logger.warn("Failed to send user feedback to server:", error);
     }
   }
 
@@ -389,7 +412,10 @@ class ErrorMonitoringService {
     averageRetryAttempts: number;
   } {
     const metrics = errorReporting.getMetrics();
-    const totalRetryAttempts = Array.from(this.retryAttempts.values()).reduce((sum, attempts) => sum + attempts, 0);
+    const totalRetryAttempts = Array.from(this.retryAttempts.values()).reduce(
+      (sum, attempts) => sum + attempts,
+      0,
+    );
     const errorsWithRetries = this.retryAttempts.size;
 
     return {
@@ -398,7 +424,8 @@ class ErrorMonitoringService {
       errorsByCategory: metrics.errorsByCategory,
       errorsBySeverity: metrics.errorsBySeverity,
       recoveryRate: metrics.recoverySuccessRate,
-      averageRetryAttempts: errorsWithRetries > 0 ? totalRetryAttempts / errorsWithRetries : 0,
+      averageRetryAttempts:
+        errorsWithRetries > 0 ? totalRetryAttempts / errorsWithRetries : 0,
     };
   }
 
@@ -425,13 +452,16 @@ export const monitorError = (error: AppError): void => {
   errorMonitoring.monitorError(error);
 };
 
-export const monitorPerformance = (operation: string, duration: number): void => {
+export const monitorPerformance = (
+  operation: string,
+  duration: number,
+): void => {
   errorMonitoring.monitorPerformance(operation, duration);
 };
 
 export const createPerformanceMonitor = (operation: string) => {
   const startTime = performance.now();
-  
+
   return {
     end() {
       const duration = performance.now() - startTime;
@@ -443,8 +473,8 @@ export const createPerformanceMonitor = (operation: string) => {
 
 export const submitErrorFeedback = (
   errorId: string,
-  feedback: UserFeedback['feedback'],
-  comment?: string
+  feedback: UserFeedback["feedback"],
+  comment?: string,
 ): void => {
   errorMonitoring.submitFeedback({
     errorId,
