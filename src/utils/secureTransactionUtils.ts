@@ -1,4 +1,6 @@
-import { ethers } from 'ethers';
+import { ethers } from "ethers";
+import { simulateTransaction } from "./tenderlySimulation";
+import { logger } from "./logger";
 
 /**
  * Formats a blockchain address for display: 0x1234...5678
@@ -12,11 +14,11 @@ export const formatAddress = (address: string): string => {
  * Formats a value in wei to a string in ETH with fixed precision
  */
 export const formatEth = (wei: string | undefined): string => {
-  if (!wei) return '0.000000';
+  if (!wei) return "0.000000";
   try {
     return parseFloat(ethers.formatEther(wei)).toFixed(6);
   } catch (error) {
-    return '0.000000';
+    return "0.000000";
   }
 };
 
@@ -25,11 +27,16 @@ export const formatEth = (wei: string | undefined): string => {
  */
 export const getRiskLevelColor = (riskLevel: string): string => {
   switch (riskLevel) {
-    case 'critical': return 'text-red-600 dark:text-red-400';
-    case 'high': return 'text-orange-600 dark:text-orange-400';
-    case 'medium': return 'text-yellow-600 dark:text-yellow-400';
-    case 'low': return 'text-green-600 dark:text-green-400';
-    default: return 'text-gray-600 dark:text-gray-400';
+    case "critical":
+      return "text-red-600 dark:text-red-400";
+    case "high":
+      return "text-orange-600 dark:text-orange-400";
+    case "medium":
+      return "text-yellow-600 dark:text-yellow-400";
+    case "low":
+      return "text-green-600 dark:text-green-400";
+    default:
+      return "text-gray-600 dark:text-gray-400";
   }
 };
 
@@ -38,22 +45,60 @@ export const getRiskLevelColor = (riskLevel: string): string => {
  */
 export const getRiskLevelBg = (riskLevel: string): string => {
   switch (riskLevel) {
-    case 'critical': return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-    case 'high': return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800';
-    case 'medium': return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
-    case 'low': return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
-    default: return 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800';
+    case "critical":
+      return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800";
+    case "high":
+      return "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800";
+    case "medium":
+      return "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800";
+    case "low":
+      return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
+    default:
+      return "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800";
   }
 };
 
 /**
  * Maps a step name to a progress percentage
  */
-export const getProgressForStep = (step: 'validation' | 'signing' | 'broadcast'): number => {
+export const getProgressForStep = (
+  step: "validation" | "signing" | "broadcast",
+): number => {
   switch (step) {
-    case 'validation': return 25;
-    case 'signing': return 50;
-    case 'broadcast': return 75;
-    default: return 0;
+    case "validation":
+      return 25;
+    case "signing":
+      return 50;
+    case "broadcast":
+      return 75;
+    default:
+      return 0;
   }
 };
+
+export async function secureSendTransaction(
+  txRequest: { from: string; to: string; value?: string; data?: string },
+  skipSimulation = false,
+) {
+  if (!skipSimulation) {
+    logger.info("Simulating secure transaction", { txRequest });
+    const simulationResult = await simulateTransaction(txRequest);
+
+    if (
+      simulationResult.error ||
+      !simulationResult.tenderlyResponse.transaction.status
+    ) {
+      const errorMessage =
+        simulationResult.error || "Tenderly simulation failed";
+      logger.error(errorMessage, { simulationResult });
+      throw new Error(`Transaction failed simulation: ${errorMessage}`);
+    }
+    logger.info("Simulation successful", { simulationResult });
+  }
+
+  // This is where the actual transaction would be sent
+  logger.info("Skipping actual transaction for now.", { txRequest });
+  return {
+    hash: "0x-simulated-transaction-hash",
+  };
+}
