@@ -1,0 +1,79 @@
+{
+  "properties": [
+    {
+      "id": "1",
+      "title": "Modern Downtown Apartment",
+      "location": "San Francisco, CA",
+      "price": 850000,
+      "tokenId": "1",
+      "description": "Beautiful 2-bedroom apartment in downtown San Francisco with stunning city views and modern amenities.",
+      "imageUrl": "https://images.unsplash.com/photo-1540932764986-b8887cceff1f?w=400",
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "area": 1200,
+      "roi": 5.2,
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "contractAddress": "0x5FbDB2315678afccb333f8a9c34a6af00d2d16451"
+    },
+    {
+      "id": "2",
+      "title": "Luxury Waterfront Penthouse",
+      "location": "Miami, FL",
+      "price": 2500000,
+      "tokenId": "2",
+      "description": "Exclusive penthouse with oceanfront views, private pool, and premium amenities in Miami Beach.",
+      "imageUrl": "https://images.unsplash.com/photo-1512917774080-9264f475eabf?w=400",
+      "bedrooms": 4,
+      "bathrooms": 4,
+      "area": 5000,
+      "roi": 6.8,
+      "owner": "0x70997970C51812e339D9B73b0245ad39437D9142",
+      "contractAddress": "0x5FbDB2315678afccb333f8a9c34a6af00d2d16451"
+    },
+    {
+      "id": "3",
+      "title": "Historic Brooklyn Townhouse",
+      "location": "Brooklyn, NY",
+      "price": 1200000,
+      "tokenId": "3",
+      "description": "Beautifully restored historic brownstone in Brooklyn Heights with original hardwood floors and period details.",
+      "imageUrl": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "area": 2000,
+      "roi": 4.5,
+      "owner": "0x3C44CdDdB6a900c8d7C64f46199c5e3c2c52bBd8",
+      "contractAddress": "0x5FbDB2315678afccb333f8a9c34a6af00d2d16451"
+    },
+    {
+      "id": "4",
+      "title": "Tech Hub Office Space",
+      "location": "Austin, TX",
+      "price": 750000,
+      "tokenId": "4",
+      "description": "Prime commercial real estate in the heart of Austin's tech district. Perfect for startups and tech companies.",
+      "imageUrl": "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=400",
+      "bedrooms": 0,
+      "bathrooms": 2,
+      "area": 3500,
+      "roi": 7.2,
+      "owner": "0x1234567890123456789012345678901234567890",
+      "contractAddress": "0x5FbDB2315678afccb333f8a9c34a6af00d2d16451"
+    },
+    {
+      "id": "5",
+      "title": "Mountain View Villa",
+      "location": "Denver, CO",
+      "price": 950000,
+      "tokenId": "5",
+      "description": "Stunning villa with panoramic mountain views, outdoor living spaces, and eco-friendly features.",
+      "imageUrl": "https://images.unsplash.com/photo-1571508601101-440d5a02f147?w=400",
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "area": 3200,
+      "roi": 5.9,
+      "owner": "0x0123456789012345678901234567890123456789",
+      "contractAddress": "0x5FbDB2315678afccb333f8a9c34a6af00d2d16451"
+    }
+  ]
+}

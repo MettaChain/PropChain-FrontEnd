@@ -93,11 +93,11 @@ export function isMaintenanceMode(): boolean {
 
 /**
  * Get RPC URL for a specific chain
- * @param chain - The chain identifier (ethereum, polygon, bsc)
+ * @param chain - The chain identifier (ethereum, polygon, bsc, local)
  * @returns RPC URL or undefined if not configured
  */
 export function getRpcUrl(
-  chain: "ethereum" | "polygon" | "bsc",
+  chain: "ethereum" | "polygon" | "bsc" | "local",
 ): string | undefined {
   const config = getEnvConfig();
 
@@ -108,9 +108,19 @@ export function getRpcUrl(
       return config.POLYGON_MAINNET_RPC_URL;
     case "bsc":
       return config.BSC_MAINNET_RPC_URL;
+    case "local":
+      return config.LOCAL_RPC_URL;
     default:
       return undefined;
   }
+}
+
+/**
+ * Get local Foundry/Anvil RPC URL
+ * @returns Local RPC URL or undefined if not configured
+ */
+export function getLocalRpcUrl(): string | undefined {
+  return getEnvConfig().LOCAL_RPC_URL;
 }
 
 /**
