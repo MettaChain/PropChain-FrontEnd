@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Plus, CheckSquare, Square, Heart } from 'lucide-react';
+import { ShoppingCart, Plus, CheckSquare, Square, Heart, Star } from 'lucide-react';
 import type { Property } from '@/types/property';
-import { formatPrice, formatNumber, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
+import { formatPrice, formatNumber, formatROI, getBlockchainColor } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
 import { useComparisonStore } from '@/store/comparisonStore';
@@ -18,6 +18,12 @@ interface PropertyCardProps {
   property: Property;
   viewMode?: 'grid' | 'list';
 }
+
+const WALLET_OPTIONS = [
+  { id: 'metamask', name: 'MetaMask', installUrl: 'https://metamask.io/download/' },
+  { id: 'walletconnect', name: 'WalletConnect', description: 'Scan a QR code with any mobile wallet' },
+  { id: 'coinbase', name: 'Coinbase Wallet', installUrl: 'https://www.coinbase.com/wallet' },
+] as const;
 
 const PropertyCardInner: React.FC<PropertyCardProps> = ({ 
   property, 
@@ -35,28 +41,24 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
   const compareLimitReached = selectedIds.length >= 3 && !isCompared;
   const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
 
-  const handleAddToCart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     addItem(property, 1);
   }, [addItem, property]);
 
-  const handleComparisonToggle = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleComparisonToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleProperty(property);
   }, [toggleProperty, property]);
 
-  const handleCompareToggle = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
-    e.preventDefault();
+  const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
     e.stopPropagation();
     if (!compareLimitReached) {
       togglePropertyId(property.id);
     }
   }, [compareLimitReached, togglePropertyId, property.id]);
 
-  const handleToggleFavorite = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isFavorite(property.id)) {
       removeFavorite(property.id);
@@ -71,24 +73,23 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
         isListView ? 'flex flex-row' : 'flex flex-col'
       }`}
     >
-{/* Image */}
-        <div className={`relative overflow-hidden ${isListView ? 'w-64 flex-shrink-0' : 'w-full h-56'}`}>
-          <Image
-            src={property.images[0]}
-            alt={`${property.name} - ${PROPERTY_TYPE_LABELS[property.propertyType]} property in ${property.location.city}, ${property.location.state}`}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-300"
-          />
-        
-{/* Badge Container */}
+      <div className={`relative overflow-hidden ${isListView ? 'w-64 flex-shrink-0' : 'w-full h-56'}`}>
+        <Image
+          src={property.images[0]}
+          alt={`${property.name} - ${PROPERTY_TYPE_LABELS[property.propertyType]} property in ${property.location.city}, ${property.location.state}`}
+          fill
+          className="object-cover group-hover:scale-110 transition-transform duration-300"
+        />
+
         <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 sm:gap-2">
           {property.featured && (
-            <span className="bg-yellow-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded" role="status" aria-label="Featured property">
-              ⭐ Featured
+            <span className="bg-yellow-700 dark:bg-yellow-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-live="polite" aria-label="Featured property">
+              <Star className="w-3 h-3" aria-hidden="true" />
+              Featured
             </span>
           )}
           {property.verified && (
-            <span className="bg-green-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-label="Verified property">
+            <span className="bg-emerald-700 dark:bg-emerald-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-live="polite" aria-label="Verified property">
               <svg aria-hidden="true" className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
@@ -97,17 +98,15 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
           )}
         </div>
 
-        {/* ROI Badge */}
-        <div className="absolute top-2 right-20 sm:top-3 sm:right-24" role="status" aria-label={`Return on investment: ${formatROI(property.metrics.roi)}`}>
-          <div className="bg-blue-600 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
+        <div className="absolute top-2 right-20 sm:top-3 sm:right-24" role="status" aria-live="polite" aria-label={`Return on investment: ${formatROI(property.metrics.roi)}`}>
+          <div className="bg-blue-700 dark:bg-blue-800 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
             {formatROI(property.metrics.roi)} ROI
           </div>
         </div>
 
-        {/* Comparison Toggle */}
         <button
           onClick={handleComparisonToggle}
-          className="absolute top-2 right-12 sm:top-3 sm:right-16 bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 p-2 rounded-lg shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="absolute top-2 right-12 sm:top-3 sm:right-16 bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 p-2 rounded-lg shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           title={isSelectedForComparison ? "Remove from comparison" : "Add to comparison"}
           aria-label={isSelectedForComparison ? "Remove property from comparison" : "Add property to comparison"}
           aria-pressed={isSelectedForComparison}
@@ -119,10 +118,9 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
           )}
         </button>
 
-        {/* Favorite Button */}
         <button
           onClick={handleToggleFavorite}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
           aria-label={isFavorite(property.id) ? `Remove ${property.name} from favorites` : `Add ${property.name} to favorites`}
           aria-pressed={isFavorite(property.id)}
         >
@@ -136,10 +134,10 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
           />
         </button>
 
-        {/* Blockchain Badge */}
         <div 
           className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3"
           role="status"
+          aria-live="polite"
           aria-label={`Blockchain: ${BLOCKCHAIN_LABELS[property.blockchain]}`}
         >
           <div
@@ -151,7 +149,6 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
           </div>
         </div>
 
-        {/* Compare Toggle */}
         <div className="absolute top-12 sm:top-14 right-2 sm:right-3">
           <label
             className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${
@@ -175,25 +172,20 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
         </div>
       </div>
 
-      {/* Content */}
       <div className={`p-3 sm:p-5 flex flex-col ${isListView ? 'flex-1' : ''}`}>
-        {/* Property Type */}
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className="text-lg sm:text-xl">{getPropertyTypeIcon(property.propertyType)}</span>
           <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             {PROPERTY_TYPE_LABELS[property.propertyType]}
           </span>
         </div>
 
-        {/* Title */}
         <Link
           href={`/properties/${property.id}`}
-          className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2"
+          className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
         >
           {property.name}
         </Link>
 
-        {/* Location */}
         <div className="flex items-start gap-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
           <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -204,14 +196,12 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
           </span>
         </div>
 
-        {/* Description */}
         {isListView && (
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
             {property.description}
           </p>
         )}
 
-        {/* Details */}
         {property.details.bedrooms && (
           <div className="flex items-center gap-4 text-sm text-gray-700 dark:text-gray-300 mb-4">
             {property.details.bedrooms && (
@@ -234,12 +224,11 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               </svg>
-                <span>{formatNumber(property.details.squareFeet)} sqft</span>
+              <span>{formatNumber(property.details.squareFeet)} sqft</span>
             </div>
           </div>
         )}
 
-        {/* Token Info */}
         <div className="flex items-center justify-between mb-3 sm:mb-4 p-2 sm:p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-2">
           <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Available Tokens</p>
@@ -255,7 +244,6 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
           </div>
         </div>
 
-        {/* Price and CTA */}
         <div className="flex items-center justify-between mt-auto pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700 gap-2">
           <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-gray-400">Total Value</p>
@@ -272,7 +260,7 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
             />
             <button
               onClick={handleAddToCart}
-              className="px-2 sm:px-3 py-1.5 sm:py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              className="px-2 sm:px-3 py-1.5 sm:py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
               disabled={property.tokenInfo.available === 0}
               title="Add to Cart"
               aria-label={property.tokenInfo.available === 0 ? 'No tokens available' : `Add ${property.name} to cart`}
@@ -283,7 +271,7 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
             </button>
             <Link
               href={`/properties/${property.id}`}
-              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center"
+              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 inline-flex items-center justify-center"
               aria-label={`View details for ${property.name}`}
             >
               View
