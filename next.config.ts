@@ -87,7 +87,8 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=60, stale-while-revalidate=300, s-maxage=300",
+            value:
+              "public, max-age=60, stale-while-revalidate=300, s-maxage=300",
           },
           {
             key: "Vary",
@@ -146,6 +147,12 @@ const nextConfig: NextConfig = {
             chunks: "all",
             priority: 25,
           },
+          safe: {
+            name: "safe-vendors",
+            test: /[\\/]node_modules[\\/]@safe-global[\\/]/,
+            chunks: "all",
+            priority: 30,
+          },
         },
       };
     }
@@ -156,7 +163,10 @@ const nextConfig: NextConfig = {
           compiler.hooks.done.tap("BuildStatsPlugin", (stats: any) => {
             const fs = require("fs");
             const path = require("path");
-            const outputPath = path.join(compiler.options.output.path ?? ".next", "build-stats.json");
+            const outputPath = path.join(
+              compiler.options.output.path ?? ".next",
+              "build-stats.json",
+            );
             fs.writeFileSync(
               outputPath,
               JSON.stringify(
@@ -167,8 +177,8 @@ const nextConfig: NextConfig = {
                   chunkGroups: true,
                 }),
                 null,
-                2
-              )
+                2,
+              ),
             );
           });
         }
