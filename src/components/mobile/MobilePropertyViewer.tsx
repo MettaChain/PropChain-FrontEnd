@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-
+import { useTranslation } from "react-i18next";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import type { PanInfo } from "framer-motion";
@@ -13,12 +13,10 @@ import {
   Phone,
   MapPin,
   Camera,
-  Play,
   ChevronLeft,
   ChevronRight,
   ZoomIn,
   ZoomOut,
-  Maximize2,
   Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +34,8 @@ export const MobilePropertyViewer = ({
   isOpen,
   onClose,
 }: MobilePropertyViewerProps) => {
+  const { t } = useTranslation("common");
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [scale, setScale] = useState(1);
@@ -83,11 +83,16 @@ export const MobilePropertyViewer = ({
   };
 
   const handleShare = async () => {
+    const shareText = t("mobile.viewer.shareText", {
+      name: property.name,
+      location: property.location,
+    });
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: property.name,
-          text: `Check out this property: ${property.name} in ${property.location}`,
+          text: shareText,
           url: window.location.href,
         });
       } catch (error) {
@@ -164,6 +169,8 @@ export const MobilePropertyViewer = ({
         {/* Image Gallery */}
         <div
           ref={containerRef}
+          role="region"
+          aria-label={t("mobile.viewer.galleryLabel", { name: property.name })}
           className="relative w-full h-full overflow-hidden"
         >
           <motion.div
@@ -197,9 +204,10 @@ export const MobilePropertyViewer = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => setCurrentImageIndex((prev) => prev - 1)}
+                  aria-label={t("mobile.viewer.previousImage")}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeft className="w-6 h-6" aria-hidden="true" />
                 </Button>
               )}
 
@@ -208,9 +216,10 @@ export const MobilePropertyViewer = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => setCurrentImageIndex((prev) => prev + 1)}
+                  aria-label={t("mobile.viewer.nextImage")}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
                 >
-                  <ChevronRight className="w-6 h-6" />
+                  <ChevronRight className="w-6 h-6" aria-hidden="true" />
                 </Button>
               )}
             </>
@@ -238,8 +247,16 @@ export const MobilePropertyViewer = ({
         </div>
 
         {/* Image Counter */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-          {currentImageIndex + 1} / {property.images.length}
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="absolute top-20 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm"
+        >
+          {t("mobile.viewer.imageCounter", {
+            current: currentImageIndex + 1,
+            total: property.images.length,
+          })}
         </div>
 
         {/* Thumbnail Strip */}
@@ -251,7 +268,7 @@ export const MobilePropertyViewer = ({
           <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
             {property.images.map((image, index) => (
               <button
-                key={index}
+                key={image}
                 onClick={() => setCurrentImageIndex(index)}
                 className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
                   index === currentImageIndex
@@ -288,13 +305,17 @@ export const MobilePropertyViewer = ({
 
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <div>
-                    <p className="text-xs text-gray-300">Value</p>
+                    <p className="text-xs text-gray-300">
+                      {t("mobile.viewer.valueLabel")}
+                    </p>
                     <p className="font-semibold">
                       ${property.value.toLocaleString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-300">ROI</p>
+                    <p className="text-xs text-gray-300">
+                      {t("mobile.viewer.roiLabel")}
+                    </p>
                     <p
                       className={`font-semibold ${property.roi >= 0 ? "text-green-400" : "text-red-400"}`}
                     >
@@ -306,10 +327,19 @@ export const MobilePropertyViewer = ({
 
                 {property.bedrooms && property.bathrooms && (
                   <div className="flex gap-4 mb-3 text-sm">
-                    <span>{property.bedrooms} bed</span>
-                    <span>{property.bathrooms} bath</span>
+                    <span>
+                      {t("mobile.viewer.bed", { count: property.bedrooms })}
+                    </span>
+                    <span>
+                      {t("mobile.viewer.bath", { count: property.bathrooms })}
+                    </span>
                     {property.sqft && (
-                      <span>{property.sqft.toLocaleString()} sqft</span>
+                      <span>
+                        {t("mobile.viewer.sqft", {
+                          count: property.sqft,
+                          formattedCount: property.sqft.toLocaleString(),
+                        })}
+                      </span>
                     )}
                   </div>
                 )}
@@ -320,9 +350,9 @@ export const MobilePropertyViewer = ({
 
                 {property.amenities && (
                   <div className="flex flex-wrap gap-2">
-                    {property.amenities.slice(0, 3).map((amenity, index) => (
+                    {property.amenities.slice(0, 3).map((amenity) => (
                       <Badge
-                        key={index}
+                        key={amenity}
                         variant="secondary"
                         className="text-xs"
                       >
@@ -331,7 +361,9 @@ export const MobilePropertyViewer = ({
                     ))}
                     {property.amenities.length > 3 && (
                       <Badge variant="secondary" className="text-xs">
-                        +{property.amenities.length - 3} more
+                        {t("mobile.viewer.moreAmenities", {
+                          count: property.amenities.length - 3,
+                        })}
                       </Badge>
                     )}
                   </div>
@@ -347,14 +379,14 @@ export const MobilePropertyViewer = ({
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
               <Phone className="w-4 h-4 mr-2" />
-              Contact
+              {t("mobile.viewer.contact")}
             </Button>
             <Button
               variant="outline"
               className="flex-1 border-white text-white hover:bg-white hover:text-black"
             >
               <Camera className="w-4 h-4 mr-2" />
-              Schedule Tour
+              {t("mobile.viewer.scheduleTour")}
             </Button>
           </div>
         </motion.div>

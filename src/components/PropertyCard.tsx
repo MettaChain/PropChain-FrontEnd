@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Plus, CheckSquare, Square, Heart } from 'lucide-react';
+import { ShoppingCart, Plus, CheckSquare, Square, Heart, Star } from 'lucide-react';
 import type { Property } from '@/types/property';
-import { formatPrice, formatNumber, formatROI, getBlockchainColor, getPropertyTypeIcon } from '@/utils/searchUtils';
+import { formatPrice, formatNumber, formatROI, getBlockchainColor } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
 import { useComparisonStore } from '@/store/comparisonStore';
@@ -19,7 +19,7 @@ interface PropertyCardProps {
   viewMode?: 'grid' | 'list';
 }
 
-export const PropertyCard: React.FC<PropertyCardProps> = ({ 
+const PropertyCardInner: React.FC<PropertyCardProps> = ({ 
   property, 
   viewMode = 'grid' 
 }) => {
@@ -36,89 +36,101 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
 
   const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     addItem(property, 1);
-  };
+  }, [addItem, property]);
 
   const handleComparisonToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     toggleProperty(property);
-  };
+  }, [toggleProperty, property]);
 
   const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
-    e.preventDefault();
     e.stopPropagation();
     if (!compareLimitReached) {
       togglePropertyId(property.id);
     }
-  };
+  }, [compareLimitReached, togglePropertyId, property.id]);
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     if (isFavorite(property.id)) {
       removeFavorite(property.id);
     } else {
       addFavorite(property);
     }
-  };
+  }, [isFavorite, removeFavorite, addFavorite, property]);
 
   return (
-    <Link
-      href={`/properties/${property.id}`}
-      className={`group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden ${
+    <article
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden ${
         isListView ? 'flex flex-row' : 'flex flex-col'
       }`}
     >
-      {/* Image */}
-      <div className={`relative overflow-hidden ${isListView ? 'w-64 flex-shrink-0' : 'w-full h-56'}`}>
-        <Image
-          src={property.images[0]}
-          alt={property.name}
-          fill
-          className="object-cover group-hover:scale-110 transition-transform duration-300"
-        />
+{/* Image */}
+        <div className={`relative overflow-hidden ${isListView ? 'w-64 flex-shrink-0' : 'w-full h-56'}`}>
+          <Image
+            src={property.images[0]}
+            alt={`${property.name} - ${PROPERTY_TYPE_LABELS[property.propertyType]} property in ${property.location.city}, ${property.location.state}`}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
+          />
         
-        {/* Badges */}
+{/* Badge Container */}
+        {/*
+         * Badge palette tuned for WCAG AA contrast (>=4.5:1) on both light
+         * and dark surfaces. Light mode: white text on saturated dark colour.
+         * Dark mode: white text on slightly lighter hue, still well above 4.5:1
+         * against the gray-800 card surface.
+         *   Featured:  bg-yellow-700/800   (>=4.7:1 vs white)
+         *   Verified:  bg-emerald-700/800 (>=4.7:1 vs white)
+         *   ROI:       bg-blue-700/800     (>=6:1 vs white)
+         */}
         <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 sm:gap-2">
           {property.featured && (
-            <span className="bg-yellow-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded text-xs">
-              ⭐ Featured
+            <span className="bg-yellow-700 dark:bg-yellow-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-live="polite" aria-label="Featured property">
+              <Star className="w-3 h-3" aria-hidden="true" />
+              Featured
             </span>
           )}
           {property.verified && (
-            <span className="bg-green-500 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1">
-              ✓ Verified
+            <span className="bg-emerald-700 dark:bg-emerald-800 text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1" role="status" aria-live="polite" aria-label="Verified property">
+              <svg aria-hidden="true" className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Verified
             </span>
           )}
         </div>
 
         {/* ROI Badge */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2">
-          <div className="bg-blue-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg shadow-lg">
-        <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-          <div className="bg-blue-600 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
+        <div className="absolute top-2 right-20 sm:top-3 sm:right-24" role="status" aria-live="polite" aria-label={`Return on investment: ${formatROI(property.metrics.roi)}`}>
+          <div className="bg-blue-700 dark:bg-blue-800 text-white text-xs sm:text-sm font-bold px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg shadow-lg">
             {formatROI(property.metrics.roi)} ROI
           </div>
-          <button
-            onClick={handleComparisonToggle}
-            className="bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 p-2 rounded-lg shadow-lg transition-colors"
-            title={isSelectedForComparison ? "Remove from comparison" : "Add to comparison"}
-          >
-            {isSelectedForComparison ? (
-              <CheckSquare className="w-4 h-4" />
-            ) : (
-              <Square className="w-4 h-4" />
-            )}
-          </button>
         </div>
+
+        {/* Comparison Toggle */}
+        <button
+          onClick={handleComparisonToggle}
+          className="absolute top-2 right-12 sm:top-3 sm:right-16 bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 p-2 rounded-lg shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          title={isSelectedForComparison ? "Remove from comparison" : "Add to comparison"}
+          aria-label={isSelectedForComparison ? "Remove property from comparison" : "Add property to comparison"}
+          aria-pressed={isSelectedForComparison}
+        >
+          {isSelectedForComparison ? (
+            <CheckSquare className="w-4 h-4" aria-hidden="true" />
+          ) : (
+            <Square className="w-4 h-4" aria-hidden="true" />
+          )}
+        </button>
 
         {/* Favorite Button */}
         <button
           onClick={handleToggleFavorite}
-          className="absolute top-3 right-16 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+          aria-label={isFavorite(property.id) ? `Remove ${property.name} from favorites` : `Add ${property.name} to favorites`}
+          aria-pressed={isFavorite(property.id)}
         >
           <Heart
             className={`w-4 h-4 ${
@@ -126,22 +138,28 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 ? 'fill-red-500 text-red-500'
                 : 'text-gray-600 hover:text-red-500'
             }`}
+            aria-hidden="true"
           />
         </button>
 
         {/* Blockchain Badge */}
-        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3">
+        <div 
+          className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3"
+          role="status"
+          aria-live="polite"
+          aria-label={`Blockchain: ${BLOCKCHAIN_LABELS[property.blockchain]}`}
+        >
           <div
             className="text-white text-xs font-semibold px-2 py-0.5 sm:py-1 rounded flex items-center gap-1"
             style={{ backgroundColor: getBlockchainColor(property.blockchain) }}
           >
-            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" aria-hidden="true" />
             <span className="truncate max-w-[80px] sm:max-w-none">{BLOCKCHAIN_LABELS[property.blockchain]}</span>
           </div>
         </div>
 
         {/* Compare Toggle */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-12 sm:top-14 right-2 sm:right-3">
           <label
             className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${
               isCompared
@@ -157,7 +175,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               onClick={(e) => e.stopPropagation()}
               disabled={compareLimitReached}
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              aria-label={isCompared ? 'Remove from comparison' : 'Add to comparison'}
+              aria-label={isCompared ? 'Remove from comparison list' : 'Add to comparison list'}
             />
             <span>{isCompared ? 'Selected' : 'Compare'}</span>
           </label>
@@ -168,24 +186,26 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       <div className={`p-3 sm:p-5 flex flex-col ${isListView ? 'flex-1' : ''}`}>
         {/* Property Type */}
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className="text-lg sm:text-xl">{getPropertyTypeIcon(property.propertyType)}</span>
           <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             {PROPERTY_TYPE_LABELS[property.propertyType]}
           </span>
         </div>
 
         {/* Title */}
-        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+        <Link
+          href={`/properties/${property.id}`}
+          className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2"
+        >
           {property.name}
-        </h3>
+        </Link>
 
         {/* Location */}
         <div className="flex items-start gap-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
-          <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <span className="line-clamp-2">
+          <span className="line-clamp-2" aria-label={`Location: ${property.location.city}, ${property.location.state}`}>
             {property.location.city}, {property.location.state}
           </span>
         </div>
@@ -245,7 +265,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         <div className="flex items-center justify-between mt-auto pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700 gap-2">
           <div className="min-w-0">
             <p className="text-xs text-gray-500 dark:text-gray-400">Total Value</p>
-            <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
+            <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate" aria-label={`Total value: ${formatPrice(property.price.total)} ETH`}>
               <CurrencyToggle ethAmount={property.price.total} />
             </div>
           </div>
@@ -258,20 +278,27 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             />
             <button
               onClick={handleAddToCart}
-              className="px-2 sm:px-3 py-1.5 sm:py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 flex-shrink-0"
+              className="px-2 sm:px-3 py-1.5 sm:py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1 flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
               disabled={property.tokenInfo.available === 0}
               title="Add to Cart"
+              aria-label={property.tokenInfo.available === 0 ? 'No tokens available' : `Add ${property.name} to cart`}
             >
-              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" />
-              <Plus className="w-2 h-2 sm:w-3 sm:h-3" />
+              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden="true" />
+              <Plus className="w-2 h-2 sm:w-3 sm:h-3" aria-hidden="true" />
               <span className="hidden sm:inline">Add to Cart</span>
             </button>
-            <button className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex-shrink-0">
+            <Link
+              href={`/properties/${property.id}`}
+              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center"
+              aria-label={`View details for ${property.name}`}
+            >
               View
-            </button>
+            </Link>
           </div>
         </div>
       </div>
-    </Link>
+    </article>
   );
 };
+
+export const PropertyCard = React.memo(PropertyCardInner);

@@ -167,13 +167,14 @@ describe('transactionStore', () => {
       expect(result.current.recentTransactions[0].error).toBe('Transaction failed');
     });
 
-    it('should limit recentTransactions to 10 items', () => {
+    it('should limit recentTransactions to 10 items', async () => {
       const { result } = renderHook(() => useTransactionStore());
       
-      // Add 11 confirmed transactions
-      act(() => {
+      // Add 11 confirmed transactions, yielding to microtask queue between each add
+      await act(async () => {
         for (let i = 0; i < 11; i++) {
           result.current.addTransaction({ ...mockTransactionData, hash: `0x${i}` });
+          await Promise.resolve();
           const transactionId = result.current.transactions[0].id;
           result.current.updateTransaction(transactionId, { status: 'confirmed' });
         }
@@ -332,17 +333,20 @@ describe('transactionStore', () => {
   });
 
   describe('getTransactionsByStatus', () => {
-    it('should filter transactions by status', () => {
+    it('should filter transactions by status', async () => {
       const { result } = renderHook(() => useTransactionStore());
       
-      act(() => {
+      await act(async () => {
         result.current.addTransaction({ ...mockTransactionData, hash: '0x111' });
+        await Promise.resolve();
         result.current.addTransaction({ ...mockTransactionData, hash: '0x222' });
+        await Promise.resolve();
         result.current.addTransaction({ ...mockTransactionData, hash: '0x333' });
-        
+        await Promise.resolve();
+
         const tx1 = result.current.transactions[0].id;
         const tx2 = result.current.transactions[1].id;
-        
+
         result.current.updateTransaction(tx1, { status: 'confirmed' });
         result.current.updateTransaction(tx2, { status: 'failed' });
       });
@@ -417,9 +421,14 @@ describe('transactionStore', () => {
         result.current.setError('Some error');
       });
       
+      // Simulate a fresh session by resetting the store (persistence is disabled in tests)
+      act(() => {
+        useTransactionStore.getState().reset();
+      });
+
       // Create a new hook instance
       const { result: result2 } = renderHook(() => useTransactionStore());
-      
+
       expect(result2.current.isLoading).toBe(false);
       expect(result2.current.error).toBeNull();
       // Note: pendingTransactions and recentTransactions are derived from transactions

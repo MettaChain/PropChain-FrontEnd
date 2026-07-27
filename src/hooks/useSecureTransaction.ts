@@ -1,5 +1,6 @@
 'use client';
 import { logger } from '@/utils/logger';
+import { getFriendlyWeb3ErrorMessage } from '@/utils/errorHandling';
 
 import { useCallback, useState } from 'react';
 import { ethers } from 'ethers';
@@ -146,9 +147,7 @@ export const useSecureTransaction = (): UseSecureTransactionReturn => {
         return signedTransaction;
       } catch (error) {
         logger.error('Failed to sign transaction:', error);
-        toast.error('Failed to sign transaction', {
-          description: error instanceof Error ? error.message : 'Unknown error'
-        });
+        toast.error(getFriendlyWeb3ErrorMessage(error));
         return null;
       } finally {
         setIsSigning(false);
@@ -237,9 +236,7 @@ export const useSecureTransaction = (): UseSecureTransactionReturn => {
         return txHash;
       } catch (error) {
         logger.error('Failed to broadcast transaction:', error);
-        toast.error('Failed to broadcast transaction', {
-          description: error instanceof Error ? error.message : 'Unknown error'
-        });
+        toast.error(getFriendlyWeb3ErrorMessage(error));
         return null;
       } finally {
         setIsBroadcasting(false);

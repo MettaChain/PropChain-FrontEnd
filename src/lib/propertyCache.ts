@@ -4,6 +4,7 @@
  */
 
 import { logger } from '@/utils/logger';
+import { STORAGE_KEYS } from './storageKeys';
 import {
   dbGet,
   dbSet,
@@ -39,9 +40,13 @@ import {
   getCacheEntryStatus,
   calculateEntrySize,
 } from '@/types/cache';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 // Event listeners
 const eventListeners: Set<CacheEventListener> = new Set();
+
+// Interval handle for cleanup timer (stored at module level to allow cleanup on re-init)
+let cleanupIntervalHandle: ReturnType<typeof setInterval> | null = null;
 
 // Cache statistics
 let cacheStats: CacheStats = {
@@ -53,11 +58,17 @@ let cacheStats: CacheStats = {
   missRate: 0,
   oldestEntry: null,
   newestEntry: null,
+  evictionCount: 0,
+  invalidationCount: 0,
+  entitiesByType: {},
+  sizeByType: {},
 };
 
 // Request counters for hit/miss rate
 let cacheHits = 0;
 let cacheMisses = 0;
+let evictionCount = 0;
+let invalidationCount = 0;
 
 /**
  * Emit a cache event
@@ -88,17 +99,22 @@ export const addCacheEventListener = (listener: CacheEventListener): (() => void
 const createCacheMetadata = (
   key: string,
   size: number,
+  dataType: string = 'default',
   config: CacheConfig = DEFAULT_CACHE_CONFIG
 ): CacheMetadata => {
   const now = Date.now();
+  // Get TTL for this data type, fallback to default TTL
+  const ttl = config.dataTypeTtls?.[dataType] ?? config.ttl;
+  
   return {
     key,
     cachedAt: now,
-    expiresAt: now + config.ttl,
+    expiresAt: now + ttl,
     lastAccessed: now,
     accessCount: 0,
     size,
     version: config.version,
+    dataType,
   };
 };
 
@@ -117,16 +133,8 @@ const updateMetadataOnAccess = (metadata: CacheMetadata): CacheMetadata => ({
 export const getCacheConfig = (): CacheConfig => {
   if (typeof window === 'undefined') return DEFAULT_CACHE_CONFIG;
   
-  try {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.CACHE_CONFIG);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return { ...DEFAULT_CACHE_CONFIG, ...parsed };
-    }
-  } catch (error) {
-    logger.error('Error reading cache config:', error);
-  }
-  return DEFAULT_CACHE_CONFIG;
+  const stored = safeLocalStorage.getJSON<CacheConfig>(LOCAL_STORAGE_KEYS.CACHE_CONFIG, DEFAULT_CACHE_CONFIG);
+  return { ...DEFAULT_CACHE_CONFIG, ...stored };
 };
 
 /**
@@ -135,13 +143,9 @@ export const getCacheConfig = (): CacheConfig => {
 export const setCacheConfig = (config: Partial<CacheConfig>): void => {
   if (typeof window === 'undefined') return;
   
-  try {
-    const current = getCacheConfig();
-    const updated = { ...current, ...config };
-    localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_CONFIG, JSON.stringify(updated));
-  } catch (error) {
-    logger.error('Error saving cache config:', error);
-  }
+  const current = getCacheConfig();
+  const updated = { ...current, ...config };
+  safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.CACHE_CONFIG, updated);
 };
 
 /**
@@ -149,6 +153,78 @@ export const setCacheConfig = (config: Partial<CacheConfig>): void => {
  */
 export const isCacheAvailable = (): boolean => {
   return isIndexedDBSupported();
+};
+
+/**
+ * Perform LRU eviction when cache limits are exceeded
+ */
+const performLRUEviction = async (config: CacheConfig): Promise<void> => {
+  if (!config.enableLRU) return;
+
+  try {
+    const properties = await getAllCachedProperties();
+    const mobileProperties = await getAllCachedMobileProperties();
+    const allEntries = [
+      ...properties.map(p => ({ ...p, type: 'property' as const })),
+      ...mobileProperties.map(p => ({ ...p, type: 'mobile-property' as const }))
+    ];
+
+    // Check if we exceed max entries
+    if (allEntries.length > config.maxEntries) {
+      // Sort by last accessed (ascending) - least recently used first
+      const sorted = [...allEntries].sort(
+        (a, b) => a.metadata.lastAccessed - b.metadata.lastAccessed
+      );
+
+      // Remove least recently used entries until we're under the limit
+      const toRemove = sorted.length - config.maxEntries;
+      for (let i = 0; i < toRemove; i++) {
+        const entry = sorted[i];
+        if (entry.type === 'property') {
+          await deleteCachedProperty(entry.data.id);
+        } else {
+          await deleteCachedMobileProperty(entry.data.id);
+        }
+        evictionCount++;
+        emitEvent({
+          type: 'evict',
+          key: entry.metadata.key,
+          timestamp: Date.now(),
+          reason: 'LRU eviction - max entries exceeded',
+        });
+      }
+    }
+
+    // Check if we exceed max size
+    const totalSize = allEntries.reduce((sum, e) => sum + e.metadata.size, 0);
+    if (totalSize > config.maxSize) {
+      const sorted = [...allEntries].sort(
+        (a, b) => a.metadata.lastAccessed - b.metadata.lastAccessed
+      );
+
+      // Remove least recently used entries until we're under the size limit
+      let currentSize = totalSize;
+      for (const entry of sorted) {
+        if (currentSize <= config.maxSize * 0.9) break; // Stop at 90% of max
+
+        if (entry.type === 'property') {
+          await deleteCachedProperty(entry.data.id);
+        } else {
+          await deleteCachedMobileProperty(entry.data.id);
+        }
+        currentSize -= entry.metadata.size;
+        evictionCount++;
+        emitEvent({
+          type: 'evict',
+          key: entry.metadata.key,
+          timestamp: Date.now(),
+          reason: 'LRU eviction - size limit exceeded',
+        });
+      }
+    }
+  } catch (error) {
+    logger.error('Error performing LRU eviction:', error);
+  }
 };
 
 /**
@@ -167,7 +243,7 @@ export const getCachedProperty = async (
 
     if (!entry) {
       cacheMisses++;
-      emitEvent({ type: 'miss', key, timestamp: Date.now() });
+      emitEvent({ type: 'miss', key, timestamp: Date.now(), dataType: 'property' });
       return { data: null, source: 'none', stale: false };
     }
 
@@ -176,7 +252,13 @@ export const getCachedProperty = async (
     if (status === 'expired') {
       cacheMisses++;
       await deleteCachedProperty(propertyId);
-      emitEvent({ type: 'expire', key, timestamp: Date.now(), metadata: entry.metadata });
+      emitEvent({ 
+        type: 'expire', 
+        key, 
+        timestamp: Date.now(), 
+        metadata: entry.metadata,
+        dataType: 'property' 
+      });
       return { data: null, source: 'none', stale: false };
     }
 
@@ -188,7 +270,13 @@ export const getCachedProperty = async (
     await dbSet(CACHE_STORE_NAMES.PROPERTIES, key, updatedEntry);
 
     cacheHits++;
-    emitEvent({ type: 'hit', key, timestamp: Date.now(), metadata: entry.metadata });
+    emitEvent({ 
+      type: 'hit', 
+      key, 
+      timestamp: Date.now(), 
+      metadata: entry.metadata,
+      dataType: 'property' 
+    });
     
     return {
       data: entry.data,
@@ -197,7 +285,13 @@ export const getCachedProperty = async (
     };
   } catch (error) {
     logger.error('Error getting cached property:', error);
-    emitEvent({ type: 'error', key, timestamp: Date.now(), error: error as Error });
+    emitEvent({ 
+      type: 'error', 
+      key, 
+      timestamp: Date.now(), 
+      error: error as Error,
+      dataType: 'property' 
+    });
     return { data: null, source: 'none', stale: false, error: error as Error };
   }
 };
@@ -215,23 +309,38 @@ export const setCachedProperty = async (
     // Calculate approximate size
     const tempEntry: CacheEntry<Property> = {
       data: property,
-      metadata: createCacheMetadata(key, 0, config),
+      metadata: createCacheMetadata(key, 0, 'property', config),
     };
     const size = calculateEntrySize(tempEntry);
 
     const entry: PropertyCacheEntry = {
       data: property,
-      metadata: createCacheMetadata(key, size, config),
+      metadata: createCacheMetadata(key, size, 'property', config),
     };
 
     await dbSet(CACHE_STORE_NAMES.PROPERTIES, key, entry);
-    emitEvent({ type: 'set', key, timestamp: Date.now(), metadata: entry.metadata });
+    emitEvent({ 
+      type: 'set', 
+      key, 
+      timestamp: Date.now(), 
+      metadata: entry.metadata,
+      dataType: 'property'
+    });
+    
+    // Perform LRU eviction if needed
+    await performLRUEviction(config);
     
     // Update stats
     await updateCacheStats();
   } catch (error) {
     logger.error('Error caching property:', error);
-    emitEvent({ type: 'error', key, timestamp: Date.now(), error: error as Error });
+    emitEvent({ 
+      type: 'error', 
+      key, 
+      timestamp: Date.now(), 
+      error: error as Error,
+      dataType: 'property'
+    });
     throw error;
   }
 };
@@ -315,21 +424,37 @@ export const setCachedMobileProperty = async (
   try {
     const tempEntry: CacheEntry<MobileProperty> = {
       data: property,
-      metadata: createCacheMetadata(key, 0, config),
+      metadata: createCacheMetadata(key, 0, 'mobile-property', config),
     };
     const size = calculateEntrySize(tempEntry);
 
     const entry: MobilePropertyCacheEntry = {
       data: property,
-      metadata: createCacheMetadata(key, size, config),
+      metadata: createCacheMetadata(key, size, 'mobile-property', config),
     };
 
     await dbSet(CACHE_STORE_NAMES.MOBILE_PROPERTIES, key, entry);
-    emitEvent({ type: 'set', key, timestamp: Date.now(), metadata: entry.metadata });
+    emitEvent({ 
+      type: 'set', 
+      key, 
+      timestamp: Date.now(), 
+      metadata: entry.metadata,
+      dataType: 'mobile-property'
+    });
+    
+    // Perform LRU eviction if needed
+    await performLRUEviction(config);
+    
     await updateCacheStats();
   } catch (error) {
     logger.error('Error caching mobile property:', error);
-    emitEvent({ type: 'error', key, timestamp: Date.now(), error: error as Error });
+    emitEvent({ 
+      type: 'error', 
+      key, 
+      timestamp: Date.now(), 
+      error: error as Error,
+      dataType: 'mobile-property'
+    });
     throw error;
   }
 };
@@ -377,11 +502,9 @@ export const cacheSearchResult = async (
     };
 
     if (typeof window !== 'undefined') {
-      const searches = JSON.parse(
-        localStorage.getItem('propchain-search-cache') || '{}'
-      );
+      const searches = safeLocalStorage.getJSON<Record<string, any>>(STORAGE_KEYS.SEARCH_CACHE.key, {});
       searches[key] = searchCache;
-      localStorage.setItem('propchain-search-cache', JSON.stringify(searches));
+      safeLocalStorage.setJSON(STORAGE_KEYS.SEARCH_CACHE.key, searches);
     }
 
     emitEvent({ type: 'set', key, timestamp: Date.now() });
@@ -403,9 +526,7 @@ export const getCachedSearchResult = async (
   try {
     if (typeof window === 'undefined') return null;
 
-    const searches = JSON.parse(
-      localStorage.getItem('propchain-search-cache') || '{}'
-    );
+    const searches = safeLocalStorage.getJSON<Record<string, any>>(STORAGE_KEYS.SEARCH_CACHE.key, {});
     const cached = searches[key];
 
     if (!cached) {
@@ -418,7 +539,7 @@ export const getCachedSearchResult = async (
     if (Date.now() - cached.cachedAt > config.ttl) {
       cacheMisses++;
       delete searches[key];
-      localStorage.setItem('propchain-search-cache', JSON.stringify(searches));
+      safeLocalStorage.setJSON(STORAGE_KEYS.SEARCH_CACHE.key, searches);
       return null;
     }
 
@@ -510,7 +631,7 @@ export const clearAllCachedProperties = async (): Promise<void> => {
     await dbClear(CACHE_STORE_NAMES.MOBILE_PROPERTIES);
     
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('propchain-search-cache');
+      safeLocalStorage.remove(STORAGE_KEYS.SEARCH_CACHE.key);
     }
 
     cacheHits = 0;
@@ -544,6 +665,22 @@ export const updateCacheStats = async (): Promise<CacheStats> => {
       ...mobileProperties.map((p) => p.metadata.cachedAt),
     ];
 
+    // Calculate metrics by data type
+    const entitiesByType: Record<string, number> = {};
+    const sizeByType: Record<string, number> = {};
+
+    properties.forEach(p => {
+      const dt = p.metadata.dataType;
+      entitiesByType[dt] = (entitiesByType[dt] || 0) + 1;
+      sizeByType[dt] = (sizeByType[dt] || 0) + p.metadata.size;
+    });
+
+    mobileProperties.forEach(p => {
+      const dt = p.metadata.dataType;
+      entitiesByType[dt] = (entitiesByType[dt] || 0) + 1;
+      sizeByType[dt] = (sizeByType[dt] || 0) + p.metadata.size;
+    });
+
     const totalRequests = cacheHits + cacheMisses;
     const hitRate = totalRequests > 0 ? cacheHits / totalRequests : 0;
     const missRate = totalRequests > 0 ? cacheMisses / totalRequests : 0;
@@ -566,14 +703,15 @@ export const updateCacheStats = async (): Promise<CacheStats> => {
       missRate,
       oldestEntry: allTimestamps.length > 0 ? Math.min(...allTimestamps) : null,
       newestEntry: allTimestamps.length > 0 ? Math.max(...allTimestamps) : null,
+      evictionCount,
+      invalidationCount,
+      entitiesByType,
+      sizeByType,
     };
 
     // Persist stats
     if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        LOCAL_STORAGE_KEYS.CACHE_STATS,
-        JSON.stringify(cacheStats)
-      );
+      safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.CACHE_STATS, cacheStats);
     }
 
     return cacheStats;
@@ -607,6 +745,13 @@ export const cleanupExpiredEntries = async (): Promise<number> => {
       if (now > entry.metadata.expiresAt) {
         await deleteCachedProperty(entry.data.id);
         cleanedCount++;
+        emitEvent({
+          type: 'cleanup',
+          key: entry.metadata.key,
+          timestamp: Date.now(),
+          dataType: entry.metadata.dataType,
+          reason: 'TTL expired',
+        });
       }
     }
 
@@ -615,34 +760,49 @@ export const cleanupExpiredEntries = async (): Promise<number> => {
       if (now > entry.metadata.expiresAt) {
         await deleteCachedMobileProperty(entry.data.id);
         cleanedCount++;
+        emitEvent({
+          type: 'cleanup',
+          key: entry.metadata.key,
+          timestamp: Date.now(),
+          dataType: entry.metadata.dataType,
+          reason: 'TTL expired',
+        });
       }
     }
 
     // Clean expired search caches
     if (typeof window !== 'undefined') {
-      const searches = JSON.parse(
-        localStorage.getItem('propchain-search-cache') || '{}'
-      );
+      const searches = safeLocalStorage.getJSON<Record<string, any>>(STORAGE_KEYS.SEARCH_CACHE.key, {});
       let modified = false;
       
       for (const [key, value] of Object.entries(searches)) {
         const searchCache = value as { cachedAt: number };
-        if (now - searchCache.cachedAt > config.ttl) {
+        const searchTTL = config.dataTypeTtls?.['search'] ?? config.ttl;
+        if (now - searchCache.cachedAt > searchTTL) {
           delete searches[key];
           modified = true;
+          cleanedCount++;
+          emitEvent({
+            type: 'cleanup',
+            key,
+            timestamp: Date.now(),
+            dataType: 'search',
+            reason: 'TTL expired',
+          });
         }
       }
       
       if (modified) {
-        localStorage.setItem('propchain-search-cache', JSON.stringify(searches));
+        safeLocalStorage.setJSON(STORAGE_KEYS.SEARCH_CACHE.key, searches);
       }
     }
 
     if (cleanedCount > 0) {
       emitEvent({
         type: 'cleanup',
-        key: 'expired',
+        key: 'batch',
         timestamp: Date.now(),
+        reason: `${cleanedCount} entries cleaned`,
       });
       await updateCacheStats();
     }
@@ -666,18 +826,21 @@ export const initPropertyCache = async (): Promise<void> => {
   try {
     // Load cached stats
     if (typeof window !== 'undefined') {
-      const storedStats = localStorage.getItem(LOCAL_STORAGE_KEYS.CACHE_STATS);
-      if (storedStats) {
-        cacheStats = { ...cacheStats, ...JSON.parse(storedStats) };
-      }
+      const storedStats = safeLocalStorage.getJSON<Partial<CacheStats>>(LOCAL_STORAGE_KEYS.CACHE_STATS, {});
+      cacheStats = { ...cacheStats, ...storedStats };
     }
 
     // Clean up expired entries on init
     await cleanupExpiredEntries();
     
+    // Clear any existing cleanup interval (prevents accumulation on HMR / re-imports)
+    if (cleanupIntervalHandle !== null) {
+      clearInterval(cleanupIntervalHandle);
+    }
+
     // Set up periodic cleanup
     const config = getCacheConfig();
-    setInterval(cleanupExpiredEntries, config.cleanupInterval);
+    cleanupIntervalHandle = setInterval(cleanupExpiredEntries, config.cleanupInterval);
 
     logger.info('Property cache initialized');
   } catch (error) {

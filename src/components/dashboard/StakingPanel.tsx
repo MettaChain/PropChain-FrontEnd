@@ -11,7 +11,8 @@ import {
   Clock, 
   AlertCircle,
   ChevronRight,
-  Info
+  Info,
+  Home
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -167,8 +168,8 @@ export const StakingPanel: React.FC = () => {
                   <div className="p-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-xl">
-                          🏠
+                        <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center">
+                          <Home className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
                         </div>
                         <div>
                           <h5 className="font-bold">{token.name}</h5>

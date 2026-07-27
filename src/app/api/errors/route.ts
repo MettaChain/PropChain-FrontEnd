@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { ErrorReportingData } from '@/types/errors';
 import { logger } from '@/utils/logger';
 import { withRateLimit } from '@/lib/rateLimit';
+import { withCsrf } from '@/lib/csrf';
 
 async function handleErrorsPost(request: NextRequest) {
   try {
@@ -49,7 +50,7 @@ async function handleErrorsPost(request: NextRequest) {
 }
 
 // Export the rate-limited POST handler
-export const POST = withRateLimit(handleErrorsPost);
+export const POST = withRateLimit(withCsrf(handleErrorsPost));
 
 async function handleErrorsGet() {
   return NextResponse.json(

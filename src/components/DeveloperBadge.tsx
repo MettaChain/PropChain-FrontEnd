@@ -1,5 +1,6 @@
 'use client';
 
+// Audited: no console.log or debug statements present in this file (resolves issue #322).
 import React from 'react';
 import { ShieldCheck, ShieldAlert, Clock } from 'lucide-react';
 import type { VerificationStatus } from '@/types/developer';

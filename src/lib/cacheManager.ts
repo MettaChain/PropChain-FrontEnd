@@ -1,6 +1,6 @@
 /**
  * Cache Manager
- * Centralized cache management with synchronization, invalidation, and storage management
+ * Centralized cache management with synchronization, invalidation, versioning, and LRU eviction
  */
 
 import { logger } from '@/utils/logger';
@@ -26,6 +26,14 @@ import {
   isCacheAvailable,
   initPropertyCache,
 } from './propertyCache';
+import { genId } from '@/utils/genId';
+import { generateSecureId } from '@/utils/secureId';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
+import { sha256, toUtf8Bytes } from 'ethers';
+
+// Version migration handlers
+type VersionMigration = (data: unknown) => unknown;
+const versionMigrations: Map<number, VersionMigration> = new Map();
 
 // Sync queue for offline operations
 interface SyncQueueItem {
@@ -41,9 +49,11 @@ let isInitialized = false;
 let isOnline = true;
 let syncInProgress = false;
 let lastSyncTime = 0;
+let cacheVersion = DEFAULT_CACHE_CONFIG.version;
 
 // Event listeners
 const stateChangeListeners: Set<(online: boolean) => void> = new Set();
+const mutationListeners: Map<string, Set<(payload: unknown) => void>> = new Map();
 
 /**
  * Initialize the cache manager
@@ -55,15 +65,15 @@ export const initCacheManager = async (): Promise<void> => {
     // Initialize property cache
     await initPropertyCache();
 
+    // Check and handle cache version migrations
+    await handleCacheVersionMigration();
+
     // Set up online/offline detection
     setupNetworkListeners();
 
     // Load last sync time
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.LAST_SYNC);
-      if (stored) {
-        lastSyncTime = parseInt(stored, 10);
-      }
+      lastSyncTime = safeLocalStorage.getJSON<number>(LOCAL_STORAGE_KEYS.LAST_SYNC, 0);
     }
 
     // Perform initial sync if online
@@ -150,10 +160,7 @@ export const performBackgroundSync = async (): Promise<void> => {
     // Update last sync time
     lastSyncTime = Date.now();
     if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        LOCAL_STORAGE_KEYS.LAST_SYNC,
-        lastSyncTime.toString()
-      );
+      safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.LAST_SYNC, lastSyncTime);
     }
 
     logger.info('Background sync completed');
@@ -173,10 +180,7 @@ const processSyncQueue = async (): Promise<void> => {
   if (typeof window === 'undefined') return;
 
   try {
-    const queueJson = localStorage.getItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
-    if (!queueJson) return;
-
-    const queue: SyncQueueItem[] = JSON.parse(queueJson);
+    const queue = safeLocalStorage.getJSON<SyncQueueItem[]>(LOCAL_STORAGE_KEYS.SYNC_QUEUE, []);
     if (queue.length === 0) return;
 
     logger.info(`Processing ${queue.length} sync queue items`);
@@ -208,10 +212,7 @@ const processSyncQueue = async (): Promise<void> => {
       (item) => !processedIds.includes(item.id) || failedItems.some((f) => f.id === item.id)
     );
 
-    localStorage.setItem(
-      LOCAL_STORAGE_KEYS.SYNC_QUEUE,
-      JSON.stringify(remainingQueue)
-    );
+    safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.SYNC_QUEUE, remainingQueue);
 
     logger.info(`Sync queue processed: ${processedIds.length} succeeded, ${failedItems.length} failed`);
   } catch (error) {
@@ -252,12 +253,23 @@ export const addToSyncQueue = (
   if (typeof window === 'undefined') return;
 
   try {
-    const queueJson = localStorage.getItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
-    const queue: SyncQueueItem[] = queueJson ? JSON.parse(queueJson) : [];
+    const queue = safeLocalStorage.getJSON<SyncQueueItem[]>(LOCAL_STORAGE_KEYS.SYNC_QUEUE, []);
+
+    const canonicalPayload = JSON.stringify(payload);
+    const itemHash = sha256(toUtf8Bytes(type + canonicalPayload));
+
+    const isDuplicate = queue.some((item) => {
+      const existingHash = sha256(toUtf8Bytes(item.type + JSON.stringify(item.payload)));
+      return existingHash === itemHash;
+    });
+
+    if (isDuplicate) {
+      logger.info(`Duplicate item rejected from sync queue: ${type}`);
+      return;
+    }
 
     const newItem: SyncQueueItem = {
-      // Combine timestamp with random base-36 string for a unique, sortable ID
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: crypto.randomUUID(),
       type,
       payload,
       timestamp: Date.now(),
@@ -265,7 +277,7 @@ export const addToSyncQueue = (
     };
 
     queue.push(newItem);
-    localStorage.setItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(queue));
+    safeLocalStorage.setJSON(LOCAL_STORAGE_KEYS.SYNC_QUEUE, queue);
 
     logger.info(`Added item to sync queue: ${newItem.id}`);
   } catch (error) {
@@ -280,9 +292,7 @@ export const getSyncQueueLength = (): number => {
   if (typeof window === 'undefined') return 0;
 
   try {
-    const queueJson = localStorage.getItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
-    if (!queueJson) return 0;
-    const queue: SyncQueueItem[] = JSON.parse(queueJson);
+    const queue = safeLocalStorage.getJSON<SyncQueueItem[]>(LOCAL_STORAGE_KEYS.SYNC_QUEUE, []);
     return queue.length;
   } catch {
     return 0;
@@ -294,8 +304,157 @@ export const getSyncQueueLength = (): number => {
  */
 export const clearSyncQueue = (): void => {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
+  safeLocalStorage.remove(LOCAL_STORAGE_KEYS.SYNC_QUEUE);
   logger.info('Sync queue cleared');
+};
+
+/**
+ * Handle cache version migrations
+ */
+const handleCacheVersionMigration = async (): Promise<void> => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const storedVersion = parseInt(
+      localStorage.getItem(LOCAL_STORAGE_KEYS.CACHE_VERSION) || '0',
+      10
+    );
+    const currentVersion = DEFAULT_CACHE_CONFIG.version;
+
+    if (storedVersion < currentVersion) {
+      logger.info(`Migrating cache from v${storedVersion} to v${currentVersion}`);
+
+      // Run migrations for each version step
+      for (let v = storedVersion + 1; v <= currentVersion; v++) {
+        const migration = versionMigrations.get(v);
+        if (migration) {
+          try {
+            // Get all cached data, migrate it, and clear cache
+            const { getAllCachedProperties, getAllCachedMobileProperties } = await import(
+              './propertyCache'
+            );
+
+            const properties = await getAllCachedProperties();
+            const mobileProperties = await getAllCachedMobileProperties();
+
+            // Apply migration
+            const migratedProperties = properties.map((entry) => ({
+              ...entry,
+              data: migration(entry.data) as never,
+            }));
+            const migratedMobileProperties = mobileProperties.map((entry) => ({
+              ...entry,
+              data: migration(entry.data) as never,
+            }));
+
+            // Re-store migrated data
+            await clearAllCachedProperties();
+            const { setCachedProperty, setCachedMobileProperty } = await import(
+              './propertyCache'
+            );
+
+            for (const entry of migratedProperties) {
+              await setCachedProperty(entry.data);
+            }
+            for (const entry of migratedMobileProperties) {
+              await setCachedMobileProperty(entry.data);
+            }
+
+            logger.info(`Migration to v${v} completed`);
+          } catch (error) {
+            logger.error(`Error running migration to v${v}:`, error);
+          }
+        }
+      }
+
+      localStorage.setItem(LOCAL_STORAGE_KEYS.CACHE_VERSION, currentVersion.toString());
+      cacheVersion = currentVersion;
+    }
+  } catch (error) {
+    logger.error('Error handling cache version migration:', error);
+  }
+};
+
+/**
+ * Register a version migration handler
+ */
+export const registerVersionMigration = (
+  version: number,
+  handler: (data: unknown) => unknown
+): void => {
+  versionMigrations.set(version, handler);
+  logger.info(`Registered version migration for v${version}`);
+};
+
+/**
+ * Get current cache version
+ */
+export const getCacheVersion = (): number => cacheVersion;
+
+/**
+ * Register mutation listener for cache invalidation
+ */
+export const onMutation = (
+  mutationType: string,
+  handler: (payload: unknown) => void
+): (() => void) => {
+  if (!mutationListeners.has(mutationType)) {
+    mutationListeners.set(mutationType, new Set());
+  }
+  mutationListeners.get(mutationType)!.add(handler);
+
+  // Return unsubscribe function
+  return () => {
+    mutationListeners.get(mutationType)?.delete(handler);
+  };
+};
+
+/**
+ * Trigger mutation and invalidate related cache
+ */
+export const triggerMutation = async (
+  mutationType: string,
+  payload: unknown,
+  invalidationPatterns?: RegExp[]
+): Promise<void> => {
+  try {
+    // Call all registered listeners
+    const listeners = mutationListeners.get(mutationType);
+    if (listeners) {
+      listeners.forEach((handler) => {
+        try {
+          handler(payload);
+        } catch (error) {
+          logger.error(`Error calling mutation listener for ${mutationType}:`, error);
+        }
+      });
+    }
+
+    // Invalidate cache based on patterns
+    if (invalidationPatterns && invalidationPatterns.length > 0) {
+      for (const pattern of invalidationPatterns) {
+        await invalidateCache(pattern);
+      }
+    }
+
+    // Track invalidation in stats
+    const stats = await updateCacheStats();
+    if (stats && 'invalidationCount' in stats) {
+      const event: CacheEvent = {
+        type: 'invalidate',
+        key: mutationType,
+        timestamp: Date.now(),
+        reason: `Mutation: ${mutationType}`,
+      };
+      addCacheEventListener((listener) => {
+        listener(event);
+      });
+    }
+
+    logger.info(`Mutation triggered: ${mutationType}, invalidated cache patterns`);
+  } catch (error) {
+    logger.error('Error triggering mutation:', error);
+  }
 };
 
 /**

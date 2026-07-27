@@ -4,14 +4,13 @@ import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
 import { useWalletPersistence } from "@/utils/walletPersistence";
-import { setupExtensionErrorHandling } from "@/utils/extensionDetection";
-import { structuredLogger } from "@/utils/structuredLogger";
+import { setupExtensionErrorHandling, cleanupExtensionErrorHandling } from "@/utils/extensionDetection";
 import { errorMonitoring } from "@/utils/errorMonitoringService";
 import { ErrorCategory, ErrorSeverity } from "@/types/errors";
 import { logger } from "@/utils/logger";
+import { generateErrorId } from "@/utils/secureId";
 import { WalletConnector } from "@/components/WalletConnector";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import {
   ChainAware,
   ChainSpecific,
@@ -37,10 +36,10 @@ function HomeContent() {
     setupExtensionErrorHandling();
     
     // Initialize structured logging and error monitoring
-    structuredLogger.info('Application initialized', {
+    logger.info('Application initialized', {
       component: 'HomeContent',
       action: 'initialization',
-      metadata: { timestamp: new Date().toISOString() },
+      timestamp: new Date().toISOString(),
     });
 
     // Set up global error handling
@@ -49,7 +48,7 @@ function HomeContent() {
       error.stack = event.error?.stack;
       
       const appError = {
-        id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        id: generateErrorId(),
         category: ErrorCategory.UI,
         severity: ErrorSeverity.HIGH,
         message: event.message,
@@ -72,7 +71,7 @@ function HomeContent() {
       const error = new Error(event.reason?.message || 'Unhandled promise rejection');
       
       const appError = {
-        id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        id: generateErrorId(),
         category: ErrorCategory.NETWORK,
         severity: ErrorSeverity.MEDIUM,
         message: error.message,
@@ -95,6 +94,7 @@ function HomeContent() {
 
     // Cleanup function
     return () => {
+      cleanupExtensionErrorHandling();
       window.removeEventListener('error', handleUnhandledError);
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
@@ -121,7 +121,6 @@ function HomeContent() {
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <ThemeSwitcher />
               <LanguageSwitcher />
               <WalletConnector />
             </div>
@@ -245,9 +244,10 @@ function HomeContent() {
         </ChainAware>
 
         {/* Feature links — Issues #75, #76, #85, #89 */}
-        <nav aria-label="Platform features" className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <nav aria-label="Platform features" className="mt-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             { href: '/properties', emoji: '🏠', label: 'Browse Properties', desc: 'Shareable property pages with QR codes' },
+            { href: '/transactions', emoji: '📜', label: 'Transaction History', desc: 'Search, filter, and export on-chain activity' },
             { href: '/governance', emoji: '🗳️', label: 'Governance', desc: 'Vote on property management decisions' },
             { href: '/tax-report', emoji: '📄', label: 'Tax Reports', desc: 'Form 8949 & Schedule D PDF export' },
             { href: '/accessibility', emoji: '♿', label: 'Accessibility', desc: 'WCAG 2.1 AA compliance demo' },

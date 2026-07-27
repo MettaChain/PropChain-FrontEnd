@@ -8,21 +8,24 @@ describe('Web3Tooltip', () => {
     render(<Web3Tooltip term="gas fee">Gas Fee</Web3Tooltip>);
     
     expect(screen.getByText('Gas Fee')).toBeInTheDocument();
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    const el = screen.getByText('Gas Fee');
+    expect(el.closest('span')?.querySelector('svg')).toBeTruthy();
   });
 
   it('should not render tooltip for unknown terms', () => {
     render(<Web3Tooltip term="unknown term">Unknown</Web3Tooltip>);
     
     expect(screen.getByText('Unknown')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    const el = screen.getByText('Unknown');
+    expect(el.closest('span')).toBeNull();
   });
 
   it('should render without icon when showIcon is false', () => {
     render(<Web3Tooltip term="gas fee" showIcon={false}>Gas Fee</Web3Tooltip>);
     
     expect(screen.getByText('Gas Fee')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    const el = screen.getByText('Gas Fee');
+    expect(el.closest('span')?.querySelector('svg')).toBeNull();
   });
 
   it('should apply custom className', () => {
@@ -35,10 +38,12 @@ describe('Web3Tooltip', () => {
   it('should show tooltip on hover', async () => {
     render(<Web3Tooltip term="gas fee">Gas Fee</Web3Tooltip>);
     
-    const trigger = screen.getByRole('button');
+    const el = screen.getByText('Gas Fee');
+    const trigger = el.closest('span') as HTMLElement;
     await userEvent.hover(trigger);
     
-    // Tooltip content should appear
-    expect(screen.getByText(/fee paid to blockchain validators/)).toBeInTheDocument();
+    // Tooltip content should appear (may render multiple nodes for accessibility)
+    const matches = screen.getAllByText(/fee paid to blockchain validators/);
+    expect(matches.length).toBeGreaterThan(0);
   });
 });

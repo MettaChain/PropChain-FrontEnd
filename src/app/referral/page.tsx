@@ -12,7 +12,7 @@ export const metadata = {
 
 export default function ReferralPage() {
   return (
-    <main className="min-h-screen bg-slate-50 py-12">
+    <main className="min-h-screen bg-slate-50 py-12 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4">
         <ReferralDashboard showLeaderboard={true} />
       </div>

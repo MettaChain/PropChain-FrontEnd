@@ -101,6 +101,7 @@ body {
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -137,6 +138,7 @@ body {
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -291,7 +293,7 @@ html[dir="rtl"] .price {
 }
 
 /* RTL animations - reverse direction */
-html[dir="rtl"] @keyframes slideInLeft {
+@keyframes slideInLeft {
   from {
     transform: translateX(100%);
   }
@@ -300,7 +302,7 @@ html[dir="rtl"] @keyframes slideInLeft {
   }
 }
 
-html[dir="rtl"] @keyframes slideInRight {
+@keyframes slideInRight {
   from {
     transform: translateX(-100%);
   }
@@ -496,8 +498,8 @@ html[lang="ar"] {
     display: block !important;
   }
 
-  .property-detail .lg\\:col-span-2,
-  .property-detail .lg\\:col-span-3 {
+  .property-detail .lg\:col-span-2,
+  .property-detail .lg\:col-span-3 {
     width: 100% !important;
     margin-bottom: 1rem !important;
   }

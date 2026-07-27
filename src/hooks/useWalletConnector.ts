@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { logger } from '@/utils/logger';
+import { getFriendlyWeb3ErrorMessage } from '@/utils/errorHandling';
 
 export type SupportedWalletId = 'metamask' | 'walletconnect' | 'coinbase';
 
@@ -34,7 +35,7 @@ export const useWalletConnector = () => {
       logger.debug('MetaMask connector loaded and executed successfully');
       return result;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to connect MetaMask';
+      const message = getFriendlyWeb3ErrorMessage(error);
       setConnectorError(message);
       logger.error('MetaMask connector error:', error);
       throw error;
@@ -61,7 +62,7 @@ export const useWalletConnector = () => {
       logger.debug('Coinbase connector loaded and executed successfully');
       return result;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to connect Coinbase Wallet';
+      const message = getFriendlyWeb3ErrorMessage(error);
       setConnectorError(message);
       logger.error('Coinbase connector error:', error);
       throw error;
@@ -88,7 +89,7 @@ export const useWalletConnector = () => {
       logger.debug('WalletConnect connector loaded and executed successfully');
       return result;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to connect with WalletConnect';
+      const message = getFriendlyWeb3ErrorMessage(error);
       setConnectorError(message);
       logger.error('WalletConnect connector error:', error);
       throw error;

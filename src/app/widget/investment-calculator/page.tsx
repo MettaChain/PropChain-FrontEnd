@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { InvestmentCalculatorWidget } from '@/components/widget/InvestmentCalculatorWidget';
+import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 
-export default function InvestmentCalculatorEmbedPage() {
+function InvestmentCalculatorEmbedPage() {
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
 
@@ -46,3 +47,5 @@ export default function InvestmentCalculatorEmbedPage() {
     </div>
   );
 }
+
+export default withRouteErrorBoundary(InvestmentCalculatorEmbedPage, { routeName: 'widget/investment-calculator' });

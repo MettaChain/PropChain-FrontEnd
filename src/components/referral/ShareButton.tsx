@@ -1,23 +1,35 @@
 'use client';
 
-/**
- * ShareButton - Button for sharing referral links via social media or native share
- */
-
 import { useState } from 'react';
+import { logger } from '@/utils/logger';
 
 export interface ShareButtonProps {
   url: string;
   onShare?: () => void;
 }
 
+const SHARE_TEXT =
+  'Join PropChain - Invest in real estate through blockchain. Use my referral link and earn rewards!';
+
+function isSafeUrl(raw: string): boolean {
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
 export default function ShareButton({ url, onShare }: ShareButtonProps) {
   const [showOptions, setShowOptions] = useState(false);
 
-  const shareVia = async (platform: string) => {
-    const text = encodeURIComponent(
-      'Join PropChain - Invest in real estate through blockchain. Use my referral link and earn rewards!'
-    );
+  const shareVia = (platform: string) => {
+    if (!isSafeUrl(url)) {
+      logger.error('ShareButton: refused to share unsafe URL', { url });
+      return;
+    }
+
+    const text = encodeURIComponent(SHARE_TEXT);
     const urlEncoded = encodeURIComponent(url);
     let shareUrl = '';
 
@@ -38,23 +50,29 @@ export default function ShareButton({ url, onShare }: ShareButtonProps) {
         return;
     }
 
-    window.open(shareUrl, 'share', 'width=600,height=400');
+    window.open(shareUrl, 'share', 'width=600,height=400,noopener,noreferrer');
     onShare?.();
     setShowOptions(false);
   };
 
   const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'PropChain Referral',
-          text: 'Join PropChain - Invest in real estate through blockchain!',
-          url: url,
-        });
-        onShare?.();
-        setShowOptions(false);
-      } catch (error) {
-        // User cancelled
+    if (!navigator.share) return;
+    if (!isSafeUrl(url)) {
+      logger.error('ShareButton: refused to share unsafe URL via native share', { url });
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: 'PropChain Referral',
+        text: 'Join PropChain - Invest in real estate through blockchain!',
+        url,
+      });
+      onShare?.();
+      setShowOptions(false);
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        logger.error('Native share failed:', error);
       }
     }
   };

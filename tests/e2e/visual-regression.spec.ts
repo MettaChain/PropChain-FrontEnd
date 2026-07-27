@@ -1,31 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { setupWalletMock } from './wallet-fixture';
 
 test.describe('Visual Regression Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Set consistent viewport for visual tests
     await page.setViewportSize({ width: 1280, height: 720 });
     
-    // Mock wallet connection for consistent state
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        isMetaMask: true,
-        request: async ({ method }: { method: string }) => {
-          if (method === 'eth_requestAccounts') {
-            return ['0x1234567890123456789012345678901234567890'];
-          }
-          if (method === 'eth_chainId') {
-            return '0x1';
-          }
-          if (method === 'eth_getBalance') {
-            return '0x56BC75E2D630E8000'; // 100 ETH in wei
-          }
-          return null;
-        },
-        on: () => {},
-        removeListener: () => {},
-        isConnected: () => true,
-      };
-    });
+    await setupWalletMock(page);
   });
 
   test('homepage visual baseline', async ({ page }) => {

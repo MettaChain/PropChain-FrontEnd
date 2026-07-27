@@ -93,14 +93,17 @@ interface SkeletonProps {
   lines?: number;
 }
 
-export const SkeletonBlock: React.FC<SkeletonProps> = ({ className = '', lines = 1 }) => {
+export const Skeleton: React.FC<SkeletonProps> = ({ className = '', lines = 1 }) => {
+  const id = React.useId();
   return (
     <div role="status" aria-busy="true" aria-label="Loading content" className={`space-y-2 ${className}`}>
       {Array.from({ length: lines }).map((_, index) => (
-        <Skeleton
-          key={index}
-          className="h-4"
-          style={{ width: `${60 + (index % 2) * 20}%` }}
+        <div
+          key={`${id}-skeleton-line-${index}`}
+          className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+          style={{
+            width: `${Math.random() * 40 + 60}%`,
+          }}
         />
       ))}
       <span className="sr-only">Loading content</span>

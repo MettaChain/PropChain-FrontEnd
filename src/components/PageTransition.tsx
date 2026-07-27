@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { memo } from 'react';
+import { motion, AnimatePresence, type Variants, type Transition } from 'framer-motion';
 
 interface PageTransitionProps {
   children: React.ReactNode;
@@ -9,7 +9,11 @@ interface PageTransitionProps {
   isDetail?: boolean;
 }
 
-const pageVariants = {
+// ============================================================================
+// Static animation variants (defined once outside components to avoid recreation)
+// ============================================================================
+
+const pageVariants: Variants = {
   initial: {
     opacity: 0,
     y: 20,
@@ -27,13 +31,13 @@ const pageVariants = {
   },
 };
 
-const pageTransition = {
-  type: 'tween' as const,
-  ease: 'anticipate' as const,
+const pageTransition: Transition = {
+  type: 'tween',
+  ease: 'anticipate',
   duration: 0.4,
 };
 
-const detailPageVariants = {
+const detailPageVariants: Variants = {
   initial: {
     opacity: 0,
     x: 100,
@@ -51,13 +55,13 @@ const detailPageVariants = {
   },
 };
 
-const detailPageTransition = {
-  type: 'spring' as const,
+const detailPageTransition: Transition = {
+  type: 'spring',
   stiffness: 300,
   damping: 30,
 };
 
-const modalVariants = {
+const modalVariants: Variants = {
   initial: {
     opacity: 0,
     scale: 0.8,
@@ -72,13 +76,68 @@ const modalVariants = {
   },
 };
 
-const modalTransition = {
-  type: 'spring' as const,
+const modalTransition: Transition = {
+  type: 'spring',
   stiffness: 400,
   damping: 25,
 };
 
-export const PageTransition: React.FC<PageTransitionProps> = ({ 
+const containerVariants: Variants = {
+  initial: { opacity: 0 },
+  in: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+  out: {
+    opacity: 0,
+    transition: {
+      staggerChildren: 0.05,
+      staggerDirection: -1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  initial: {
+    opacity: 0,
+    y: 20,
+    scale: 0.8,
+  },
+  in: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+  },
+  out: {
+    opacity: 0,
+    y: -20,
+    scale: 0.8,
+  },
+};
+
+const itemTransition: Transition = {
+  type: 'spring',
+  stiffness: 300,
+  damping: 20,
+};
+
+const skeletonTransition: Transition = { duration: 0.2 };
+
+const contentEnterTransition: Transition = { 
+  type: 'spring',
+  stiffness: 400,
+  damping: 25,
+  duration: 0.3,
+};
+
+// ============================================================================
+// Page Transition
+// ============================================================================
+
+export const PageTransition = memo<PageTransitionProps>(({ 
   children, 
   className = '',
   isDetail = false 
@@ -98,9 +157,9 @@ export const PageTransition: React.FC<PageTransitionProps> = ({
       {children}
     </motion.div>
   );
-};
+});
 
-export const ModalTransition: React.FC<PageTransitionProps> = ({ children, className = '' }) => {
+export const ModalTransition = memo<PageTransitionProps>(({ children, className = '' }) => {
   return (
     <motion.div
       className={className}
@@ -113,28 +172,10 @@ export const ModalTransition: React.FC<PageTransitionProps> = ({ children, class
       {children}
     </motion.div>
   );
-};
+});
 
 // Stagger animation for property grids
-export const StaggerContainer: React.FC<PageTransitionProps> = ({ children, className = '' }) => {
-  const containerVariants = {
-    initial: { opacity: 0 },
-    in: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-    out: {
-      opacity: 0,
-      transition: {
-        staggerChildren: 0.05,
-        staggerDirection: -1,
-      },
-    },
-  };
-
+export const StaggerContainer = memo<PageTransitionProps>(({ children, className = '' }) => {
   return (
     <motion.div
       className={className}
@@ -146,48 +187,26 @@ export const StaggerContainer: React.FC<PageTransitionProps> = ({ children, clas
       {children}
     </motion.div>
   );
-};
+});
 
-export const StaggerItem: React.FC<PageTransitionProps> = ({ children, className = '' }) => {
-  const itemVariants = {
-    initial: {
-      opacity: 0,
-      y: 20,
-      scale: 0.8,
-    },
-    in: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-    },
-    out: {
-      opacity: 0,
-      y: -20,
-      scale: 0.8,
-    },
-  };
-
+export const StaggerItem = memo<PageTransitionProps>(({ children, className = '' }) => {
   return (
     <motion.div
       className={className}
       variants={itemVariants}
-      transition={{
-        type: 'spring',
-        stiffness: 300,
-        damping: 20,
-      }}
+      transition={itemTransition}
     >
       {children}
     </motion.div>
   );
-};
+});
 
 // Skeleton to content transition
-export const SkeletonToContent: React.FC<{
+export const SkeletonToContent = memo<{
   isLoading: boolean;
   children: React.ReactNode;
   className?: string;
-}> = ({ isLoading, children, className = '' }) => {
+}>(({ isLoading, children, className = '' }) => {
   return (
     <AnimatePresence mode="wait">
       {isLoading ? (
@@ -197,7 +216,7 @@ export const SkeletonToContent: React.FC<{
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={skeletonTransition}
         >
           <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-48 w-full" />
         </motion.div>
@@ -208,16 +227,11 @@ export const SkeletonToContent: React.FC<{
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ 
-            type: 'spring',
-            stiffness: 400,
-            damping: 25,
-            duration: 0.3
-          }}
+          transition={contentEnterTransition}
         >
           {children}
         </motion.div>
       )}
     </AnimatePresence>
   );
-};
+});

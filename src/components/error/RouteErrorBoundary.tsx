@@ -7,6 +7,7 @@ import { Home, RefreshCw, AlertTriangle, Search } from 'lucide-react';
 import type { AppError } from '@/types/errors';
 import { ErrorCategory } from '@/types/errors';
 import { getWalletErrorMessage } from '@/utils/errorHandling';
+import { getRouteErrorIconConfig, getRouteErrorTitle } from './routeErrorHelpers';
 
 interface RouteErrorBoundaryProps {
   error: AppError;
@@ -27,51 +28,17 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
   onRetry,
   onNavigateHome,
 }) => {
-  const getErrorIcon = () => {
-    switch (error.category) {
-      case ErrorCategory.WEB3:
-        return (
-          <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-          </div>
-        );
-      case ErrorCategory.NETWORK:
-        return (
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
-          </div>
-        );
-      default:
-        return (
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-gray-600 dark:text-gray-400" />
-          </div>
-        );
-    }
-  };
+  const { bgClass, iconClass } = getRouteErrorIconConfig(error.category);
 
-  const getErrorTitle = () => {
-    switch (error.category) {
-      case ErrorCategory.WEB3:
-        return 'Wallet Connection Error';
-      case ErrorCategory.NETWORK:
-        return 'Network Error';
-      case ErrorCategory.VALIDATION:
-        return 'Validation Error';
-      case ErrorCategory.PERMISSION:
-        return 'Permission Error';
-      case ErrorCategory.AUTHENTICATION:
-        return 'Authentication Error';
-      default:
-        return 'Something went wrong';
-    }
-  };
+  const getErrorTitle = () => getRouteErrorTitle(error.category)
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md w-full mx-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
-          {getErrorIcon()}
+          <div className={`w-16 h-16 ${bgClass} rounded-full flex items-center justify-center mx-auto mb-4`}>
+            <AlertTriangle className={`w-8 h-8 ${iconClass}`} />
+          </div>
 
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             {getErrorTitle()}

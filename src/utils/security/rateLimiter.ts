@@ -36,7 +36,16 @@ export class RateLimiter {
    */
   check(identifier: string): RateLimitResult {
     const now = Date.now();
-    const key = `${identifier}`;
+     const key = `${identifier}`;
+
+     // If maxAttempts is zero or negative, disallow all requests
+     if (this.config.maxAttempts <= 0) {
+       return {
+         allowed: false,
+         remainingAttempts: 0,
+         resetTime: now,
+       };
+     }
     const current = this.attempts.get(key);
 
     if (!current || now > current.resetTime) {
@@ -79,7 +88,7 @@ export class RateLimiter {
    * Reset rate limit for a specific identifier
    */
   reset(identifier: string): void {
-    this.attempts.delete(identifier);
+    this.attempts.delete(`${identifier}`);
   }
 
   /**
@@ -98,14 +107,14 @@ export class RateLimiter {
     resetTime: number;
     isLimited: boolean;
   } | null {
-    const current = this.attempts.get(identifier);
-    if (!current) return null;
+    const current = this.attempts.get(`${identifier}`);
+     if (!current) return null;
 
     const now = Date.now();
     const isExpired = now > current.resetTime;
     
     if (isExpired) {
-      this.attempts.delete(identifier);
+       this.attempts.delete(`${identifier}`);
       return null;
     }
 

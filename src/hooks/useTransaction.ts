@@ -1,5 +1,6 @@
 'use client';
 import { logger } from '@/utils/logger';
+import { getFriendlyWeb3ErrorMessage } from '@/utils/errorHandling';
 
 import { useCallback } from 'react';
 import { ethers } from 'ethers';
@@ -91,9 +92,7 @@ export const useTransaction = () => {
           }
         } catch (error) {
           logger.error('Secure transaction failed:', error);
-          toast.error('Secure transaction failed', {
-            description: error instanceof Error ? error.message : 'Unknown error'
-          });
+          toast.error(getFriendlyWeb3ErrorMessage(error));
           return;
         }
       }

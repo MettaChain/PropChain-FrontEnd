@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { logger } from "@/utils/logger";
+import { STORAGE_KEYS } from "@/lib/storageKeys";
 import type {
   AppError,
   ErrorBoundaryState,
@@ -26,8 +27,6 @@ import {
 } from "@/types/errors";
 import { ErrorFactory } from "@/utils/errorFactory";
 import { errorReporting } from "@/utils/errorReporting";
-import { useTranslation } from "react-i18next";
-
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -138,8 +137,8 @@ export class Web3ErrorBoundary extends Component<Props, State> {
   private handleReconnect = () => {
     // Clear local storage and reload
     if (typeof window !== "undefined") {
-      localStorage.removeItem("walletconnected");
-      localStorage.removeItem("wagmi.connected");
+      localStorage.removeItem(STORAGE_KEYS.WALLET_CONNECTED.key);
+      localStorage.removeItem(STORAGE_KEYS.WAGMI_CONNECTED.key);
     }
     window.location.reload();
   };
@@ -158,8 +157,6 @@ export class Web3ErrorBoundary extends Component<Props, State> {
     if (!this.state.error?.recoveryAction || !this.props.enableRetry) {
       return null;
     }
-
-    const { t } = useTranslation("common");
 
     switch (this.state.error.recoveryAction) {
       case ErrorRecoveryAction.RETRY:
@@ -212,8 +209,6 @@ export class Web3ErrorBoundary extends Component<Props, State> {
     if (!this.state.error) {
       return "An unknown error occurred";
     }
-
-    const { t } = useTranslation("common");
 
     // Use user-friendly message if available
     if (this.state.error.userMessage) {

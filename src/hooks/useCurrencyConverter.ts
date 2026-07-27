@@ -1,5 +1,6 @@
 'use client';
 import { logger } from '@/utils/logger';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 import { useState, useEffect } from 'react';
 
@@ -35,16 +36,16 @@ export const useCurrencyConverter = () => {
         setLastUpdated(new Date());
         
         // Save to localStorage
-        localStorage.setItem('ethToUsdRate', data.ethereum.usd.toString());
-        localStorage.setItem('ethToUsdLastUpdated', new Date().toISOString());
+        localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_RATE.key, data.ethereum.usd.toString());
+        localStorage.setItem(STORAGE_KEYS.ETH_TO_USD_LAST_UPDATED.key, new Date().toISOString());
       }
     } catch (err) {
       logger.error('Error fetching ETH price:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch exchange rate');
       
       // Try to use cached rate
-      const cachedRate = localStorage.getItem('ethToUsdRate');
-      const cachedDate = localStorage.getItem('ethToUsdLastUpdated');
+      const cachedRate = localStorage.getItem(STORAGE_KEYS.ETH_TO_USD_RATE.key);
+      const cachedDate = localStorage.getItem(STORAGE_KEYS.ETH_TO_USD_LAST_UPDATED.key);
       
       if (cachedRate && cachedDate) {
         setEthToUsdRate(parseFloat(cachedRate));
@@ -57,8 +58,8 @@ export const useCurrencyConverter = () => {
 
   useEffect(() => {
     // Check if we have cached data that's less than 60 seconds old
-    const cachedRate = localStorage.getItem('ethToUsdRate');
-    const cachedDate = localStorage.getItem('ethToUsdLastUpdated');
+    const cachedRate = localStorage.getItem(STORAGE_KEYS.ETH_TO_USD_RATE.key);
+    const cachedDate = localStorage.getItem(STORAGE_KEYS.ETH_TO_USD_LAST_UPDATED.key);
     
     if (cachedRate && cachedDate) {
       const lastUpdate = new Date(cachedDate);

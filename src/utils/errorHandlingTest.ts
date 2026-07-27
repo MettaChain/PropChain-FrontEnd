@@ -1,24 +1,24 @@
 'use client';
 
 // Test file to verify the new error handling implementation
-import { structuredLogger } from './structuredLogger';
+import { logger } from './logger';
 import { errorMonitoring } from './errorMonitoringService';
 import { ErrorCategory, ErrorSeverity } from '@/types/errors';
 
 // Test functions to verify the error handling system
 export const testErrorHandling = () => {
-  console.log('Testing new error handling system...');
+  logger.info('Testing new error handling system...');
 
   // Test 1: Structured logging
-  structuredLogger.info('Test info log', {
+  logger.info('Test info log', {
     component: 'TestComponent',
     action: 'test_logging',
-    metadata: { test: true },
+    test: true,
   });
 
   // Test 2: Error tracking
   const testError = new Error('Test error for verification');
-  structuredLogger.error('Test error logging', testError, {
+  logger.errorWithStack('Test error logging', testError, {
     component: 'TestComponent',
     action: 'test_error_tracking',
   });
@@ -42,7 +42,7 @@ export const testErrorHandling = () => {
   // Test 4: Performance monitoring
   errorMonitoring.monitorPerformance('test-operation', 150);
 
-  console.log('Error handling tests completed successfully!');
+  logger.info('Error handling tests completed successfully!');
   return true;
 };
 
@@ -57,10 +57,10 @@ export const testConsoleOverridesRemoved = () => {
   };
 
   // Test that console works normally
-  console.log('Console override removal test - this should appear normally');
-  console.error('Console error test - this should appear normally');
-  console.warn('Console warning test - this should appear normally');
-  console.info('Console info test - this should appear normally');
+  logger.info('Console override removal test - this should appear normally');
+  logger.error('Console error test - this should appear normally');
+  logger.warn('Console warning test - this should appear normally');
+  logger.info('Console info test - this should appear normally');
 
   return {
     consoleWorking: true,
@@ -74,6 +74,6 @@ export const runAllTests = () => {
     consoleOverrides: testConsoleOverridesRemoved(),
   };
 
-  console.log('All tests completed:', results);
+  logger.info('All tests completed:', results);
   return results;
 };

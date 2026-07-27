@@ -140,8 +140,8 @@ export const WalletAddressInput: React.FC<WalletAddressInputProps> = ({
           <X className="h-4 w-4 text-red-600" />
           <AlertDescription className="text-red-800 dark:text-red-200">
             <div className="space-y-1">
-              {errors.map((error, index) => (
-                <div key={index}>{error}</div>
+              {errors.map((error) => (
+                <div key={error}>{error}</div>
               ))}
             </div>
           </AlertDescription>
@@ -209,8 +209,8 @@ export const WalletAddressInput: React.FC<WalletAddressInputProps> = ({
             <AlertDescription className="text-yellow-800 dark:text-yellow-200">
               <div className="space-y-1">
                 <strong>Warnings:</strong>
-                {warnings.map((warning, index) => (
-                  <div key={index} className="text-sm">• {warning}</div>
+                {warnings.map((warning) => (
+                  <div key={warning} className="text-sm">• {warning}</div>
                 ))}
               </div>
             </AlertDescription>

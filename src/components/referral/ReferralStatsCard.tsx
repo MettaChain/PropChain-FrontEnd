@@ -1,9 +1,5 @@
 'use client';
 
-/**
- * ReferralStatsCard - Displays detailed referral statistics
- */
-
 import { ReferralStats, ReferralTier } from '@/types/referral';
 import { formatUnits } from 'viem';
 

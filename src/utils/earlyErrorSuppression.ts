@@ -1,5 +1,10 @@
+import { logger } from './logger';
+import { KNOWN_WALLET_PATTERN_REGISTRY } from '../config/wallets';
+
 const stringifyArgs = (args: readonly unknown[]): string =>
   args.map((arg) => (typeof arg === 'string' ? arg : String(arg))).join(' ');
+
+const earlySuppressionCleanups: Array<() => void> = [];
 
 // This file should be imported as early as possible in the application
 // It immediately starts suppressing extension errors
@@ -9,12 +14,17 @@ if (typeof window !== 'undefined') {
   const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;
   
-  const suppressPatterns = [
-    'bfnaelmomeimhlpmgjnjophhpkkoljpa',
-    'evmAsk.js',
-    'selectExtension',
-    'chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa',
-  ];
+  const suppressPatterns = Object.values(KNOWN_WALLET_PATTERN_REGISTRY)
+    .flatMap(w => w.patterns)
+    .map(p => String(p));
+  
+  if (process.env.NODE_ENV === 'development') {
+    let logged = false;
+    if (!logged) {
+      console.log('Active extension error suppression patterns:', suppressPatterns);
+      logged = true;
+    }
+  }
   
   const shouldSuppress = (...args: unknown[]): boolean => {
     const message = stringifyArgs(args).toLowerCase();
@@ -31,21 +41,35 @@ if (typeof window !== 'undefined') {
     if (shouldSuppress(...args)) return;
     originalConsoleWarn.apply(console, args);
   };
+
+  earlySuppressionCleanups.push(() => {
+    console.error = originalConsoleError;
+    console.warn = originalConsoleWarn;
+  });
   
   // Suppress global errors
-  window.addEventListener('error', (event) => {
+  const handleError = (event: ErrorEvent) => {
     if (shouldSuppress(event.error, event.filename, event.message)) {
       event.preventDefault();
       event.stopPropagation();
     }
-  }, true);
+  };
+  window.addEventListener('error', handleError, true);
+  earlySuppressionCleanups.push(() => {
+    window.removeEventListener('error', handleError, true);
+  });
   
   // Suppress unhandled promise rejections
-  window.addEventListener('unhandledrejection', (event) => {
+  const handleRejection = (event: PromiseRejectionEvent) => {
     if (shouldSuppress(event.reason)) {
       event.preventDefault();
       event.stopPropagation();
+      return;
     }
+  };
+  window.addEventListener('unhandledrejection', handleRejection);
+  earlySuppressionCleanups.push(() => {
+    window.removeEventListener('unhandledrejection', handleRejection);
   });
   
   // Override window.onerror
@@ -59,9 +83,19 @@ if (typeof window !== 'undefined') {
     }
     return false;
   };
+  earlySuppressionCleanups.push(() => {
+    window.onerror = originalOnError;
+  });
 }
 
 export const initializeEarlyErrorSuppression = () => {
   // This function can be called to ensure suppression is active
   // Note: Early error suppression is already active from module load
+};
+
+export const cleanupEarlyErrorSuppression = () => {
+  let fn: (() => void) | undefined;
+  while ((fn = earlySuppressionCleanups.pop()) !== undefined) {
+    fn();
+  }
 };

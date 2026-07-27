@@ -27,7 +27,10 @@ import {
   cacheSearchResult,
 } from './propertyCache';
 import { isNetworkOnline } from './cacheManager';
+import { generateSecureId } from '@/utils/secureId';
 import { redisCacheService } from './redisCache';
+import { genId } from '@/utils/genId';
+import { savedSearchesKey } from './storageKeys';
 
 /**
  * Property Service
@@ -105,6 +108,7 @@ class PropertyService {
 
   /**
    * Fetch search results from network and cache them
+   * Implements server-side pagination: only returns the requested page
    */
   private async fetchAndCacheSearch(
     filters: SearchFilters,
@@ -115,32 +119,35 @@ class PropertyService {
     // Simulate API delay
     await this.delay(300);
 
-    let results = [...MOCK_PROPERTIES];
+    // Apply filters to all data (in a real DB, this would be WHERE clause)
+    let results = this.applyFilters([...MOCK_PROPERTIES], filters);
 
-    // Apply filters
-    results = this.applyFilters(results, filters);
-
-    // Apply sorting
+    // Apply sorting (in a real DB, this would be ORDER BY)
     results = this.applySorting(results, sortBy);
 
-    // Calculate pagination
+    // Server-side pagination: calculate total and slice before returning
     const total = results.length;
     const totalPages = Math.ceil(total / resultsPerPage);
-    const startIndex = (page - 1) * resultsPerPage;
+    
+    // Validate page number
+    const validPage = Math.max(1, Math.min(page, totalPages || 1));
+    const startIndex = (validPage - 1) * resultsPerPage;
     const endIndex = startIndex + resultsPerPage;
+    
+    // Only return the requested page of data (server-side pagination)
     const paginatedResults = results.slice(startIndex, endIndex);
 
     const result: PropertySearchResult = {
       properties: paginatedResults,
       total,
-      page,
+      page: validPage,
       totalPages,
     };
 
     // Cache the result in both Redis and local cache
     try {
       // Cache in Redis first (primary cache)
-      await redisCacheService.setPropertyListings(filters, sortBy, page, result);
+      await redisCacheService.setPropertyListings(filters, sortBy, validPage, result);
       
       // Also cache in local cache as fallback
       await cacheSearchResult(filters, sortBy, result);
@@ -282,7 +289,7 @@ class PropertyService {
     await this.delay(200);
     
     // Get from localStorage
-    const saved = localStorage.getItem(`propchain-saved-searches-${userId}`);
+    const saved = localStorage.getItem(savedSearchesKey(userId));
     return parseSavedSearches(saved);
   }
 
@@ -315,7 +322,7 @@ class PropertyService {
 
     const existing = await this.getSavedSearches(userId);
     const updated = [...existing, savedSearch];
-    localStorage.setItem(`propchain-saved-searches-${userId}`, JSON.stringify(updated));
+    localStorage.setItem(savedSearchesKey(userId), JSON.stringify(updated));
 
     return savedSearch;
   }
@@ -328,7 +335,7 @@ class PropertyService {
 
     const existing = await this.getSavedSearches(userId);
     const updated = existing.filter(s => s.id !== searchId);
-    localStorage.setItem(`propchain-saved-searches-${userId}`, JSON.stringify(updated));
+    localStorage.setItem(savedSearchesKey(userId), JSON.stringify(updated));
   }
 
   /**
@@ -456,7 +463,8 @@ class PropertyService {
    * Generate unique ID
    */
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return genId(`${Date.now()}`);
+    return generateSecureId();
   }
 }
 

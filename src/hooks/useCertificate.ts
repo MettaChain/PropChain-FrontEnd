@@ -36,7 +36,7 @@ export function useCertificate() {
           property.location.city,
           property.location.state,
         ].join(', '),
-        propertyImage: property.images[0] ?? '',
+        propertyImage: property.images[0],
         tokenAmount: purchase.tokenAmount,
         tokenSymbol: property.tokenInfo.tokenSymbol,
         walletAddress: address,
