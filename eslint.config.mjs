@@ -1,5 +1,6 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import storybook from "eslint-plugin-storybook";
+import jsdoc from "eslint-plugin-jsdoc";
 
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
@@ -42,62 +43,88 @@ import tsParser from "@typescript-eslint/parser";
  *     not re-run when the store setter references change.
  */
 
-export default [{
-  ignores: ["node_modules/**", ".next/**", "out/**", "dist/**", "coverage/**"],
-}, {
-  files: ["src/**/*.{ts,tsx}"],
-  languageOptions: {
-    parser: tsParser,
-    parserOptions: {
-      project: ["./tsconfig.json"],
-      tsconfigRootDir: import.meta.dirname,
-      ecmaVersion: "latest",
-      sourceType: "module",
+export default [
+  {
+    ignores: [
+      "node_modules/**",
+      ".next/**",
+      "out/**",
+      "dist/**",
+      "coverage/**",
+    ],
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        project: ["./tsconfig.json"],
+        tsconfigRootDir: import.meta.dirname,
+        ecmaVersion: "latest",
+        sourceType: "module",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": tseslint,
+      jsdoc,
+    },
+    rules: {
+      // Warn on `as any` / `: any` in new code; existing justified survivors are
+      // documented in docs/as-any-survivors.md.  Set to "warn" so CI surfaces
+      // regressions without hard-failing on the one remaining legacy site.
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/consistent-type-imports": "off",
+      "@typescript-eslint/no-unnecessary-type-assertion": "off",
+      // Escalated to `error` to enforce routing through the structured logger.
+      // The override below re-enables console.* in `src/utils/logger.ts` only —
+      // that file is the canonical, mandatory sink for the logger pipeline.
+      "no-console": "error",
+      "jsdoc/require-jsdoc": [
+        "error",
+        {
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: true,
+            FunctionExpression: true,
+          },
+          contexts: ["ExportNamedDeclaration"],
+        },
+      ],
     },
   },
-  plugins: {
-    "@typescript-eslint": tseslint,
+  {
+    // The structured logger sink is the only file allowed to call console.*
+    // directly. Any other module must go through `logger.{debug,info,warn,error}`.
+    files: ["src/utils/logger.ts"],
+    rules: {
+      "no-console": "off",
+    },
   },
-  rules: {
-    // Warn on `as any` / `: any` in new code; existing justified survivors are
-    // documented in docs/as-any-survivors.md.  Set to "warn" so CI surfaces
-    // regressions without hard-failing on the one remaining legacy site.
-    "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/consistent-type-imports": "off",
-    "@typescript-eslint/no-unnecessary-type-assertion": "off",
-    // Escalated to `error` to enforce routing through the structured logger.
-    // The override below re-enables console.* in `src/utils/logger.ts` only —
-    // that file is the canonical, mandatory sink for the logger pipeline.
-    "no-console": "error",
+  {
+    // Apply `no-console` to everything else so future direct console.* calls
+    // are caught at lint time.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      // earlyErrorSuppression.ts intentionally uses raw console; logger.ts
+      // and the deprecated structuredLogger.ts wrap it.
+      "src/utils/earlyErrorSuppression.ts",
+      "src/utils/logger.ts",
+      "src/utils/structuredLogger.ts",
+      // extensionDetection.ts intentionally overrides console.error to filter
+      // noisy browser-extension errors that are not actionable.
+      "src/utils/extensionDetection.ts",
+      // Test files and stories legitimately use console.* for debug output
+      // and assertions.
+      "src/**/__tests__/**",
+      "src/**/*.test.{ts,tsx}",
+      "src/**/*.stories.{ts,tsx}",
+    ],
+    rules: {
+      // disallow all console.* (no `allow` options provided).
+      "no-console": "error",
+    },
   },
-}, {
-  // The structured logger sink is the only file allowed to call console.*
-  // directly. Any other module must go through `logger.{debug,info,warn,error}`.
-  files: ["src/utils/logger.ts"],
-  rules: {
-    "no-console": "off",
-  },
-}, {
-  // Apply `no-console` to everything else so future direct console.* calls
-  // are caught at lint time.
-  files: ["src/**/*.{ts,tsx}"],
-  ignores: [
-    // earlyErrorSuppression.ts intentionally uses raw console; logger.ts
-    // and the deprecated structuredLogger.ts wrap it.
-    "src/utils/earlyErrorSuppression.ts",
-    "src/utils/logger.ts",
-    "src/utils/structuredLogger.ts",
-    // extensionDetection.ts intentionally overrides console.error to filter
-    // noisy browser-extension errors that are not actionable.
-    "src/utils/extensionDetection.ts",
-    // Test files and stories legitimately use console.* for debug output
-    // and assertions.
-    "src/**/__tests__/**",
-    "src/**/*.test.{ts,tsx}",
-    "src/**/*.stories.{ts,tsx}",
-  ],
-  rules: {
-    // disallow all console.* (no `allow` options provided).
-    "no-console": "error",
-  },
-}, ...storybook.configs["flat/recommended"]];
+  ...storybook.configs["flat/recommended"],
+];

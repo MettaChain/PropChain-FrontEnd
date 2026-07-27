@@ -1,3 +1,13 @@
+import { http, createConfig } from "wagmi";
+import { mainnet, polygon, bsc } from "wagmi/chains";
+import { injected } from "wagmi/connectors";
+import { getRpcUrl } from "./env";
+import { mockConnector } from "./mockConnector";
+
+const connectors =
+  process.env.NEXT_PUBLIC_MOCK_WALLET === "true"
+    ? [mockConnector]
+    : [injected()];
 import {http, createConfig} from "wagmi";
 import {mainnet, polygon, bsc} from "wagmi/chains";
 import { defineChain } from "viem";
@@ -82,6 +92,13 @@ const supportedChains = buildSupportedChains();
 const transports = buildTransports();
 
 export const config = createConfig({
+  chains: [mainnet, polygon, bsc],
+  connectors,
+  transports: {
+    [mainnet.id]: http(getWagmiRpcUrl(mainnet.id)),
+    [polygon.id]: http(getWagmiRpcUrl(polygon.id)),
+    [bsc.id]: http(getWagmiRpcUrl(bsc.id)),
+  },
   chains: supportedChains,
   connectors: [injected()],
   transports,
