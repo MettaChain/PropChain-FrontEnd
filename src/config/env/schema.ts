@@ -29,6 +29,7 @@ const envSchema = z.object({
   ETHEREUM_MAINNET_RPC_URL: z.string().url().optional(),
   POLYGON_MAINNET_RPC_URL: z.string().url().optional(),
   BSC_MAINNET_RPC_URL: z.string().url().optional(),
+  LOCAL_RPC_URL: z.string().url().optional(),
 
   // Wallet Connect Configuration
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().optional(),
@@ -181,6 +182,7 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
   ETHEREUM_MAINNET_RPC_URL: "Ethereum Mainnet RPC URL",
   POLYGON_MAINNET_RPC_URL: "Polygon Mainnet RPC URL",
   BSC_MAINNET_RPC_URL: "Binance Smart Chain Mainnet RPC URL",
+  LOCAL_RPC_URL: "Local Foundry/Anvil RPC URL for offline development (http://localhost:8545)",
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:
     "WalletConnect Project ID (required for WalletConnect)",
   NEXT_PUBLIC_ANALYTICS_ENABLED: "Enable/disable analytics tracking",
