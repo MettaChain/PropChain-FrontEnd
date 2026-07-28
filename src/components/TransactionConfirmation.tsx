@@ -94,34 +94,36 @@ export const TransactionConfirmation: React.FC<
   const currentDeviceId = useMemo(() => getSecurityDeviceId(), []);
   const currentDeviceLabel = useMemo(() => getSecurityDeviceLabel(), []);
 
-  useEffect(() => {
-    if (isOpen && transaction) {
-      validateTransactionData();
-      const valueEth = weiToEth(transaction.value);
-      const requiresKyc = shouldRequireKyc(
-        transaction.value,
-        profile.thresholdEth,
-      );
-      setTransactionEth(valueEth);
-      setKycRequired(requiresKyc);
-      logTransactionScreening(
-        valueEth,
-        requiresKyc,
-        profile.status === "verified" || !requiresKyc,
-      );
+      if (isOpen && transaction) {
+        validateTransactionData();
+        const valueEth = weiToEth(transaction.value);
+        const requiresKyc = shouldRequireKyc(
+            transaction.value,
+            profile.thresholdEth,
+        );
+        setTransactionEth(valueEth);
+        setKycRequired(requiresKyc);
+        logTransactionScreening(
+            valueEth,
+            requiresKyc,
+            profile.status === "verified" || !requiresKyc,
+        );
 
-      if (!skipSimulation) {
-        runSimulation();
-      }
+        if (!skipSimulation) {
+            runSimulation();
+        } else {
+            setSimulation(null);
+        }
     }
-  }, [
+}, [
     isOpen,
     transaction,
     profile.status,
     profile.thresholdEth,
     logTransactionScreening,
     skipSimulation,
-  ]);
+    runSimulation,
+]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -506,6 +508,68 @@ export const TransactionConfirmation: React.FC<
                   </div>
                 </div>
               )}
+
+              <div className="mt-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-gray-900 dark:text-white">
+                    Simulated Result
+                  </h3>
+                  <button
+                    onClick={() => setShowSimulation(!showSimulation)}
+                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    {showSimulation ? "Hide" : "Show"}
+                  </button>
+                </div>
+                {showSimulation && (
+                  <div className="mt-2 space-y-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                    {simulating ? (
+                      <div className="flex items-center">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                        <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                          Simulating...
+                        </span>
+                      </div>
+                    ) : simulation ? (
+                      <>
+                        {simulation.error ? (
+                          <p className="text-sm text-red-500">
+                            Error: {simulation.error}
+                          </p>
+                        ) : (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">
+                                Estimated Gas:
+                              </span>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {simulation.gasEstimate.toString()}
+                              </span>
+                            </div>
+                            <h4 className="text-md mt-2 font-medium text-gray-900 dark:text-white">
+                              State Changes:
+                            </h4>
+                            {renderStateChanges()}
+                          </>
+                        )}
+                      </>
+                    ) : null}
+                  </div>
+                )}
+                <div className="mt-4 flex items-center justify-end">
+                  <label
+                    htmlFor="skip-simulation"
+                    className="mr-2 text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Skip simulation for low-value tx
+                  </label>
+                  <Switch
+                    id="skip-simulation"
+                    checked={skipSimulation}
+                    onCheckedChange={setSkipSimulation}
+                  />
+                </div>
+              </div>
 
               {validation.blocks.length > 0 && (
                 <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">

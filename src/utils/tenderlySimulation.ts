@@ -1,11 +1,4 @@
 import { logger } from "@/utils/logger";
-import { createPublicClient, http, estimateContractGas } from "viem";
-import { mainnet } from "viem/chains";
-
-const publicClient = createPublicClient({
-  chain: mainnet,
-  transport: http(),
-});
 
 export interface SimulationResult {
   gasEstimate: bigint;
@@ -13,66 +6,44 @@ export interface SimulationResult {
   error?: string;
 }
 
-export async function simulateTransaction(txRequest: {
-  from: string;
-  to: string;
-  value?: string;
-  data?: string;
-  gasLimit?: string;
-  gasPrice?: string;
-}): Promise<SimulationResult> {
+export const simulateTransaction = async (
+  txRequest: any,
+): Promise<SimulationResult> => {
+  logger.info("Simulating transaction via internal API", { to: txRequest.to });
   try {
-    const gasEstimate = await estimateContractGas(publicClient, {
-      account: txRequest.from as `0x${string}`,
-      to: txRequest.to as `0x${string}`,
-      data: (txRequest.data as `0x${string}`) || "0x",
-      value: txRequest.value ? BigInt(txRequest.value) : undefined,
-    });
-
-    const simResponse = await fetch("/api/simulate", {
+    const response = await fetch("/api/simulate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(txRequest),
     });
 
-    if (!simResponse.ok) {
-      const errorBody = await simResponse.text();
-      logger.error("Tenderly API simulation failed", {
-        status: simResponse.status,
+    if (!response.ok) {
+      const errorBody = await response.text();
+      logger.error("Simulation API call failed", {
+        status: response.status,
         error: errorBody,
       });
-      return {
-        gasEstimate,
-        tenderlyResponse: null,
-        error: `Simulation failed: ${errorBody}`,
-      };
+      throw new Error(`Simulation failed: ${errorBody}`);
     }
 
-    const tenderlyResponse = await simResponse.json();
-    logger.info("Transaction simulated successfully via Tenderly", {
-      tenderlyId: tenderlyResponse.simulation.id,
+    const result = await response.json();
+    logger.info("Simulation successful", {
+      tenderlyTxHash: result.transaction.hash,
     });
 
-    return { gasEstimate, tenderlyResponse };
-  } catch (error: any) {
-    logger.error("Error during transaction simulation:", error);
-
-    let gasEstimate: bigint = BigInt(0);
-    try {
-      gasEstimate = await estimateContractGas(publicClient, {
-        account: txRequest.from as `0x${string}`,
-        to: txRequest.to as `0x${string}`,
-        data: (txRequest.data as `0x${string}`) || "0x",
-        value: txRequest.value ? BigInt(txRequest.value) : undefined,
-      });
-    } catch (gasError) {
-      logger.error("Could not even estimate gas:", gasError);
-    }
-
     return {
-      gasEstimate,
+      gasEstimate: BigInt(result.transaction.gas),
+      tenderlyResponse: result,
+    };
+  } catch (error) {
+    logger.error("Error in simulateTransaction:", error);
+    return {
+      gasEstimate: BigInt(0),
       tenderlyResponse: null,
-      error: error.message || "An unknown error occurred during simulation.",
+      error:
+        error instanceof Error ? error.message : "An unknown error occurred",
     };
   }
-}
+};
