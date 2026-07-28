@@ -24,6 +24,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
         error: <OctagonXIcon className="size-4" />,
         loading: <Loader2Icon className="size-4 animate-spin" />,
       }}
+      toastOptions={{
+        max: 3,
+        classNames: {
+          toast: "group toast",
+          description: "group-data-[type=error]:text-red-500",
+        },
+      }}
       style={
         {
           "--normal-bg": "var(--popover)",

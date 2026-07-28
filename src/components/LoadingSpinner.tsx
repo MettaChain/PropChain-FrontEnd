@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -33,7 +34,6 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         ${className}
       `}
     >
-      {/* Visually hidden text for screen readers that don't support aria-label on div */}
       <span className="sr-only">{label}</span>
     </div>
   );
@@ -110,3 +110,6 @@ export const Skeleton: React.FC<SkeletonProps> = ({ className = '', lines = 1 })
     </div>
   );
 };
+
+/** @deprecated Use SkeletonBlock or the shadcn Skeleton component instead */
+export const Skeleton = SkeletonBlock;
