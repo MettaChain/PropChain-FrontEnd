@@ -1,7 +1,12 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { CartState, CartActions, CartItem, BatchTransactionResult } from '@/types/cart';
-import type { Property } from '@/types/property';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type {
+  CartState,
+  CartActions,
+  CartItem,
+  BatchTransactionResult,
+} from "@/types/cart";
+import type { Property } from "@/types/property";
 
 interface CartStore extends CartState, CartActions {}
 
@@ -16,15 +21,20 @@ export const useCartStore = create<CartStore>()(
       totalCost: 0,
       totalGasEstimate: 0,
       isOpen: false,
+      slippageTolerance: 0.005, // Default to 0.5%
+
+      setSlippageTolerance: (tolerance: number) => {
+        set({ slippageTolerance: tolerance });
+      },
 
       addItem: (property: Property, quantity = 1) => {
         set((state) => {
           const existingItemIndex = state.items.findIndex(
-            (item) => item.property.id === property.id
+            (item) => item.property.id === property.id,
           );
 
           let newItems: CartItem[];
-          
+
           if (existingItemIndex >= 0) {
             // Update existing item
             newItems = state.items.map((item, index) =>
@@ -33,10 +43,10 @@ export const useCartStore = create<CartStore>()(
                     ...item,
                     quantity: Math.min(
                       item.quantity + quantity,
-                      property.tokenInfo.available
+                      property.tokenInfo.available,
                     ),
                   }
-                : item
+                : item,
             );
           } else {
             // Add new item
@@ -50,7 +60,7 @@ export const useCartStore = create<CartStore>()(
           }
 
           const totals = calculateTotals(newItems);
-          
+
           return {
             items: newItems,
             ...totals,
@@ -61,10 +71,10 @@ export const useCartStore = create<CartStore>()(
       removeItem: (propertyId: string) => {
         set((state) => {
           const newItems = state.items.filter(
-            (item) => item.property.id !== propertyId
+            (item) => item.property.id !== propertyId,
           );
           const totals = calculateTotals(newItems);
-          
+
           return {
             items: newItems,
             ...totals,
@@ -74,17 +84,22 @@ export const useCartStore = create<CartStore>()(
 
       updateQuantity: (propertyId: string, quantity: number) => {
         set((state) => {
-          const newItems = state.items.map((item) =>
-            item.property.id === propertyId
-              ? {
-                  ...item,
-                  quantity: Math.max(0, Math.min(quantity, item.property.tokenInfo.available)),
-                }
-              : item
-          ).filter((item) => item.quantity > 0);
+          const newItems = state.items
+            .map((item) =>
+              item.property.id === propertyId
+                ? {
+                    ...item,
+                    quantity: Math.max(
+                      0,
+                      Math.min(quantity, item.property.tokenInfo.available),
+                    ),
+                  }
+                : item,
+            )
+            .filter((item) => item.quantity > 0);
 
           const totals = calculateTotals(newItems);
-          
+
           return {
             items: newItems,
             ...totals,
@@ -112,23 +127,27 @@ export const useCartStore = create<CartStore>()(
       },
     }),
     {
-      name: 'propchain-cart',
+      name: "propchain-cart",
       partialize: (state) => ({
         items: state.items,
       }),
-    }
-  )
+    },
+  ),
 );
 
-function calculateTotals(items: CartItem[]): { totalCost: number; totalGasEstimate: number } {
+function calculateTotals(items: CartItem[]): {
+  totalCost: number;
+  totalGasEstimate: number;
+} {
   const totalCost = items.reduce(
     (sum, item) => sum + item.property.price.perToken * item.quantity,
-    0
+    0,
   );
 
-  const totalGasEstimate = items.length === 0 
-    ? 0 
-    : BASE_BATCH_GAS + (items.length * GAS_PER_TRANSACTION);
+  const totalGasEstimate =
+    items.length === 0
+      ? 0
+      : BASE_BATCH_GAS + items.length * GAS_PER_TRANSACTION;
 
   return { totalCost, totalGasEstimate };
 }
