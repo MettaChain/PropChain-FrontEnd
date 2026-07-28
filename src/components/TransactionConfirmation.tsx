@@ -54,7 +54,7 @@ interface TransactionConfirmationProps {
     gasPrice?: string;
     from: string;
   };
-  onConfirm: () => void;
+  onConfirm: (error?: string) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -84,7 +84,7 @@ export const TransactionConfirmation: React.FC<
   );
   const [totpCode, setTotpCode] = useState("");
   const [trustThisDevice, setTrustThisDevice] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
   const hardwareTimerRef = useRef<number | null>(null);
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
   const [simulating, setSimulating] = useState(false);
@@ -139,6 +139,7 @@ export const TransactionConfirmation: React.FC<
       setTotpCode("");
       setTrustThisDevice(false);
       setIsConfirming(false);
+      setTransactionError(null);
       setSimulation(null);
       setSimulating(false);
       setShowSimulation(false);
@@ -295,7 +296,11 @@ export const TransactionConfirmation: React.FC<
     if (trustThisDevice && settings.trustedDeviceBypass) {
       trustDevice(currentDeviceId, currentDeviceLabel);
     }
-    onConfirm();
+    if (transactionError) {
+      onConfirm(transactionError);
+    } else {
+      onConfirm();
+    }
     setIsConfirming(false);
   };
 
@@ -523,6 +528,11 @@ export const TransactionConfirmation: React.FC<
                 </div>
                 {showSimulation && (
                   <div className="mt-2 space-y-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                    {transactionError && (
+                      <p className="text-sm text-red-500">
+                        Error: {transactionError}
+                      </p>
+                    )}
                     {simulating ? (
                       <div className="flex items-center">
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
