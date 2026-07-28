@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@/utils/earlyErrorSuppression";
 import { ClientProviders } from "@/components/ClientProviders";
+import { GasPriceBanner } from "@/components/GasPriceBanner";
+import { useGasPrice } from "@/hooks/useGasPrice";
 import { headers } from "next/headers";
 
 /**
@@ -47,6 +49,8 @@ export default async function RootLayout({
   const preferredLang = acceptLanguage.split(",")[0].split("-")[0] || "en";
   const isRTL = ["ar", "he"].includes(preferredLang);
 
+  useGasPrice();
+
   return (
     <html
       lang={preferredLang}
@@ -68,6 +72,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-background font-sans text-foreground antialiased`}
       >
+        <GasPriceBanner />
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
