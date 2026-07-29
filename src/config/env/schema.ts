@@ -83,6 +83,10 @@ const envSchema = z.object({
     .string()
     .transform((val: string) => parseInt(val, 10))
     .default(50), // 50 requests per wallet per window
+
+  // Upstash Redis Configuration
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 });
 
 /**
@@ -198,6 +202,8 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
   RATE_LIMIT_WINDOW_MS: "Rate limit time window in milliseconds",
   RATE_LIMIT_MAX_REQUESTS: "Maximum requests per IP per window",
   RATE_LIMIT_MAX_REQUESTS_PER_WALLET: "Maximum requests per wallet per window",
+  UPSTASH_REDIS_REST_URL: "Upstash Redis REST URL for distributed rate limiting",
+  UPSTASH_REDIS_REST_TOKEN: "Upstash Redis REST token for distributed rate limiting",
 };
 
 /**

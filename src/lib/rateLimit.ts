@@ -16,17 +16,11 @@ interface RateLimitResult {
   retryAfter?: number;
 }
 
-// In-memory store for rate limiting (in production, use Redis or similar)
 const ipStore: RateLimitStore = {};
 const walletStore: RateLimitStore = {};
 
-// Interval handle for cleanup timer
 let cleanupIntervalHandle: ReturnType<typeof setInterval> | null = null;
 
-/**
- * Start the periodic cleanup of expired rate-limit entries.
- * Safe to call multiple times — clears any existing interval first.
- */
 function startCleanupTimer(): void {
   if (cleanupIntervalHandle !== null) {
     clearInterval(cleanupIntervalHandle);
@@ -44,15 +38,11 @@ function startCleanupTimer(): void {
         delete walletStore[key];
       }
     });
-  }, 60000); // Clean up every minute
+  }, 60000);
 }
 
-// Start the cleanup timer on module load
 startCleanupTimer();
 
-/**
- * Stops the cleanup timer. Useful for tests and HMR teardown.
- */
 export function stopRateLimitCleanup(): void {
   if (cleanupIntervalHandle !== null) {
     clearInterval(cleanupIntervalHandle);
@@ -66,17 +56,17 @@ function getRateLimitData(store: RateLimitStore, key: string, windowMs: number):
 } {
   const now = Date.now();
   const existing = store[key];
-  
+
   if (existing && existing.resetTime > now) {
     return {
       count: existing.count + 1,
-      resetTime: existing.resetTime
+      resetTime: existing.resetTime,
     };
   }
-  
+
   return {
     count: 1,
-    resetTime: now + windowMs
+    resetTime: now + windowMs,
   };
 }
 
@@ -87,67 +77,126 @@ function updateRateLimitStore(store: RateLimitStore, key: string, data: {
   store[key] = data;
 }
 
-export function rateLimitByIP(request: NextRequest): RateLimitResult {
+let redisClient: {
+  zadd: (key: string, scoreMember: { score: number; member: string }) => Promise<number>;
+  zremrangebyscore: (key: string, min: string, max: string) => Promise<number>;
+  zcount: (key: string, min: string, max: string) => Promise<number>;
+  expire: (key: string, seconds: number) => Promise<number>;
+} | null = null;
+
+let redisAvailable = false;
+
+async function initRedis(): Promise<void> {
+  if (redisClient !== null || redisAvailable) {
+    return;
+  }
+
+  const env = validateEnv();
+  const url = env.UPSTASH_REDIS_REST_URL;
+  const token = env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    return;
+  }
+
+  try {
+    const { Redis } = await import('@upstash/redis');
+    redisClient = new Redis({ url, token });
+    redisAvailable = true;
+  } catch {
+    redisAvailable = false;
+  }
+}
+
+async function slidingWindowLimit(
+  key: string,
+  windowMs: number,
+  maxRequests: number,
+): Promise<{ count: number; resetTime: number }> {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  const resetTime = now + windowMs;
+
+  await initRedis();
+
+  if (redisAvailable && redisClient) {
+    try {
+      await redisClient.zremrangebyscore(key, '-inf', windowStart.toString());
+      const count = await redisClient.zcount(key, windowStart.toString(), now.toString());
+
+      if (count < maxRequests) {
+        await redisClient.zadd(key, { score: now, member: `${now}-${Math.random()}` });
+        await redisClient.expire(key, Math.ceil(windowMs / 1000) + 1);
+      }
+
+      return { count: count + (count < maxRequests ? 1 : 0), resetTime };
+    } catch {
+      redisAvailable = false;
+      redisClient = null;
+    }
+  }
+
+  const store = key.includes('ip:') ? ipStore : walletStore;
+  const data = getRateLimitData(store, key, windowMs);
+  if (data.count <= maxRequests) {
+    updateRateLimitStore(store, key, data);
+  }
+  return data;
+}
+
+export async function rateLimitByIP(request: NextRequest): Promise<RateLimitResult> {
   const env = validateEnv();
   const windowMs = env.RATE_LIMIT_WINDOW_MS;
   const maxRequests = env.RATE_LIMIT_MAX_REQUESTS;
-  
-  const ip = (request as NextRequest & { ip?: string }).ip || 
-    request.headers.get('x-forwarded-for')?.split(',')[0] || 
-    request.headers.get('x-real-ip') || 
+
+  const ip = (request as NextRequest & { ip?: string }).ip ||
+    request.headers.get('x-forwarded-for')?.split(',')[0] ||
+    request.headers.get('x-real-ip') ||
     'unknown';
-  
-  const data = getRateLimitData(ipStore, ip, windowMs);
+
+  const key = `rl:ip:${ip}`;
+  const data = await slidingWindowLimit(key, windowMs, maxRequests);
   const remaining = Math.max(0, maxRequests - data.count);
   const success = data.count <= maxRequests;
-  
-  if (success) {
-    updateRateLimitStore(ipStore, ip, data);
-  }
-  
+
   return {
     success,
     limit: maxRequests,
     remaining,
     resetTime: data.resetTime,
-    retryAfter: success ? undefined : Math.ceil((data.resetTime - Date.now()) / 1000)
+    retryAfter: success ? undefined : Math.ceil((data.resetTime - Date.now()) / 1000),
   };
 }
 
-export function rateLimitByWallet(request: NextRequest): RateLimitResult {
+export async function rateLimitByWallet(request: NextRequest): Promise<RateLimitResult> {
   const env = validateEnv();
   const windowMs = env.RATE_LIMIT_WINDOW_MS;
   const maxRequests = env.RATE_LIMIT_MAX_REQUESTS_PER_WALLET;
-  
-  // Get wallet address from Authorization header or custom header
+
   const walletAddress = request.headers.get('x-wallet-address') ||
     request.headers.get('authorization')?.replace('Bearer ', '') ||
     null;
-  
+
   if (!walletAddress) {
-    // No wallet address provided, return success with default limits
     return {
       success: true,
       limit: maxRequests,
       remaining: maxRequests,
-      resetTime: Date.now() + windowMs
+      resetTime: Date.now() + windowMs,
     };
   }
-  
-  const data = getRateLimitData(walletStore, walletAddress, windowMs);
+
+  const key = `rl:wallet:${walletAddress}`;
+  const data = await slidingWindowLimit(key, windowMs, maxRequests);
   const remaining = Math.max(0, maxRequests - data.count);
   const success = data.count <= maxRequests;
-  
-  if (success) {
-    updateRateLimitStore(walletStore, walletAddress, data);
-  }
-  
+
   return {
     success,
     limit: maxRequests,
     remaining,
     resetTime: data.resetTime,
-    retryAfter: success ? undefined : Math.ceil((data.resetTime - Date.now()) / 1000)
+    retryAfter: success ? undefined : Math.ceil((data.resetTime - Date.now()) / 1000),
   };
 }
 
@@ -157,54 +206,50 @@ export function createRateLimitResponse(rateLimitResult: RateLimitResult): NextR
     'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
     'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
   };
-  
+
   if (!rateLimitResult.success && rateLimitResult.retryAfter) {
     headers['Retry-After'] = rateLimitResult.retryAfter.toString();
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Too Many Requests',
         message: 'Rate limit exceeded. Please try again later.',
-        retryAfter: rateLimitResult.retryAfter
+        retryAfter: rateLimitResult.retryAfter,
       },
-      { 
+      {
         status: 429,
-        headers
-      }
+        headers,
+      },
     );
   }
-  
+
   return NextResponse.json(
     { success: true },
-    { 
+    {
       status: 200,
-      headers
-    }
+      headers,
+    },
   );
 }
 
 export function withRateLimit(handler: (request: NextRequest) => Promise<NextResponse>) {
   return async (request: NextRequest): Promise<NextResponse> => {
-    // Check IP-based rate limit
-    const ipRateLimit = rateLimitByIP(request);
+    const ipRateLimit = await rateLimitByIP(request);
     if (!ipRateLimit.success) {
       return createRateLimitResponse(ipRateLimit);
     }
-    
-    // Check wallet-based rate limit if wallet address is provided
-    const walletRateLimit = rateLimitByWallet(request);
+
+    const walletRateLimit = await rateLimitByWallet(request);
     if (!walletRateLimit.success) {
       return createRateLimitResponse(walletRateLimit);
     }
-    
-    // Proceed with the actual handler
+
     const response = await handler(request);
-    
-    // Add rate limit headers to the response
+
     response.headers.set('X-RateLimit-Limit', ipRateLimit.limit.toString());
     response.headers.set('X-RateLimit-Remaining', ipRateLimit.remaining.toString());
     response.headers.set('X-RateLimit-Reset', new Date(ipRateLimit.resetTime).toISOString());
-    
+
     return response;
   };
 }

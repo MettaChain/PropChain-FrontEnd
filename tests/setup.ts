@@ -57,6 +57,19 @@ Object.defineProperty(window, 'ethereum', {
   writable: true,
 });
 
+jest.mock('@upstash/redis', () => {
+  return {
+    Redis: jest.fn().mockImplementation(() => ({
+      zadd: jest.fn().mockResolvedValue(1),
+      zremrangebyscore: jest.fn().mockResolvedValue(0),
+      zcount: jest.fn().mockResolvedValue(0),
+      expire: jest.fn().mockResolvedValue(1),
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue(undefined),
+    })),
+  };
+});
+
 // Mock Web3Wallet
 jest.mock('@walletconnect/web3-provider', () => {
   return jest.fn().mockImplementation(() => ({

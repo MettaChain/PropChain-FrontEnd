@@ -121,14 +121,11 @@ const nextConfig: NextConfig = {
     config.resolve = config.resolve ?? {};
     config.resolve.alias = {
       ...(config.resolve.alias ?? {}),
-      "@walletconnect/ethereum-provider": false,
-      "@safe-global/safe-apps-sdk": false,
-      "@safe-global/safe-apps-provider": false,
-      "@base-org/account": false,
-      "@gemini-wallet/core": false,
-      "@react-native-async-storage/async-storage": false,
-      porto: false,
-      "porto/internal": false,
+      // Wallet SDKs are intentionally NOT aliased to `false`.
+      // They are lazy-loaded via dynamic imports in useWalletConnector.ts
+      // and the wallet connector modules under src/lib/walletConnectors/.
+      // Setting them to `false` breaks wagmi connector detection and
+      // prevents WalletConnect v2, Safe, Coinbase, and MetaMask connections.
     };
 
     if (!isServer && config.optimization?.splitChunks) {
