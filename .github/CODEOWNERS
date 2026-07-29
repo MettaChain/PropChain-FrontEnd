@@ -1,0 +1,37 @@
+# CODEOWNERS — Domain-based Ownership for PropChain
+
+# Web3 / Wallet / Smart Contract Integration
+src/utils/wallet*                       @propchain/web3-team
+src/middleware.ts                        @propchain/web3-team
+src/lib/walletConnectors/               @propchain/web3-team
+src/lib/walletConnectors.ts             @propchain/web3-team
+src/config/wagmi.ts                     @propchain/web3-team
+src/config/wallets.ts                   @propchain/web3-team
+src/config/chains.ts                    @propchain/web3-team
+src/hooks/useWalletConnector.ts         @propchain/web3-team
+src/lib/viem-client.ts                  @propchain/web3-team
+src/features/web3-error/                @propchain/web3-team
+
+# Observability / Logging / Monitoring
+src/utils/logger.ts                     @propchain/observability-team
+src/utils/structuredLogger.ts           @propchain/observability-team
+src/utils/errorHandling.ts              @propchain/observability-team
+src/utils/errorReporting.ts             @propchain/observability-team
+src/utils/errorFactory.ts               @propchain/observability-team
+src/utils/errorMonitoringService.ts     @propchain/observability-team
+src/utils/earlyErrorSuppression.ts      @propchain/observability-team
+src/features/error-fallback/            @propchain/observability-team
+src/features/recovery/                  @propchain/observability-team
+src/lib/rateLimit.ts                    @propchain/observability-team
+src/lib/redis.ts                        @propchain/observability-team
+src/lib/redisCache.ts                   @propchain/observability-team
+src/lib/initRedisCache.ts               @propchain/observability-team
+
+# Accessibility
+src/features/transaction-a11y/          @propchain/accessibility-team
+
+# Smart Contracts / ABIs
+src/config/abis.ts                      @propchain/smart-contract-team
+src/config/referralContracts.ts         @propchain/smart-contract-team
+_fixtures/PropertyNFT.abi.json          @propchain/smart-contract-team
+_fixtures/                              @propchain/smart-contract-team

@@ -1,0 +1,77 @@
+name: Preview Environment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_target:
+    types: [closed]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    outputs:
+      preview_url: ${{ steps.deploy.outputs.preview_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel Preview
+        id: deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --token=${{ secrets.VERCEL_TOKEN }} \
+            --env NEXT_PUBLIC_PREVIEW_FORK_URL=http://preview-fork:8545 \
+            --yes 2>&1 | tail -1)
+          echo "preview_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Comment PR with Preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const previewUrl = '${{ steps.deploy.outputs.preview_url }}';
+            const body = `## 🚀 Preview Environment Ready\n\n- **Frontend Preview:** ${previewUrl}\n- **Hardhat Fork:** \`http://preview-fork:8545\`\n\nThis environment will be destroyed when the PR is closed.`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body,
+            });
+
+  destroy-preview:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Remove Vercel Preview Deployment
+        run: |
+          vercel remove --token=${{ secrets.VERCEL_TOKEN }} --yes --safe propchain-preview-pr-${{ github.event.pull_request.number }}
+        continue-on-error: true
+
+      - name: Comment PR with teardown notice
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## 🔒 Preview Environment Destroyed\n\nThe preview environment for this PR has been torn down.`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body,
+            });
