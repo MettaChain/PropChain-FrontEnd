@@ -1,5 +1,16 @@
 import { PhishingProtection } from '../phishingProtection';
 
+// Mock the canonical logger so importing phishingProtection does not pull in the
+// logger → csrfClient → walletStore → chains module graph (which needs defineChain).
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
 // Mock viem functions
 jest.mock('viem', () => ({
   isAddress: jest.fn(),
@@ -521,17 +532,129 @@ describe('PhishingProtection', () => {
   });
 
   describe('CDN manifest', () => {
-    beforeEach(() => {
-      PhishingProtection.clearMemoizedResults();
+    const SIGNER_KEY = '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45';
+    const OTHER_KEY = '0x1234567890123456789012345678901234567890';
+    /** Builds a valid manifest payload with the given signature. */
+    const makeManifest = (signature: string) => ({
+      version: '1.0.0',
+      updatedAt: '2026-06-27T00:00:00Z',
+      domains: ['phishing-domain-1.com'],
+      contracts: [],
+      signature,
     });
 
-    it('should return false when CDN fetch fails', async () => {
-      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    const originalEnv = process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY;
+
+    beforeEach(() => {
+      PhishingProtection.clearMemoizedResults();
+      jest.clearAllMocks();
+      delete process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY;
+      // Default viem mocks: hex-looking signatures are accepted, and the
+      // recovered address is the signer.
+      const { isHex, recoverMessageAddress } = require('viem');
+      isHex.mockReturnValue(true);
+      recoverMessageAddress.mockResolvedValue(SIGNER_KEY);
+    });
+
+    afterEach(() => {
+      if (originalEnv === undefined) {
+        delete process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY;
+      } else {
+        process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY = originalEnv;
+      }
+    });
+
+    it('does not fetch or apply the manifest when the signing key is unset', async () => {
+      const fetchSpy = jest.fn().mockResolvedValue({
+        ok: true,
+        /** Mock CDN JSON response. */
+        json: async () => makeManifest('0x1234'),
+      });
+      global.fetch = fetchSpy as unknown as typeof fetch;
+
+      const result = await PhishingProtection.loadManifestFromCDN();
+
+      expect(result).toBe(false);
+      expect(fetchSpy).not.toHaveBeenCalled();
+      // The disabled state is reported explicitly.
+      const { logger } = jest.requireMock('@/utils/logger') as {
+        logger: { warn: jest.Mock };
+      };
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('NEXT_PUBLIC_MANIFEST_SIGNING_KEY is not set')
+      );
+      // The manifest was not applied: its CDN-only domain is not flagged.
+      const resultAfter = PhishingProtection.detectPhishing('https://phishing-domain-1.com/evil');
+      expect(resultAfter.isPhishing).toBe(false);
+    });
+
+    it('rejects a manifest signed by the wrong key (bad signature)', async () => {
+      process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY = SIGNER_KEY;
+      const { recoverMessageAddress } = require('viem');
+      // Signature recovers to a different address than the configured key.
+      recoverMessageAddress.mockResolvedValue(OTHER_KEY);
+
+      const fetchSpy = jest.fn().mockResolvedValue({
+        ok: true,
+        /** Mock CDN JSON response with a tampered signature. */
+        json: async () => makeManifest('0xbadbadbadbad'),
+      });
+      global.fetch = fetchSpy as unknown as typeof fetch;
+
+      const result = await PhishingProtection.loadManifestFromCDN();
+
+      expect(result).toBe(false);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      // The tampered manifest was not applied.
+      const resultAfter = PhishingProtection.detectPhishing('https://phishing-domain-1.com/evil');
+      expect(resultAfter.isPhishing).toBe(false);
+    });
+
+    it('applies the manifest when the signature matches the configured key', async () => {
+      process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY = SIGNER_KEY;
+
+      const fetchSpy = jest.fn().mockResolvedValue({
+        ok: true,
+        /** Mock CDN JSON response signed by the configured key. */
+        json: async () => makeManifest('0xdeadbeef'),
+      });
+      global.fetch = fetchSpy as unknown as typeof fetch;
+
+      const result = await PhishingProtection.loadManifestFromCDN();
+
+      expect(result).toBe(true);
+      // The verified manifest's CDN-only domain is now flagged.
+      const resultAfter = PhishingProtection.detectPhishing('https://phishing-domain-1.com/evil');
+      expect(resultAfter.isPhishing).toBe(true);
+      expect(resultAfter.threats).toContain('Known phishing domain detected');
+    });
+
+    it('rejects a manifest with a malformed signature', async () => {
+      process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY = SIGNER_KEY;
+      const { isHex } = require('viem');
+      isHex.mockReturnValue(false);
+
+      const fetchSpy = jest.fn().mockResolvedValue({
+        ok: true,
+        /** Mock CDN JSON response with a non-hex signature. */
+        json: async () => makeManifest('not-hex'),
+      });
+      global.fetch = fetchSpy as unknown as typeof fetch;
+
+      const result = await PhishingProtection.loadManifestFromCDN();
+
+      expect(result).toBe(false);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns false when CDN fetch fails', async () => {
+      process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY = SIGNER_KEY;
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
       const result = await PhishingProtection.loadManifestFromCDN();
       expect(result).toBe(false);
     });
 
-    it('should fall back to static domains when CDN not loaded', () => {
+    it('falls back to static domains when CDN not loaded', () => {
       const result = PhishingProtection.detectPhishing('https://metamask.io.fake/phishing');
       expect(result.isPhishing).toBe(true);
       expect(result.threats).toContain('Known phishing domain detected');
