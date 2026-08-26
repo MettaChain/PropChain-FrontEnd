@@ -26,7 +26,7 @@ type SortKey = "distance" | "price" | "roi";
 
 // --- Pure helpers (no component coupling, easy to unit-test) ---
 
-function calculateDistance(
+export function calculateDistance(
   lat1: number,
   lon1: number,
   lat2: number,
@@ -72,7 +72,7 @@ function applyDistances(
   }));
 }
 
-function filterProperties(
+export function filterProperties(
   properties: MobileProperty[],
   searchQuery: string,
   selectedFilters: string[],
@@ -88,7 +88,7 @@ function filterProperties(
   });
 }
 
-function sortProperties(
+export function sortProperties(
   properties: MobileProperty[],
   sortBy: SortKey,
 ): MobileProperty[] {

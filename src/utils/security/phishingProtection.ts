@@ -25,7 +25,20 @@ export interface PhishingManifest {
 
 export class PhishingProtection {
   private static readonly CDN_MANIFEST_URL = process.env.NEXT_PUBLIC_PHISHING_MANIFEST_URL || 'https://cdn.propchain.io/security/phishing-manifest.json';
-  private static readonly MANIFEST_PUBLIC_KEY = process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY || '';
+
+  /**
+   * The signer address used to verify the CDN manifest signature.
+   *
+   * Read lazily (not captured at module load) so the fail-closed behavior is
+   * deterministic and testable: when this is unset, the manifest is never
+   * fetched or applied. NEXT_PUBLIC_* values are inlined by Next.js at build
+   * time, so this getter is behaviorally identical to a static constant in
+   * production while allowing tests to exercise both configured and
+   * unconfigured states.
+   */
+  private static get MANIFEST_PUBLIC_KEY(): string {
+    return process.env.NEXT_PUBLIC_MANIFEST_SIGNING_KEY || '';
+  }
 
   private static cdnLoadedDomains: string[] = [];
   private static cdnLoadedContracts: string[] = [];
@@ -68,14 +81,25 @@ export class PhishingProtection {
       return true;
     }
 
+    // No signing key configured: the manifest cannot be verified, so it is
+    // never fetched or applied. The bundled fallback lists still apply, and the
+    // disabled state is reported explicitly instead of silently trusting the
+    // manifest.
+    if (!this.MANIFEST_PUBLIC_KEY) {
+      logger.warn(
+        '[PhishingProtection] Manifest verification disabled: NEXT_PUBLIC_MANIFEST_SIGNING_KEY is not set; CDN manifest will not be fetched or applied'
+      );
+      return false;
+    }
+
     try {
       const response = await fetch(this.CDN_MANIFEST_URL, { cache: 'no-cache' });
       if (!response.ok) return false;
 
       const manifest: PhishingManifest = await response.json();
 
-      if (!this.verifyManifestSignature(manifest)) {
-        console.warn('[PhishingProtection] Manifest signature verification failed');
+      if (!(await this.verifyManifestSignature(manifest))) {
+        logger.warn('[PhishingProtection] Manifest signature verification failed');
         return false;
       }
 
@@ -89,13 +113,31 @@ export class PhishingProtection {
     }
   }
 
-  private static verifyManifestSignature(manifest: PhishingManifest): boolean {
-    if (!this.MANIFEST_PUBLIC_KEY) return true;
+  /**
+   * Verifies the manifest signature by recovering the signer address over the
+   * canonical manifest payload and comparing it to the configured public key.
+   *
+   * The signature is an EIP-191 personal message signature over the
+   * JSON-stringified manifest data with the `signature` field excluded, using
+   * stable key order (version, updatedAt, domains, contracts). Fails closed:
+   * a missing key, malformed signature, or any recovery error rejects the
+   * manifest.
+   */
+  private static async verifyManifestSignature(manifest: PhishingManifest): Promise<boolean> {
+    // Fail closed: never accept an unverified manifest.
+    if (!this.MANIFEST_PUBLIC_KEY) return false;
+
     try {
       const { signature, ...data } = manifest;
-      const encoder = new TextEncoder();
+      if (!signature || !isHex(signature)) return false;
+
       const dataStr = JSON.stringify(data);
-      return dataStr.length > 0;
+      const recoveredAddress = await recoverMessageAddress({
+        message: dataStr,
+        signature: signature as Hex,
+      });
+
+      return recoveredAddress.toLowerCase() === this.MANIFEST_PUBLIC_KEY.toLowerCase();
     } catch {
       return false;
     }
