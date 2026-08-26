@@ -6,11 +6,14 @@ import Image from "next/image";
 import { SlippageControl } from "./SlippageControl";
 import { X, Plus, Minus, ShoppingCart, Trash2, Fuel } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
+import { useWalletStore } from "@/store/walletStore";
 import { formatPrice } from "@/utils/searchUtils";
 import type { CartItem } from "@/types/cart";
 
 const logger = createLogger("CartSidebar");
 
+export const CartSidebar: React.FC = () => {
+  const address = useWalletStore((state) => state.address);
   const {
     items,
     totalCost,
@@ -45,13 +48,9 @@ const logger = createLogger("CartSidebar");
       const { BatchTransactionService } =
         await import("@/lib/batchTransaction");
 
-      // Mock wallet address - in real app, this would come from wallet connection
-      const walletAddress = "0x1234567890123456789012345678901234567890";
-
-      // Show loading state
       const result = await BatchTransactionService.executeBatchPurchase(
         items,
-        walletAddress,
+        address ?? "",
         slippageTolerance,
       );
 
