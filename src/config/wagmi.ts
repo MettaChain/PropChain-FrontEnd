@@ -6,6 +6,20 @@ import { getRpcUrl, getLocalRpcUrl } from "./env";
 import { mockConnector } from "./mockConnector";
 
 /**
+ * Whether the dev-only mock wallet connector is enabled.
+ *
+ * The mock connector is only ever active when the flag is explicitly set to
+ * "true" AND the build is not production. This keeps the mock (and its
+ * generated per-session key) out of production builds entirely.
+ */
+export const isMockWalletEnabled = (): boolean => {
+  return (
+    process.env.NEXT_PUBLIC_MOCK_WALLET === "true" &&
+    process.env.NODE_ENV !== "production"
+  );
+};
+
+/**
  * Define the Foundry/Anvil local development chain
  */
 const foundry = defineChain({
@@ -115,10 +129,7 @@ const buildTransports = () => {
 const supportedChains = buildSupportedChains();
 const transports = buildTransports();
 
-const connectors =
-  process.env.NEXT_PUBLIC_MOCK_WALLET === "true"
-    ? [mockConnector]
-    : [injected()];
+const connectors = isMockWalletEnabled() ? [mockConnector] : [injected()];
 
 export const config = createConfig({
   chains: supportedChains,
