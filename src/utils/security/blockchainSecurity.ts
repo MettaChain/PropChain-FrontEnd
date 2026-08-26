@@ -1,4 +1,5 @@
 import { parseEther } from 'viem';
+import { logger } from '@/utils/logger';
 
 export interface SecurityServiceConfig {
   apiKey?: string;
@@ -13,6 +14,12 @@ export interface AddressRiskScore {
   categories: string[];
   labels: string[];
   description: string;
+  /**
+   * True only when the score came from a real screening provider. False when
+   * the provider is unconfigured/unavailable — callers must not present the
+   * score as a real risk signal in that case.
+   */
+  verified: boolean;
 }
 
 export interface TransactionRisk {
@@ -24,6 +31,10 @@ export interface TransactionRisk {
   mixer: boolean;
   gambling: boolean;
   scam: boolean;
+  /**
+   * True only when a real transaction-risk provider produced this result.
+   */
+  verified: boolean;
 }
 
 export interface SecurityAlert {
@@ -147,7 +158,10 @@ export class BlockchainSecurityService {
   }
 
   /**
-   * Checks address risk score using Chainalysis-like service
+   * Checks address risk score using a Chainalysis-like service.
+   *
+   * Returns an "unable to verify" result (`verified: false`) whenever the
+   * service is not configured or unavailable, instead of fabricating a score.
    */
   async checkAddressRisk(address: string): Promise<AddressRiskScore> {
     const cacheKey = `address_${address}`;
@@ -176,7 +190,16 @@ export class BlockchainSecurityService {
 
       if (response && response.ok) {
         const body = await response.json();
-        const score = typeof body.risk_score === 'number' ? body.risk_score : 50;
+        const score = typeof body.risk_score === 'number' ? body.risk_score : null;
+        const verified = score !== null && body.verified !== false;
+
+        // No trustworthy score: report honestly rather than guessing.
+        if (!verified || score === null) {
+          const result = this.getDefaultRiskScore(address);
+          this.setCache(cacheKey, result);
+          return result;
+        }
+
         const categories = Array.isArray(body.categories) ? body.categories : [];
         const result: AddressRiskScore = {
           address,
@@ -184,24 +207,15 @@ export class BlockchainSecurityService {
           riskLevel: this.getRiskLevel(score),
           categories,
           labels: Array.isArray(body.labels) ? body.labels : [],
-          description: body.description || ''
+          description: body.description || '',
+          verified: true
         };
         this.setCache(cacheKey, result);
         return result;
       }
 
-      // If the proxy returned an error or is unavailable, fall back to simulated check
-      const riskScore = await this.simulateAddressRiskCheck(address);
-
-      const result: AddressRiskScore = {
-        address,
-        riskScore: riskScore.score,
-        riskLevel: this.getRiskLevel(riskScore.score),
-        categories: riskScore.categories,
-        labels: riskScore.labels,
-        description: riskScore.description
-      };
-
+      // Proxy unavailable: no verified risk data exists, so report honestly.
+      const result = this.getDefaultRiskScore(address);
       this.setCache(cacheKey, result);
       return result;
 
@@ -212,35 +226,19 @@ export class BlockchainSecurityService {
   }
 
   /**
-   * Checks transaction risk
+   * Checks transaction risk.
+   *
+   * No real transaction-risk data source is integrated yet, so this returns the
+   * honest "unable to verify" result instead of deriving a score from the hash.
    */
   async checkTransactionRisk(hash: string): Promise<TransactionRisk> {
     const cacheKey = `tx_${hash}`;
     const cached = this.getFromCache(cacheKey);
     if (cached) return cached;
 
-    try {
-      // Simulate transaction risk check
-      const riskData = await this.simulateTransactionRiskCheck(hash);
-      
-      const result: TransactionRisk = {
-        hash,
-        riskScore: riskData.score,
-        riskLevel: this.getRiskLevel(riskData.score),
-        alerts: riskData.alerts,
-        sanctions: riskData.sanctions,
-        mixer: riskData.mixer,
-        gambling: riskData.gambling,
-        scam: riskData.scam
-      };
-
-      this.setCache(cacheKey, result);
-      return result;
-
-    } catch (error) {
-      logger.error('Failed to check transaction risk:', error);
-      return this.getDefaultTransactionRisk(hash);
-    }
+    const result = this.getDefaultTransactionRisk(hash);
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   /**
@@ -306,14 +304,17 @@ export class BlockchainSecurityService {
     riskScore: number;
     warnings: string[];
     blocks: string[];
+    verified: boolean;
   }> {
     const warnings: string[] = [];
     const blocks: string[] = [];
     let totalRiskScore = 0;
+    let allVerified = true;
 
     try {
       // Check sender risk — use the highest risk score seen across all checks
       const senderRisk = await this.checkAddressRisk(from);
+      allVerified = allVerified && senderRisk.verified;
       totalRiskScore = Math.max(totalRiskScore, senderRisk.riskScore);
 
       // Critical risk blocks the transaction; high risk only warns
@@ -325,6 +326,7 @@ export class BlockchainSecurityService {
 
       // Check recipient risk independently — both parties must be evaluated
       const recipientRisk = await this.checkAddressRisk(to);
+      allVerified = allVerified && recipientRisk.verified;
       totalRiskScore = Math.max(totalRiskScore, recipientRisk.riskScore);
 
       if (recipientRisk.riskLevel === 'critical') {
@@ -366,6 +368,7 @@ export class BlockchainSecurityService {
     } catch (error) {
       logger.error('Failed to validate transaction:', error);
       // Degrade gracefully — warn rather than block on service failure
+      allVerified = false;
       warnings.push('Unable to complete security validation');
     }
 
@@ -373,95 +376,13 @@ export class BlockchainSecurityService {
       isValid: blocks.length === 0,
       riskScore: totalRiskScore,
       warnings,
-      blocks
+      blocks,
+      verified: allVerified
     };
   }
 
   /**
-   * Simulates address risk check (placeholder for real API)
-   */
-  private async simulateAddressRiskCheck(address: string): Promise<{
-    score: number;
-    categories: string[];
-    labels: string[];
-    description: string;
-  }> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Derive a deterministic score from the address hex so the same address
-    // always returns the same risk score (useful for testing/demo purposes)
-    const addressHash = address.toLowerCase().replace('0x', '');
-    // Parse first 8 hex chars as a 32-bit integer, then mod 100 for a 0–99 score
-    const score = parseInt(addressHash.slice(0, 8), 16) % 100;
-
-    const categories: string[] = [];
-    const labels: string[] = [];
-
-    // Bucket the score into risk tiers and assign matching categories/labels
-    if (score > 80) {
-      categories.push('high_risk');
-      labels.push('suspicious_activity');
-    } else if (score > 60) {
-      categories.push('medium_risk');
-      labels.push('requires_review');
-    } else if (score > 40) {
-      categories.push('low_risk');
-      labels.push('monitor');
-    }
-
-    // Heuristic: addresses starting with 0x000 are likely contract addresses
-    if (address.startsWith('0x000')) {
-      categories.push('contract');
-      labels.push('smart_contract');
-    }
-
-    // Map score quartile to a human-readable description
-    const descriptions = [
-      'Address appears to have normal activity',
-      'Address shows some unusual patterns',
-      'Address has elevated risk factors',
-      'Address requires immediate investigation'
-    ];
-
-    const description = descriptions[Math.floor(score / 25)];
-
-    return { score, categories, labels, description };
-  }
-
-  /**
-   * Simulates transaction risk check (placeholder for real API)
-   */
-  private async simulateTransactionRiskCheck(hash: string): Promise<{
-    score: number;
-    alerts: string[];
-    sanctions: boolean;
-    mixer: boolean;
-    gambling: boolean;
-    scam: boolean;
-  }> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const hashShort = hash.slice(2, 10);
-    const score = parseInt(hashShort, 16) % 100;
-
-    const alerts: string[] = [];
-    const sanctions = score > 90;
-    const mixer = score > 70 && score < 80;
-    const gambling = score > 60 && score < 70;
-    const scam = score > 85;
-
-    if (sanctions) alerts.push('Transaction involves sanctioned address');
-    if (mixer) alerts.push('Transaction involves mixer service');
-    if (gambling) alerts.push('Transaction involves gambling service');
-    if (scam) alerts.push('Transaction involves known scam address');
-
-    return { score, alerts, sanctions, mixer, gambling, scam };
-  }
-
-  /**
-   * Gets default risk score for failed checks
+   * Gets the honest default for checks that could not be performed.
    */
   private getDefaultRiskScore(address: string): AddressRiskScore {
     return {
@@ -470,12 +391,13 @@ export class BlockchainSecurityService {
       riskLevel: 'medium',
       categories: ['unknown'],
       labels: ['unable_to_verify'],
-      description: 'Unable to verify address risk due to service unavailability'
+      description: 'Unable to verify address risk due to service unavailability',
+      verified: false
     };
   }
 
   /**
-   * Gets default transaction risk for failed checks
+   * Gets the honest default for transaction checks that could not be performed.
    */
   private getDefaultTransactionRisk(hash: string): TransactionRisk {
     return {
@@ -486,7 +408,8 @@ export class BlockchainSecurityService {
       sanctions: false,
       mixer: false,
       gambling: false,
-      scam: false
+      scam: false,
+      verified: false
     };
   }
 
@@ -600,16 +523,19 @@ export async function checkAddressRiskViaProxy(address: string): Promise<Address
       categories: ['unknown'],
       labels: ['unable_to_verify'],
       description: 'Unable to verify address risk via proxy',
+      verified: false
     };
   }
   const body = await res.json();
+  const hasScore = typeof body.risk_score === 'number';
   return {
     address,
-    riskScore: typeof body.risk_score === 'number' ? body.risk_score : 50,
+    riskScore: hasScore ? body.risk_score : 50,
     riskLevel: body.risk_level ?? 'medium',
     categories: Array.isArray(body.categories) ? body.categories : [],
     labels: Array.isArray(body.labels) ? body.labels : [],
     description: body.description ?? '',
+    verified: hasScore && body.verified !== false
   };
 }
 

@@ -1,5 +1,16 @@
 import { BlockchainSecurityService, SecurityServiceConfig } from '../blockchainSecurity';
 
+// Mock the canonical logger so importing blockchainSecurity does not pull in the
+// logger → csrfClient → walletStore → chains module graph (which needs browser globals).
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
 // Mock fetch for API calls
 global.fetch = jest.fn();
 
@@ -48,7 +59,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low' as const,
         categories: ['low_risk'],
         labels: ['monitor'],
-        description: 'Address appears to have normal activity'
+        description: 'Address appears to have normal activity',
+        verified: true
       };
 
       // Manually set cache
@@ -69,7 +81,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low' as const,
         categories: ['low_risk'],
         labels: ['monitor'],
-        description: 'Address appears to have normal activity'
+        description: 'Address appears to have normal activity',
+        verified: true
       };
 
       // Set expired cache (5 minutes + 1 second ago)
@@ -81,17 +94,20 @@ describe('BlockchainSecurityService', () => {
 
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
+        /** Mock proxy JSON response with a verified numeric score. */
         json: async () => ({ risk_score: 50, categories: ['medium_risk'] })
       });
 
       const result = await service.checkAddressRisk(testAddress);
       expect(fetch).toHaveBeenCalled();
       expect(result.riskScore).toBeGreaterThan(0);
+      expect(result.verified).toBe(true);
     });
 
     it('should call the local proxy endpoint', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
+        /** Mock proxy JSON response with a verified numeric score. */
         json: async () => ({ risk_score: 30, categories: ['low_risk'], labels: [], description: 'Normal' })
       });
 
@@ -102,16 +118,41 @@ describe('BlockchainSecurityService', () => {
       expect(fetchUrl).toContain(encodeURIComponent(testAddress));
     });
 
-    it('should fall back to simulation when proxy returns non-ok', async () => {
+    it('should return an unverified result when proxy returns non-ok', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 502,
+        /** Mock proxy JSON error response. */
         json: async () => ({ error: 'Bad gateway' })
       });
 
       const result = await service.checkAddressRisk(testAddress);
-      expect(result.riskScore).toBeGreaterThanOrEqual(0);
-      expect(result.riskScore).toBeLessThanOrEqual(100);
+      expect(result.verified).toBe(false);
+      expect(result.categories).toEqual(['unknown']);
+      expect(result.labels).toEqual(['unable_to_verify']);
+    });
+
+    it('should return an unverified result when proxy response has no numeric score', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        /** Mock proxy JSON response missing a numeric score. */
+        json: async () => ({ categories: ['low_risk'] })
+      });
+
+      const result = await service.checkAddressRisk(testAddress);
+      expect(result.verified).toBe(false);
+      expect(result.categories).toEqual(['unknown']);
+    });
+
+    it('should return an unverified result when proxy explicitly reports verified:false', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        /** Mock proxy JSON response explicitly reporting unverified. */
+        json: async () => ({ risk_score: 10, verified: false })
+      });
+
+      const result = await service.checkAddressRisk(testAddress);
+      expect(result.verified).toBe(false);
     });
 
     it('should return default risk score on API failure', async () => {
@@ -124,11 +165,12 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'medium',
         categories: ['unknown'],
         labels: ['unable_to_verify'],
-        description: 'Unable to verify address risk due to service unavailability'
+        description: 'Unable to verify address risk due to service unavailability',
+        verified: false
       });
     });
 
-    it('should handle different risk score ranges correctly', async () => {
+    it('should map proxy risk scores to risk levels and mark verified', async () => {
       // Mock different risk scores
       const testCases = [
         { score: 10, expectedLevel: 'low' },
@@ -138,17 +180,17 @@ describe('BlockchainSecurityService', () => {
       ];
 
       for (const { score, expectedLevel } of testCases) {
-        // Clear cache and mock the simulation to return specific score
+        // Clear cache and mock the proxy to return specific score
         service.clearCache();
-        jest.spyOn(service as any, 'simulateAddressRiskCheck').mockResolvedValueOnce({
-          score,
-          categories: [`${expectedLevel}_risk`],
-          labels: [],
-          description: 'Test'
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          /** Mock proxy JSON response with a verified score for the test case. */
+          json: async () => ({ risk_score: score, categories: [`${expectedLevel}_risk`] })
         });
 
         const result = await service.checkAddressRisk(testAddress);
         expect(result.riskLevel).toBe(expectedLevel);
+        expect(result.verified).toBe(true);
       }
     });
   });
@@ -165,7 +207,8 @@ describe('BlockchainSecurityService', () => {
         sanctions: false,
         mixer: false,
         gambling: false,
-        scam: false
+        scam: false,
+        verified: true
       };
 
       service['cache'].set(`tx_${testHash}`, {
@@ -177,9 +220,7 @@ describe('BlockchainSecurityService', () => {
       expect(result).toEqual(cachedResult);
     });
 
-    it('should return default transaction risk on failure', async () => {
-      jest.spyOn(service as any, 'simulateTransactionRiskCheck').mockRejectedValueOnce(new Error('Simulation failed'));
-
+    it('should return an unverified default (no fabricated score from the hash)', async () => {
       const result = await service.checkTransactionRisk(testHash);
       expect(result).toEqual({
         hash: testHash,
@@ -189,24 +230,9 @@ describe('BlockchainSecurityService', () => {
         sanctions: false,
         mixer: false,
         gambling: false,
-        scam: false
+        scam: false,
+        verified: false
       });
-    });
-
-    it('should handle transaction with sanctions flag', async () => {
-      jest.spyOn(service as any, 'simulateTransactionRiskCheck').mockResolvedValueOnce({
-        score: 95,
-        alerts: ['Transaction involves sanctioned address'],
-        sanctions: true,
-        mixer: false,
-        gambling: false,
-        scam: false
-      });
-
-      const result = await service.checkTransactionRisk(testHash);
-      expect(result.sanctions).toBe(true);
-      expect(result.alerts).toContain('Transaction involves sanctioned address');
-      expect(result.riskLevel).toBe('critical');
     });
   });
 
@@ -218,7 +244,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'critical',
         categories: ['sanctions'],
         labels: [],
-        description: 'Sanctioned'
+        description: 'Sanctioned',
+        verified: true
       });
 
       const result = await service.checkSanctions('0x123');
@@ -232,7 +259,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low',
         categories: ['low_risk'],
         labels: [],
-        description: 'Clean'
+        description: 'Clean',
+        verified: true
       });
 
       const result = await service.checkSanctions('0x123');
@@ -255,7 +283,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'high',
         categories: ['mixer'],
         labels: [],
-        description: 'Mixer'
+        description: 'Mixer',
+        verified: true
       });
 
       const result = await service.checkMixer('0x123');
@@ -269,7 +298,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low',
         categories: ['low_risk'],
         labels: [],
-        description: 'Clean'
+        description: 'Clean',
+        verified: true
       });
 
       const result = await service.checkMixer('0x123');
@@ -285,7 +315,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'high',
         categories: ['scam', 'mixer'],
         labels: ['suspicious'],
-        description: 'High risk address'
+        description: 'High risk address',
+        verified: true
       });
 
       const alerts = await service.getSecurityAlerts('0x123');
@@ -315,7 +346,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low',
         categories: ['low_risk'],
         labels: [],
-        description: 'Clean address'
+        description: 'Clean address',
+        verified: true
       }));
 
       const result = await service.validateTransaction(fromAddress, toAddress, value);
@@ -323,6 +355,22 @@ describe('BlockchainSecurityService', () => {
       expect(result.riskScore).toBe(10);
       expect(result.warnings).toHaveLength(0);
       expect(result.blocks).toHaveLength(0);
+      expect(result.verified).toBe(true);
+    });
+
+    it('should report verified:false when screening did not run', async () => {
+      jest.spyOn(service, 'checkAddressRisk').mockImplementation(async (address) => ({
+        address,
+        riskScore: 50,
+        riskLevel: 'medium',
+        categories: ['unknown'],
+        labels: ['unable_to_verify'],
+        description: 'Unable to verify address risk due to service unavailability',
+        verified: false
+      }));
+
+      const result = await service.validateTransaction(fromAddress, toAddress, value);
+      expect(result.verified).toBe(false);
     });
 
     it('should block transaction with critical risk sender', async () => {
@@ -332,7 +380,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: address === fromAddress ? 'critical' : 'low',
         categories: address === fromAddress ? ['high_risk'] : ['low_risk'],
         labels: [],
-        description: address === fromAddress ? 'Critical risk' : 'Clean'
+        description: address === fromAddress ? 'Critical risk' : 'Clean',
+        verified: true
       }));
 
       const result = await service.validateTransaction(fromAddress, toAddress, value);
@@ -347,7 +396,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low',
         categories: ['sanctions'],
         labels: [],
-        description: 'Sanctioned'
+        description: 'Sanctioned',
+        verified: true
       });
 
       const result = await service.validateTransaction(fromAddress, toAddress, value);
@@ -363,10 +413,13 @@ describe('BlockchainSecurityService', () => {
         riskLevel: address === toAddress ? 'high' : 'low',
         categories: address === toAddress ? ['high_risk'] : ['low_risk'],
         labels: [],
-        description: address === toAddress ? 'Risky recipient' : 'Clean sender'
+        description: address === toAddress ? 'Risky recipient' : 'Clean sender',
+        verified: true
       }));
 
-      const result = await service.validateTransaction(fromAddress, toAddress, value);
+      // Value must exceed the 1 ETH threshold for the high-value warning to fire.
+      const highValue = '2000000000000000000'; // 2 ETH
+      const result = await service.validateTransaction(fromAddress, toAddress, highValue);
       expect(result.isValid).toBe(true);
       expect(result.warnings).toContain('High-value transaction to risky address');
     });
@@ -378,7 +431,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low',
         categories: ['mixer'],
         labels: [],
-        description: 'Mixer'
+        description: 'Mixer',
+        verified: true
       });
 
       const result = await service.validateTransaction(fromAddress, toAddress, value);
@@ -386,12 +440,13 @@ describe('BlockchainSecurityService', () => {
       expect(result.warnings).toContain('Transaction involves mixer-associated address');
     });
 
-    it('should handle validation errors gracefully', async () => {
+    it('should handle validation errors gracefully and report unverified', async () => {
       jest.spyOn(service, 'checkAddressRisk').mockRejectedValue(new Error('API Error'));
 
       const result = await service.validateTransaction(fromAddress, toAddress, value);
       expect(result.isValid).toBe(true); // Should not block on errors
       expect(result.warnings).toContain('Unable to complete security validation');
+      expect(result.verified).toBe(false);
     });
   });
 
@@ -464,6 +519,13 @@ describe('BlockchainSecurityService', () => {
           const result = (service as any).getAlertSeverity(level);
           expect(result).toBe(expectedSeverity);
         });
+      });
+    });
+
+    describe('no simulated checks remain', () => {
+      it('does not expose simulateAddressRiskCheck or simulateTransactionRiskCheck', () => {
+        expect((service as any).simulateAddressRiskCheck).toBeUndefined();
+        expect((service as any).simulateTransactionRiskCheck).toBeUndefined();
       });
     });
   });
