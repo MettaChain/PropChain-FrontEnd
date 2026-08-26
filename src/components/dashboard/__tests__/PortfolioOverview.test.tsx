@@ -166,4 +166,37 @@ describe('PortfolioOverview', () => {
     const { container } = render(<PortfolioOverview />);
     expect(container.innerHTML).toContain('empty-state');
   });
+
+  it('shows the error state when the portfolio load reports an error', () => {
+    mockUsePortfolioOverview.mockReturnValue({
+      portfolio: {
+        totalValueUSD: 50000,
+        chains: [{ holdings: [{ apy: 6 }] }],
+        error: 'Failed to fetch portfolio',
+      },
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    render(<PortfolioOverview />);
+    expect(screen.getByText('Portfolio Value')).toBeInTheDocument();
+    expect(screen.getByText('Error loading')).toBeInTheDocument();
+  });
+
+  it('shows the empty state when the portfolio has no holdings', () => {
+    mockUsePortfolioOverview.mockReturnValue({
+      portfolio: {
+        totalValueUSD: 0,
+        chains: [],
+      },
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    render(<PortfolioOverview />);
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+    expect(screen.getByText('No investments yet')).toBeInTheDocument();
+  });
 });
