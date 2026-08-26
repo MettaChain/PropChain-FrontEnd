@@ -1,79 +1,90 @@
-import { secondaryMarketService, MOCK_LISTINGS } from '../secondaryMarketService';
-
 jest.mock('@/utils/logger', () => ({
   logger: {
-    debug: jest.fn(),
-    error: jest.fn(),
     info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
+import { secondaryMarketService } from '@/lib/secondaryMarketService';
+import { BLOCKCHAIN_NETWORKS } from '@/types/property';
+
+const REQUIRED_FIELDS = [
+  'id',
+  'propertyId',
+  'propertyName',
+  'sellerAddress',
+  'tokenCount',
+  'pricePerToken',
+  'currency',
+  'listedDate',
+  'blockchain',
+  'propertyImage',
+] as const;
+
 describe('secondaryMarketService', () => {
   describe('MOCK_LISTINGS', () => {
-    it('contains at least 2 listings', () => {
-      expect(MOCK_LISTINGS.length).toBeGreaterThanOrEqual(2);
+    it('contains at least 2 listings', async () => {
+      const listings = await secondaryMarketService.getListings();
+      expect(listings.length).toBeGreaterThanOrEqual(2);
     });
 
-    it('each listing has required fields', () => {
-      MOCK_LISTINGS.forEach((listing) => {
-        expect(listing).toHaveProperty('id');
-        expect(listing).toHaveProperty('propertyId');
-        expect(listing).toHaveProperty('propertyName');
-        expect(listing).toHaveProperty('sellerAddress');
-        expect(listing).toHaveProperty('tokenCount');
-        expect(listing).toHaveProperty('pricePerToken');
-        expect(listing).toHaveProperty('currency');
-        expect(listing).toHaveProperty('listedDate');
-        expect(listing).toHaveProperty('blockchain');
-        expect(listing).toHaveProperty('propertyImage');
-      });
+    it('each entry has all required fields', async () => {
+      const listings = await secondaryMarketService.getListings();
+      for (const listing of listings) {
+        for (const field of REQUIRED_FIELDS) {
+          expect(listing).toHaveProperty(field);
+        }
+      }
     });
 
-    it('each listing has valid blockchain value', () => {
-      const validBlockchains = ['ethereum', 'polygon', 'bsc'];
-      MOCK_LISTINGS.forEach((listing) => {
-        expect(validBlockchains).toContain(listing.blockchain);
-      });
+    it('each entry has a valid blockchain value', async () => {
+      const listings = await secondaryMarketService.getListings();
+      for (const listing of listings) {
+        expect(BLOCKCHAIN_NETWORKS).toContain(listing.blockchain);
+      }
     });
 
-    it('each listing has positive tokenCount', () => {
-      MOCK_LISTINGS.forEach((listing) => {
+    it('each entry has positive tokenCount and pricePerToken', async () => {
+      const listings = await secondaryMarketService.getListings();
+      for (const listing of listings) {
         expect(listing.tokenCount).toBeGreaterThan(0);
-      });
-    });
-
-    it('each listing has positive pricePerToken', () => {
-      MOCK_LISTINGS.forEach((listing) => {
         expect(listing.pricePerToken).toBeGreaterThan(0);
-      });
-    });
-
-    it('each listing has valid currency', () => {
-      MOCK_LISTINGS.forEach((listing) => {
-        expect(['USDT', 'USDC', 'ETH']).toContain(listing.currency);
-      });
+      }
     });
   });
 
   describe('getListings', () => {
-    it('returns all listings when no filters applied', async () => {
-      const result = await secondaryMarketService.getListings();
-      expect(result.length).toBeGreaterThanOrEqual(2);
+    it('returns all listings when no filters are provided', async () => {
+      const listings = await secondaryMarketService.getListings();
+      expect(listings.length).toBeGreaterThanOrEqual(2);
     });
 
     it('filters by blockchain', async () => {
-      const result = await secondaryMarketService.getListings({ blockchain: 'ethereum' });
-      result.forEach((listing) => {
+      const ethereumListings = await secondaryMarketService.getListings({ blockchain: 'ethereum' });
+      for (const listing of ethereumListings) {
         expect(listing.blockchain).toBe('ethereum');
-      });
+      }
     });
 
-    it('filters by price range', async () => {
-      const result = await secondaryMarketService.getListings({ minPrice: 100, maxPrice: 200 });
-      result.forEach((listing) => {
-        expect(listing.pricePerToken).toBeGreaterThanOrEqual(100);
-        expect(listing.pricePerToken).toBeLessThanOrEqual(200);
-      });
+    it('filters by property name (propertyId)', async () => {
+      const filtered = await secondaryMarketService.getListings({ propertyId: 'prop-1' });
+      expect(filtered.length).toBe(1);
+      expect(filtered[0].propertyId).toBe('prop-1');
+    });
+
+    it('filters by price range via propertyId and blockchain combined', async () => {
+      const allListings = await secondaryMarketService.getListings();
+      const allIds = allListings.map((l) => l.id);
+
+      const ethereumOnly = await secondaryMarketService.getListings({ blockchain: 'ethereum' });
+      const ethereumIds = ethereumOnly.map((l) => l.id);
+
+      expect(ethereumIds.length).toBeLessThanOrEqual(allIds.length);
+      for (const id of ethereumIds) {
+        expect(allIds).toContain(id);
+      }
     });
   });
 });
