@@ -1,17 +1,36 @@
 import { createConnector } from "wagmi";
 import { http, createWalletClient } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { mainnet } from "viem/chains";
 
-const account = privateKeyToAccount(
-  "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
-);
+// Dev-only mock connector. The private key is generated once per connector
+// instance (per page load) instead of being a hardcoded committed secret, so
+// there is no long-lived key to leak or be replayed against a real network.
+// The address therefore changes on every reload, which is acceptable for a
+// local mock and makes it impossible for a production-like build to sign
+// transactions with a publicly-known key.
+let account: ReturnType<typeof privateKeyToAccount> | undefined;
+let client: ReturnType<typeof createWalletClient> | undefined;
 
-const client = createWalletClient({
-  account,
-  chain: mainnet,
-  transport: http(),
-});
+/** Returns the per-session mock account, creating it with a fresh key on first use. */
+const getAccount = () => {
+  if (!account) {
+    account = privateKeyToAccount(generatePrivateKey());
+  }
+  return account;
+};
+
+/** Returns the per-session mock wallet client, created once from the mock account. */
+const getClient = () => {
+  if (!client) {
+    client = createWalletClient({
+      account: getAccount(),
+      chain: mainnet,
+      transport: http(),
+    });
+  }
+  return client;
+};
 
 export const mockConnector = createConnector((config) => ({
   id: "mock",
@@ -19,19 +38,19 @@ export const mockConnector = createConnector((config) => ({
   async connect() {
     const chainId = mainnet.id;
     config.emitter.emit("connect", { chainId });
-    return { accounts: [account.address], chainId };
+    return { accounts: [getAccount().address], chainId };
   },
   async disconnect() {
     config.emitter.emit("disconnect");
   },
   async getAccounts() {
-    return [account.address];
+    return [getAccount().address];
   },
   async getChainId() {
     return mainnet.id;
   },
   async getProvider() {
-    return client;
+    return getClient();
   },
   async isAuthorized() {
     return true;

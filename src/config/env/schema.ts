@@ -24,6 +24,8 @@ const envSchema = z.object({
   // API Configurations
   NEXT_PUBLIC_PROPERTY_API_URL: z.string().url().optional(),
   NEXT_PUBLIC_ANALYTICS_API_URL: z.string().url().optional(),
+  ERROR_REPORTING_ENDPOINT: z.string().url().optional(),
+  ERROR_REPORTING_API_KEY: z.string().optional(),
 
   // Web3 / Blockchain RPC Configurations
   ETHEREUM_MAINNET_RPC_URL: z.string().url().optional(),
@@ -183,6 +185,8 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
   NEXT_PUBLIC_PROPERTY_API_URL:
     "Property API endpoint for fetching property data",
   NEXT_PUBLIC_ANALYTICS_API_URL: "Analytics API endpoint",
+  ERROR_REPORTING_ENDPOINT: "Server-side error reporting destination",
+  ERROR_REPORTING_API_KEY: "Bearer token for the error reporting destination",
   ETHEREUM_MAINNET_RPC_URL: "Ethereum Mainnet RPC URL",
   POLYGON_MAINNET_RPC_URL: "Polygon Mainnet RPC URL",
   BSC_MAINNET_RPC_URL: "Binance Smart Chain Mainnet RPC URL",
@@ -215,6 +219,7 @@ export const sensitiveVariables: (keyof EnvConfig)[] = [
   "BSC_MAINNET_RPC_URL",
   "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID",
   "NEXT_PUBLIC_SENTRY_DSN",
+  "ERROR_REPORTING_API_KEY",
 ];
 
 export {envSchema, envRequirementsSchema};
