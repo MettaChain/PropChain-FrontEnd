@@ -1,4 +1,9 @@
 import '@testing-library/jest-dom'
+
+// Next server modules expect Fetch API constructors in the Jest environment.
+if (typeof globalThis.Request === 'undefined') globalThis.Request = class {};
+if (typeof globalThis.Response === 'undefined') globalThis.Response = class {};
+if (typeof globalThis.Headers === 'undefined') globalThis.Headers = class {};
 import 'jest-axe/extend-expect'
 import { configure } from '@testing-library/react'
 
