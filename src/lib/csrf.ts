@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireEnvStrict } from '@/lib/requireEnv';
 
-const CSRF_SECRET = process.env.CSRF_SECRET || 'default-fallback-csrf-secret-key-32-chars-long!';
 const CSRF_SESSION_COOKIE = 'csrf-session';
 
 /**
@@ -26,10 +26,14 @@ export function getAuthStatePart(request: NextRequest): string {
 
 /**
  * Generates an HMAC-SHA256 token bound to a session and authentication state.
+ *
+ * Fails closed: throws when `CSRF_SECRET` is not configured, so no token is
+ * ever minted with a guessable or hardcoded key.
  */
 export function generateTokenForSession(sessionId: string, authState: string): string {
+  const secret = requireEnvStrict('CSRF_SECRET');
   return crypto
-    .createHmac('sha256', CSRF_SECRET)
+    .createHmac('sha256', secret)
     .update(`${sessionId}:${authState}`)
     .digest('hex');
 }
@@ -49,7 +53,14 @@ export function validateCsrf(request: NextRequest): boolean {
   }
 
   const authState = getAuthStatePart(request);
-  const expectedToken = generateTokenForSession(sessionId, authState);
+
+  let expectedToken: string;
+  try {
+    expectedToken = generateTokenForSession(sessionId, authState);
+  } catch {
+    // Fail closed: without a configured secret no token can ever be valid.
+    return false;
+  }
 
   try {
     const tokenBuffer = Buffer.from(tokenFromHeader);
@@ -68,10 +79,10 @@ export function validateCsrf(request: NextRequest): boolean {
 /**
  * A middleware wrapper to enforce CSRF token validation on write handlers.
  */
-export function withCsrf<T = any>(
-  handler: (request: NextRequest, ...args: any[]) => Promise<NextResponse<T> | NextResponse>
+export function withCsrf<T = unknown>(
+  handler: (request: NextRequest, ...args: unknown[]) => Promise<NextResponse<T> | NextResponse>
 ) {
-  return async function (request: NextRequest, ...args: any[]): Promise<NextResponse> {
+  return async function (request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
     if (!validateCsrf(request)) {
       return NextResponse.json(
         { error: 'Invalid or missing CSRF token' },

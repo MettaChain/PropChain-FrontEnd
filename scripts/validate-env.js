@@ -38,6 +38,10 @@ const envSchema = {
     validate: (v) => ["development", "staging", "production"].includes(v),
     default: "development",
   },
+  CSRF_SECRET: {
+    validate: (v) => typeof v === "string" && v.length > 0,
+    default: undefined,
+  },
   ANALYZE: {
     validate: (v) => !v || v === "true" || v === "false",
     default: "false",

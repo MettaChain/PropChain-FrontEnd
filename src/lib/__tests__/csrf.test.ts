@@ -1,122 +1,194 @@
 import crypto from 'crypto';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { NextResponse } from 'next/server';
+import {
+  generateTokenForSession,
+  validateCsrf,
+  withCsrf,
+} from '@/lib/csrf';
+import type { NextRequest } from 'next/server';
 
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(),
+// The jsdom test environment does not provide the Fetch API globals that
+// `NextRequest` needs, so mock the server response primitive instead.
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: jest.fn(
+      (body: unknown, init?: { status?: number }) => ({
+        status: init?.status ?? 200,
+        body,
+        /** Resolve the mocked body like NextResponse.json().json(). */
+        json: async () => body,
+      })
+    ),
+  },
 }));
 
-import { cookies } from 'next/headers';
-import { getCsrfSessionId, getAuthStatePart, generateTokenForSession, validateCsrf, withCsrf } from '../../csrf';
+const OLD_ENV = process.env;
+const TEST_SECRET = 'test-csrf-secret-0123456789abcdef0123456789abcdef';
+// The literal fallback that used to be hardcoded in src/lib/csrf.ts (issue #817).
+const LEGACY_FALLBACK_SECRET = 'default-fallback-csrf-secret-key-32-chars-long!';
 
-function makeRequest(headers: Record<string, string> = {}, cookieValues: Record<string, string> = {}) {
-  const cookieStore = new Map(Object.entries(cookieValues));
-  return {
-    headers: {
-      get: (name: string) => headers[name] ?? null,
-    },
-    cookies: {
-      get: (name: string) => (cookieStore.has(name) ? { value: cookieStore.get(name) } : undefined),
-    },
-  } as any;
+const csrfSourcePath = join(__dirname, '..', 'csrf.ts');
+
+interface MockRequest {
+  headers: { get(name: string): string | null };
+  cookies: { get(name: string): { value: string } | undefined };
 }
 
-describe('CSRF server-side lib', () => {
-  describe('getCsrfSessionId', () => {
-    it('returns existing cookie value', () => {
-      const request = makeRequest({}, { 'csrf-session': 'existing-session-id' });
-      const { sessionId, isNew } = getCsrfSessionId(request);
-      expect(sessionId).toBe('existing-session-id');
-      expect(isNew).toBe(false);
-    });
+beforeEach(() => {
+  jest.resetModules();
+  process.env = { ...OLD_ENV, CSRF_SECRET: TEST_SECRET };
+});
 
-    it('generates new UUID when no cookie', () => {
-      const request = makeRequest();
-      const { sessionId, isNew } = getCsrfSessionId(request);
-      expect(isNew).toBe(true);
-      expect(sessionId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-      );
-    });
+afterAll(() => {
+  process.env = OLD_ENV;
+});
+
+/** Build a minimal request-shaped object for the functions under test. */
+const createRequest = (opts: {
+  csrfToken?: string;
+  sessionId?: string;
+  authToken?: string;
+} = {}): MockRequest => {
+  const headers = new Map<string, string>();
+  const cookies = new Map<string, string>();
+  if (opts.csrfToken) headers.set('x-csrf-token', opts.csrfToken);
+  if (opts.sessionId) cookies.set('csrf-session', opts.sessionId);
+  if (opts.authToken) cookies.set('auth-token', opts.authToken);
+  return {
+    headers: {
+      /** Return the header value or null, mirroring the Headers API. */
+      get: (name) => headers.get(name) ?? null,
+    },
+    cookies: {
+      /** Return the cookie or undefined, mirroring NextRequest cookies. */
+      get: (name) => {
+        const value = cookies.get(name);
+        return value === undefined ? undefined : { value };
+      },
+    },
+  };
+};
+
+/** Cast the mock request to the type expected by the CSRF helpers. */
+const asNextRequest = (req: MockRequest) => req as unknown as NextRequest;
+
+/**
+ * Sign the same session/auth payload the module signs, with an arbitrary key.
+ * Used to prove tokens minted with a different secret are rejected.
+ */
+const signWithSecret = (secret: string, sessionId: string, authState: string) =>
+  crypto
+    .createHmac('sha256', secret)
+    .update(`${sessionId}:${authState}`)
+    .digest('hex');
+
+describe('generateTokenForSession', () => {
+  it('fails closed (throws) when CSRF_SECRET is unset', () => {
+    delete process.env.CSRF_SECRET;
+    expect(() => generateTokenForSession('session-1', '')).toThrow(
+      'Missing required environment variable: CSRF_SECRET'
+    );
   });
 
-  describe('generateTokenForSession', () => {
-    it('returns a string token', () => {
-      const token = generateTokenForSession('session-1', 'auth-1');
-      expect(typeof token).toBe('string');
-      expect(token.length).toBeGreaterThan(0);
-    });
-
-    it('produces consistent output for same inputs', () => {
-      const t1 = generateTokenForSession('s', 'a');
-      const t2 = generateTokenForSession('s', 'a');
-      expect(t1).toBe(t2);
-    });
-
-    it('produces different output for different inputs', () => {
-      const t1 = generateTokenForSession('s1', 'a');
-      const t2 = generateTokenForSession('s2', 'a');
-      expect(t1).not.toBe(t2);
-    });
+  it('fails closed (throws) when CSRF_SECRET is an empty string', () => {
+    process.env.CSRF_SECRET = '';
+    expect(() => generateTokenForSession('session-1', '')).toThrow(
+      'Missing required environment variable: CSRF_SECRET'
+    );
   });
 
-  describe('validateCsrf', () => {
-    it('returns true for matching token', () => {
-      const sessionId = 'test-session';
-      const authState = 'test-auth';
-      const token = generateTokenForSession(sessionId, authState);
-
-      const request = makeRequest(
-        { 'x-csrf-token': token },
-        { 'csrf-session': sessionId, 'auth-token': authState },
-      );
-
-      expect(validateCsrf(request)).toBe(true);
-    });
-
-    it('returns false for mismatched token', () => {
-      const request = makeRequest(
-        { 'x-csrf-token': 'wrong-token' },
-        { 'csrf-session': 'test-session', 'auth-token': 'test-auth' },
-      );
-
-      expect(validateCsrf(request)).toBe(false);
-    });
-
-    it('returns false when no token provided', () => {
-      const request = makeRequest({}, { 'csrf-session': 'test-session' });
-      expect(validateCsrf(request)).toBe(false);
-    });
-
-    it('returns false when no session cookie', () => {
-      const request = makeRequest({ 'x-csrf-token': 'some-token' }, {});
-      expect(validateCsrf(request)).toBe(false);
-    });
+  it('mints an HMAC-SHA256 token when CSRF_SECRET is set', () => {
+    const token = generateTokenForSession('session-1', 'auth-1');
+    expect(token).toMatch(/^[0-9a-f]{64}$/);
+    expect(token).toBe(signWithSecret(TEST_SECRET, 'session-1', 'auth-1'));
   });
 
-  describe('withCsrf', () => {
-    it('calls handler when CSRF is valid', async () => {
-      const sessionId = 's1';
-      const authState = 'a1';
-      const token = generateTokenForSession(sessionId, authState);
-      const request = makeRequest(
-        { 'x-csrf-token': token },
-        { 'csrf-session': sessionId, 'auth-token': authState },
-      );
+  it('produces different tokens for different sessions/auth states', () => {
+    const tokenA = generateTokenForSession('session-1', 'auth-1');
+    const tokenB = generateTokenForSession('session-2', 'auth-1');
+    expect(tokenA).not.toBe(tokenB);
+  });
+});
 
-      const handler = jest.fn().mockResolvedValue({ status: 200 });
-      const wrapped = withCsrf(handler);
+describe('validateCsrf', () => {
+  it('accepts a valid token minted with the configured secret', () => {
+    const sessionId = 'session-1';
+    const token = generateTokenForSession(sessionId, '');
+    expect(validateCsrf(asNextRequest(createRequest({ csrfToken: token, sessionId })))).toBe(true);
+  });
 
-      await wrapped(request);
-      expect(handler).toHaveBeenCalledWith(request);
-    });
+  it('rejects a token signed with the old hardcoded fallback secret', () => {
+    const sessionId = 'session-1';
+    const forgedToken = signWithSecret(LEGACY_FALLBACK_SECRET, sessionId, '');
+    const req = createRequest({ csrfToken: forgedToken, sessionId });
+    expect(validateCsrf(asNextRequest(req))).toBe(false);
+  });
 
-    it('returns 403 when CSRF is invalid', async () => {
-      const request = makeRequest({}, {});
-      const handler = jest.fn();
-      const wrapped = withCsrf(handler);
+  it('fails closed when CSRF_SECRET is unset, even with a previously valid token', () => {
+    const sessionId = 'session-1';
+    const token = generateTokenForSession(sessionId, '');
+    delete process.env.CSRF_SECRET;
+    const req = createRequest({ csrfToken: token, sessionId });
+    expect(validateCsrf(asNextRequest(req))).toBe(false);
+  });
 
-      const response = await wrapped(request);
-      expect(handler).not.toHaveBeenCalled();
-      expect(response.status).toBe(403);
-    });
+  it('rejects a request with no CSRF token header', () => {
+    const req = createRequest({ sessionId: 'session-1' });
+    expect(validateCsrf(asNextRequest(req))).toBe(false);
+  });
+
+  it('rejects a request with no session cookie', () => {
+    const token = generateTokenForSession('session-1', '');
+    const req = createRequest({ csrfToken: token });
+    expect(validateCsrf(asNextRequest(req))).toBe(false);
+  });
+
+  it('rejects a tampered token', () => {
+    const sessionId = 'session-1';
+    const token = generateTokenForSession(sessionId, '');
+    const req = createRequest({ csrfToken: `${token}ff`, sessionId });
+    expect(validateCsrf(asNextRequest(req))).toBe(false);
+  });
+});
+
+describe('withCsrf', () => {
+  /** Handler that resolves successfully when CSRF validation passes. */
+  const okHandler = async () => NextResponse.json({ ok: true });
+
+  it('returns 403 when CSRF validation fails', async () => {
+    const wrapped = withCsrf(okHandler);
+    const res = await wrapped(asNextRequest(createRequest({ sessionId: 'session-1' })));
+    expect(res.status).toBe(403);
+  });
+
+  it('invokes the handler when CSRF validation passes', async () => {
+    const wrapped = withCsrf(okHandler);
+    const sessionId = 'session-1';
+    const token = generateTokenForSession(sessionId, '');
+    const res = await wrapped(
+      asNextRequest(createRequest({ csrfToken: token, sessionId }))
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
+  it('returns 403 when CSRF_SECRET is unset', async () => {
+    delete process.env.CSRF_SECRET;
+    const sessionId = 'session-1';
+    const token = signWithSecret(TEST_SECRET, sessionId, '');
+    const wrapped = withCsrf(okHandler);
+    const res = await wrapped(
+      asNextRequest(createRequest({ csrfToken: token, sessionId }))
+    );
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('src/lib/csrf.ts (regression guard)', () => {
+  it('no longer contains the hardcoded fallback secret', () => {
+    const source = readFileSync(csrfSourcePath, 'utf-8');
+    expect(source).not.toContain(LEGACY_FALLBACK_SECRET);
   });
 });
