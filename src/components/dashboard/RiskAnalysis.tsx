@@ -65,6 +65,12 @@ const ConcentrationItem = ({ name, percentage, color }: { name: string; percenta
   </div>
 );
 
+export const getRiskLevel = (score: number) => {
+  if (score < 30) return { level: "Low", color: "text-success", bgColor: "bg-success/10" };
+  if (score < 60) return { level: "Medium", color: "text-warning", bgColor: "bg-warning/10" };
+  return { level: "High", color: "text-destructive", bgColor: "bg-destructive/10" };
+};
+
 export const RiskAnalysis = () => {
   const riskMetrics: RiskMetric[] = [
     {
@@ -106,11 +112,6 @@ export const RiskAnalysis = () => {
   ];
 
   const overallRiskScore = 32;
-  const getRiskLevel = (score: number) => {
-    if (score < 30) return { level: "Low", color: "text-success", bgColor: "bg-success/10" };
-    if (score < 60) return { level: "Medium", color: "text-warning", bgColor: "bg-warning/10" };
-    return { level: "High", color: "text-destructive", bgColor: "bg-destructive/10" };
-  };
   const riskLevel = getRiskLevel(overallRiskScore);
 
   return (
