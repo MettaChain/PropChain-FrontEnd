@@ -1,121 +1,267 @@
-import type { CartItem } from '@/types/cart';
+import type { CartItem } from "@/types/cart";
+import {
+  calculateMinimumAmount,
+  type BatchPurchaseExecutor,
+  type BatchPurchaseRequest,
+} from "../batchTransaction";
 
-const mockProperty = (overrides = {}) => ({
-  id: 'prop-1',
-  title: 'Test Property',
-  tokenInfo: { available: 100, price: 0.1 },
-  status: 'active',
-  ...overrides,
-});
+jest.mock("@/utils/logger", () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
+jest.mock("@/utils/revertDecoder", () => ({
+  decodeRevertReason: jest.fn(() => "Insufficient balance"),
+}));
+
+const walletAddress = "0x1234567890123456789012345678901234567890";
+const transactionHash =
+  "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd" as const;
 
 const validItem: CartItem = {
-  id: 'item-1',
-  property: mockProperty(),
-  quantity: 1,
-  addedAt: new Date().toISOString(),
+  id: "item-1",
+  property: {
+    id: "prop-1",
+    name: "Test Property",
+    description: "A test property",
+    location: {
+      address: "1 Test Street",
+      city: "Test City",
+      state: "TS",
+      country: "Test Country",
+      zipCode: "12345",
+      coordinates: { lat: 0, lng: 0 },
+    },
+    price: { total: 10, perToken: 0.1, currency: "ETH" },
+    propertyType: "residential",
+    blockchain: "ethereum",
+    tokenInfo: {
+      totalSupply: 100,
+      available: 100,
+      sold: 0,
+      contractAddress: walletAddress,
+      tokenSymbol: "PROP",
+    },
+    metrics: {
+      roi: 5,
+      annualReturn: 1,
+      transactionVolume: 0,
+      appreciationRate: 2,
+    },
+    details: {
+      squareFeet: 1000,
+      yearBuilt: 2020,
+      amenities: [],
+    },
+    images: ["/property.jpg"],
+    listedDate: "2026-01-01",
+    status: "active",
+  },
+  quantity: 2,
+  addedAt: "2026-01-01T00:00:00.000Z",
 };
 
-describe('BatchTransactionService', () => {
-  const walletAddress = '0x1234567890123456789012345678901234567890';
+const createExecutor = (
+  response: Awaited<ReturnType<BatchPurchaseExecutor["execute"]>>,
+): BatchPurchaseExecutor => ({
+  execute: jest.fn(async () => response),
+});
 
-  beforeEach(() => {
-    delete process.env.NEXT_PUBLIC_DEMO_TX;
-    jest.resetModules();
+describe("BatchTransactionService", () => {
+  it("rejects an empty cart without invoking an executor", async () => {
+    const { BatchTransactionService } = await import("../batchTransaction");
+    const executor = createExecutor({
+      transactionHash,
+      receiptStatus: "success",
+    });
+
+    const result = await BatchTransactionService.executeBatchPurchase(
+      [],
+      walletAddress,
+      0.005,
+      executor,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("At least one item is required.");
+    expect(executor.execute).not.toHaveBeenCalled();
   });
 
-  describe('executeBatchPurchase', () => {
-    it('returns validation error when item quantity exceeds available', async () => {
-      const { BatchTransactionService } = await import('../batchTransaction');
-      const overPurchased: CartItem = {
-        ...validItem,
-        property: mockProperty({ tokenInfo: { available: 1, price: 0.1 } }),
-        quantity: 5,
-      };
-
-      const result = await BatchTransactionService.executeBatchPurchase(
-        [overPurchased],
-        walletAddress
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Validation failed');
-      expect(result.results[0].error).toContain('Insufficient tokens');
+  it("rejects a disconnected wallet before submission", async () => {
+    const { BatchTransactionService } = await import("../batchTransaction");
+    const executor = createExecutor({
+      transactionHash,
+      receiptStatus: "success",
     });
 
-    it('returns validation error when property is inactive', async () => {
-      const { BatchTransactionService } = await import('../batchTransaction');
-      const inactiveItem: CartItem = {
-        ...validItem,
-        property: mockProperty({ status: 'inactive' }),
-      };
+    const result = await BatchTransactionService.executeBatchPurchase(
+      [validItem],
+      "",
+      0.005,
+      executor,
+    );
 
-      const result = await BatchTransactionService.executeBatchPurchase(
-        [inactiveItem],
-        walletAddress
-      );
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("A connected wallet is required.");
+    expect(executor.execute).not.toHaveBeenCalled();
+  });
 
-      expect(result.success).toBe(false);
+  it("rejects quantities above the available balance before submission", async () => {
+    const { BatchTransactionService } = await import("../batchTransaction");
+    const executor = createExecutor({
+      transactionHash,
+      receiptStatus: "success",
+    });
+    const item = {
+      ...validItem,
+      quantity: validItem.property.tokenInfo.available + 1,
+    };
+
+    const result = await BatchTransactionService.executeBatchPurchase(
+      [item],
+      walletAddress,
+      0.005,
+      executor,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Insufficient tokens available");
+    expect(executor.execute).not.toHaveBeenCalled();
+  });
+
+  it("fails honestly when no deployed contract executor is configured", async () => {
+    const { BatchTransactionService } = await import("../batchTransaction");
+
+    const result = await BatchTransactionService.executeBatchPurchase(
+      [validItem],
+      walletAddress,
+      0.005,
+    );
+
+    expect(result).toEqual({
+      success: false,
+      results: [
+        {
+          propertyId: "prop-1",
+          success: false,
+          error: "Batch purchase is not configured for this network.",
+        },
+      ],
+      error: "Batch purchase is not configured for this network.",
+    });
+    expect(result.transactionHash).toBeUndefined();
+  });
+
+  it("returns the executor hash only after a successful receipt", async () => {
+    const { BatchTransactionService } = await import("../batchTransaction");
+    const executor = createExecutor({
+      transactionHash,
+      receiptStatus: "success",
     });
 
-    it('throws when no items provided and catches error', async () => {
-      const { BatchTransactionService } = await import('../batchTransaction');
-      const result = await BatchTransactionService.executeBatchPurchase([], walletAddress);
+    const result = await BatchTransactionService.executeBatchPurchase(
+      [validItem],
+      walletAddress,
+      0.005,
+      executor,
+    );
 
-      expect(result.success).toBe(false);
-      expect(result.results).toHaveLength(0);
+    expect(result.success).toBe(true);
+    expect(result.transactionHash).toBe(transactionHash);
+    expect(result.results).toEqual([
+      {
+        propertyId: "prop-1",
+        success: true,
+        transactionHash,
+      },
+    ]);
+    expect(executor.execute).toHaveBeenCalledWith({
+      walletAddress,
+      slippageTolerance: 0.005,
+      items: [
+        {
+          propertyId: "prop-1",
+          quantity: 2,
+          expectedAmount: 0.2,
+          minimumAmount: 0.199,
+        },
+      ],
+    } satisfies BatchPurchaseRequest);
+  });
+
+  it("does not report success when the receipt is reverted", async () => {
+    const { BatchTransactionService } = await import("../batchTransaction");
+    const executor = createExecutor({
+      transactionHash,
+      receiptStatus: "reverted",
     });
 
-    it('uses demo mode when NEXT_PUBLIC_DEMO_TX is true', async () => {
-      process.env.NEXT_PUBLIC_DEMO_TX = 'true';
-      jest.resetModules();
+    const result = await BatchTransactionService.executeBatchPurchase(
+      [validItem],
+      walletAddress,
+      0.005,
+      executor,
+    );
 
-      const { BatchTransactionService } = await import('../batchTransaction');
-      const result = await BatchTransactionService.executeBatchPurchase(
-        [validItem],
-        walletAddress
-      );
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Batch purchase transaction reverted.");
+    expect(result.transactionHash).toBeUndefined();
+  });
 
-      expect(result.success).toBe(true);
-      expect(result.transactionHash).toMatch(/^0x[a-f0-9]{64}$/);
-      expect(result.totalGasUsed).toBeGreaterThan(0);
+  it("returns a decoded reason for a provider revert", async () => {
+    const { BatchTransactionService } = await import("../batchTransaction");
+    const executor: BatchPurchaseExecutor = {
+      execute: jest.fn(async () => {
+        throw Object.assign(new Error("execution reverted"), {
+          data: "0x08c379a0",
+        });
+      }),
+    };
+
+    const result = await BatchTransactionService.executeBatchPurchase(
+      [validItem],
+      walletAddress,
+      0.005,
+      executor,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Insufficient balance");
+  });
+
+  it("returns a user rejection without fabricating a hash", async () => {
+    const { BatchTransactionService } = await import("../batchTransaction");
+    const executor: BatchPurchaseExecutor = {
+      execute: jest.fn(async () => {
+        throw Object.assign(new Error("User denied transaction"), {
+          code: 4001,
+        });
+      }),
+    };
+
+    const result = await BatchTransactionService.executeBatchPurchase(
+      [validItem],
+      walletAddress,
+      0.005,
+      executor,
+    );
+
+    expect(result).toEqual({
+      success: false,
+      results: [
+        {
+          propertyId: "prop-1",
+          success: false,
+          error: "Transaction rejected by the user.",
+        },
+      ],
+      error: "Transaction rejected by the user.",
     });
   });
 
-  describe('estimateGas', () => {
-    it('returns base gas for empty items', async () => {
-      const { BatchTransactionService } = await import('../batchTransaction');
-      const gas = BatchTransactionService.estimateGas([]);
-      expect(gas).toBe(0.005);
-    });
-
-    it('calculates gas proportionally to item count', async () => {
-      const { BatchTransactionService } = await import('../batchTransaction');
-      const gas1 = BatchTransactionService.estimateGas([validItem]);
-      const gas3 = BatchTransactionService.estimateGas([validItem, validItem, validItem]);
-      expect(gas3).toBeGreaterThan(gas1);
-    });
-  });
-
-  describe('getTransactionStatus', () => {
-    it('returns pending when receipt is not available', async () => {
-      const { BatchTransactionService } = await import('../batchTransaction');
-      const result = await BatchTransactionService.getTransactionStatus(
-        '0x0000000000000000000000000000000000000000000000000000000000000000'
-      );
-
-      expect(result.status).toBe('pending');
-    });
-  });
-
-  describe('waitForConfirmation', () => {
-    it('returns timeout when transaction is not found', async () => {
-      const { BatchTransactionService } = await import('../batchTransaction');
-      const result = await BatchTransactionService.waitForConfirmation(
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-        100
-      );
-
-      expect(result.status).toBe('timeout');
-    });
+  it("computes minimum amounts from the requested slippage", () => {
+    expect(calculateMinimumAmount(0.2, 0.1)).toBeCloseTo(0.18);
   });
 });
