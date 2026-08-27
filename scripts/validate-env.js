@@ -26,6 +26,10 @@ function isValidUrl(val) {
 
 // Environment variable schema definition - using inline validators
 const envSchema = {
+  AUTH_SECRET: {
+    validate: (v) => typeof v === "string" && v.trim().length >= 32,
+    default: undefined,
+  },
   NEXT_PUBLIC_APP_NAME: {
     validate: (v) => v && v.length > 0,
     default: "PropChain",
@@ -115,19 +119,24 @@ const envSchema = {
 // Environment-specific requirements
 const envRequirements = {
   development: {
-    ETHEREUM_MAINNET_RPC_URL: {validate: (v) => !v || isValidUrl(v)},
+    AUTH_SECRET: {
+      validate: (v) => typeof v === "string" && v.trim().length >= 32,
+    },
+    ETHEREUM_MAINNET_RPC_URL: { validate: (v) => !v || isValidUrl(v) },
   },
   staging: {
-    ETHEREUM_MAINNET_RPC_URL: {validate: isValidUrl},
+    ETHEREUM_MAINNET_RPC_URL: { validate: isValidUrl },
     NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: {
       validate: (v) => typeof v === "string",
     },
   },
   production: {
-    ETHEREUM_MAINNET_RPC_URL: {validate: isValidUrl},
-    POLYGON_MAINNET_RPC_URL: {validate: isValidUrl},
-    BSC_MAINNET_RPC_URL: {validate: isValidUrl},
-    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: {validate: (v) => v && v.length > 0},
+    ETHEREUM_MAINNET_RPC_URL: { validate: isValidUrl },
+    POLYGON_MAINNET_RPC_URL: { validate: isValidUrl },
+    BSC_MAINNET_RPC_URL: { validate: isValidUrl },
+    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: {
+      validate: (v) => v && v.length > 0,
+    },
   },
 };
 
@@ -232,6 +241,9 @@ async function main() {
       `  - Mock Data: ${transformBool(config.NEXT_PUBLIC_USE_MOCK_DATA) ? "Enabled" : "Disabled"}`,
     );
     console.log("\nWeb3 Configuration:");
+    console.log(
+      `  - AUTH_SECRET: ${config.AUTH_SECRET ? "Configured" : "Not set"}`,
+    );
     console.log(
       `  - Ethereum RPC: ${config.ETHEREUM_MAINNET_RPC_URL ? "Configured" : "Using default"}`,
     );
