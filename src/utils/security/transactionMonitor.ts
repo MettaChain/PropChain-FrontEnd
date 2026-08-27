@@ -189,23 +189,6 @@ export class TransactionMonitor {
     const recipient = transaction.to;
     if (!recipient) return null;
 
-    // Check for transactions to known suspicious addresses
-    if (this.isSuspiciousAddress(recipient)) {
-      return {
-        id: this.generateId(),
-        timestamp: Date.now(),
-        walletAddress,
-        anomalyType: 'suspicious_recipient',
-        severity: 'high',
-        description: `Transaction to suspicious address detected: ${recipient}`,
-        details: {
-          recipient,
-          reason: 'Address flagged in security database'
-        },
-        suggestedAction: 'Block transaction and investigate immediately'
-      };
-    }
-
     // Check for new recipient (first time interaction)
     const previousRecipients = new Set(history.map(tx => tx.to).filter(Boolean));
     if (!previousRecipients.has(recipient) && history.length > 5) {
@@ -474,15 +457,6 @@ export class TransactionMonitor {
       factors,
       recommendations
     };
-  }
-
-  /**
-   * Checks if an address is suspicious
-   */
-  private isSuspiciousAddress(address: string): boolean {
-    // This would integrate with external security databases
-    // For now, return false as placeholder
-    return false;
   }
 
   /**

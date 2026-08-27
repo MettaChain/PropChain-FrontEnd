@@ -457,10 +457,12 @@ export const TransactionConfirmation: React.FC<
               )}
 
               <div
-                className={`mb-6 rounded-lg border p-4 ${getRiskLevelBg(validation.riskScore)}`}
+                className={`mb-6 rounded-lg border p-4 ${validation.riskVerified ? getRiskLevelBg(validation.riskScore) : "bg-gray-50 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700"}`}
               >
                 <div className="flex items-center gap-3">
-                  {validation.riskScore >= 50 ? (
+                  {!validation.riskVerified ? (
+                    <Info className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  ) : validation.riskScore >= 50 ? (
                     <AlertTriangle
                       className={`h-5 w-5 ${getRiskLevelColor(validation.riskScore)}`}
                     />
@@ -472,18 +474,22 @@ export const TransactionConfirmation: React.FC<
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h3
-                        className={`font-medium ${getRiskLevelColor(validation.riskScore)}`}
+                        className={`font-medium ${validation.riskVerified ? getRiskLevelColor(validation.riskScore) : "text-gray-700 dark:text-gray-300"}`}
                       >
                         Security Assessment
                       </h3>
                       <span
-                        className={`rounded-full px-2 py-1 text-sm ${getRiskLevelBg(validation.riskScore)} ${getRiskLevelColor(validation.riskScore)}`}
+                        className={`rounded-full px-2 py-1 text-sm ${validation.riskVerified ? `${getRiskLevelBg(validation.riskScore)} ${getRiskLevelColor(validation.riskScore)}` : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"}`}
                       >
-                        {getRiskLevelText(validation.riskScore)}
+                        {validation.riskVerified
+                          ? getRiskLevelText(validation.riskScore)
+                          : "Not verified"}
                       </span>
                     </div>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                      Risk Score: {validation.riskScore}/100
+                      {validation.riskVerified
+                        ? `Risk Score: ${validation.riskScore}/100`
+                        : "Address risk screening is unavailable, so no risk score is available. Verify the recipient address manually."}
                     </p>
                   </div>
                 </div>

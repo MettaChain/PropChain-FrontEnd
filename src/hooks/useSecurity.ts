@@ -29,6 +29,11 @@ export interface TransactionValidation {
   warnings: string[];
   blocks: string[];
   requiresConfirmation: boolean;
+  /**
+   * False when address-risk screening could not run. The UI must then show an
+   * explicit "not verified" state rather than presenting riskScore as fact.
+   */
+  riskVerified: boolean;
   details: any;
 }
 
@@ -93,6 +98,9 @@ export const useSecurity = () => {
 
       // Blockchain security check
       const addressRisk = await blockchainSecurity.checkAddressRisk(walletAddress);
+      if (!addressRisk.verified) {
+        warnings.push('Address risk screening unavailable - address could not be verified');
+      }
       if (addressRisk.riskLevel === 'critical') {
         blocks.push('Address has critical security risk');
       } else if (addressRisk.riskLevel === 'high') {
@@ -142,6 +150,7 @@ export const useSecurity = () => {
         warnings: ['Wallet not connected'],
         blocks: ['Wallet must be connected'],
         requiresConfirmation: false,
+        riskVerified: false,
         details: null
       };
     }
@@ -162,6 +171,7 @@ export const useSecurity = () => {
           warnings,
           blocks,
           requiresConfirmation: false,
+          riskVerified: false,
           details: null
         };
       }
@@ -208,6 +218,7 @@ export const useSecurity = () => {
         warnings,
         blocks,
         requiresConfirmation,
+        riskVerified: securityValidation.verified,
         details: {
           transactionValidation,
           securityValidation,
@@ -224,6 +235,7 @@ export const useSecurity = () => {
         warnings,
         blocks,
         requiresConfirmation: false,
+        riskVerified: false,
         details: null
       };
     }
