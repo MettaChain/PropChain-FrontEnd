@@ -3,6 +3,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { NextResponse } from 'next/server';
 import {
+  getAuthStatePart,
+  getCsrfSessionId,
   generateTokenForSession,
   validateCsrf,
   withCsrf,
@@ -84,6 +86,33 @@ const signWithSecret = (secret: string, sessionId: string, authState: string) =>
     .update(`${sessionId}:${authState}`)
     .digest('hex');
 
+describe('session and authentication binding', () => {
+  it('returns an existing CSRF session without replacing it', () => {
+    const request = createRequest({ sessionId: 'existing-session' });
+
+    expect(getCsrfSessionId(asNextRequest(request))).toEqual({
+      sessionId: 'existing-session',
+      isNew: false,
+    });
+  });
+
+  it('creates a new session when the CSRF cookie is missing', () => {
+    const randomUUID = jest.spyOn(crypto, 'randomUUID').mockReturnValue('generated-session');
+
+    expect(getCsrfSessionId(asNextRequest(createRequest()))).toEqual({
+      sessionId: 'generated-session',
+      isNew: true,
+    });
+
+    randomUUID.mockRestore();
+  });
+
+  it('reads the auth cookie and defaults to an anonymous state', () => {
+    expect(getAuthStatePart(asNextRequest(createRequest({ authToken: 'auth-1' })))).toBe('auth-1');
+    expect(getAuthStatePart(asNextRequest(createRequest()))).toBe('');
+  });
+});
+
 describe('generateTokenForSession', () => {
   it('fails closed (throws) when CSRF_SECRET is unset', () => {
     delete process.env.CSRF_SECRET;
@@ -108,7 +137,9 @@ describe('generateTokenForSession', () => {
   it('produces different tokens for different sessions/auth states', () => {
     const tokenA = generateTokenForSession('session-1', 'auth-1');
     const tokenB = generateTokenForSession('session-2', 'auth-1');
+    const tokenC = generateTokenForSession('session-1', 'auth-2');
     expect(tokenA).not.toBe(tokenB);
+    expect(tokenA).not.toBe(tokenC);
   });
 });
 
