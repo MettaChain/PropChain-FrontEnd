@@ -138,15 +138,13 @@ const sessionStorageMock = {
 }
 global.sessionStorage = sessionStorageMock
 
-// Polyfill crypto.randomUUID for jsdom (Node.js <19)
+// Polyfill crypto.randomUUID for jsdom (Node.js <19 / jsdom without randomUUID)
 if (typeof globalThis.crypto !== 'undefined' && !globalThis.crypto.randomUUID) {
-  let counter = BigInt(0);
   globalThis.crypto.randomUUID = function randomUUID() {
-    counter++;
-    const hex = (counter + BigInt(Date.now()) * BigInt(100000)).toString(16);
-    return hex.slice(0, 36).replace(
-      /^(.{8})(.{4})(.{4})(.{4})(.{12})$/,
-      '$1-$2-4$3-a$4-$5'
-    );
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
   }
 }

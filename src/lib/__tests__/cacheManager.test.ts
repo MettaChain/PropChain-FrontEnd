@@ -60,6 +60,26 @@ function makeTrackableStorage() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* ethers mock                                                                */
+/* -------------------------------------------------------------------------- */
+/* ethers' sha256 hashes via node:crypto, which returns a Node Buffer. In the
+ * jsdom test environment Buffer is a different realm from the global
+ * Uint8Array, so ethers' internal instanceof check rejects the digest and
+ * sha256 always throws. Provide deterministic equivalents so the sync-queue
+ * dedupe logic can be exercised. */
+
+jest.mock('ethers', () => {
+  const actual = jest.requireActual('ethers');
+  const { createHash } = jest.requireActual('node:crypto');
+  return {
+    ...actual,
+    toUtf8Bytes: (value: string) => Buffer.from(value, 'utf8'),
+    sha256: (data: Uint8Array) =>
+      '0x' + createHash('sha256').update(Buffer.from(data)).digest('hex'),
+  };
+});
+
+/* -------------------------------------------------------------------------- */
 /* propertyCache mock                                                         */
 /* -------------------------------------------------------------------------- */
 /* Implements just enough of the propertyCache surface area for cacheManager's
@@ -302,7 +322,9 @@ describe('cacheManager', () => {
         retries: 0,
         timestamp: expect.any(Number),
       });
-      expect(queue[0].id).toMatch(/^\d+-[a-z0-9]+$/);
+      // Items are identified with a UUID (crypto.randomUUID), not the legacy
+      // `Date.now()-random` scheme.
+      expect(queue[0].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     });
 
     it('clears the queue', () => {

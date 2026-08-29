@@ -126,6 +126,7 @@ export function KycVerificationCenter() {
                   </p>
                   <div className="mt-3">
                     <Input
+                      data-testid="kyc-file-input"
                       type="file"
                       multiple
                       accept="image/*,application/pdf"

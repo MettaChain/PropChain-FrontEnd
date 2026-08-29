@@ -58,4 +58,5 @@ module.exports = {
   formatEther: jest.fn((wei) => Number(wei) / 1e18),
   parseEther: jest.fn((eth) => BigInt(Math.floor(Number(eth) * 1e18))),
   parseUnits: jest.fn((val, decimals) => BigInt(Number(val) * Math.pow(10, decimals))),
+  defineChain: jest.fn((chain) => chain),
 };
