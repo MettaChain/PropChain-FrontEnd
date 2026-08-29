@@ -17,6 +17,14 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
+jest.mock('@/config/chains', () => ({
+  CHAIN_CONFIG: {
+    1: { name: 'Ethereum', symbol: 'ETH', color: '#627EEA' },
+    137: { name: 'Polygon', symbol: 'MATIC', color: '#8247E5' },
+    56: { name: 'Binance Smart Chain', symbol: 'BNB', color: '#F3BA2F' },
+  },
+}));
+
 import { PortfolioService } from '@/lib/portfolioService';
 
 const ADDRESS = '0xdeadbeef';
@@ -107,5 +115,53 @@ describe('PortfolioService.fetchPortfolioOverview (#504)', () => {
     await PortfolioService.fetchPortfolioOverview(ADDRESS, 7);
 
     expect(perfSpy).toHaveBeenCalledWith(ADDRESS, 7);
+  });
+});
+
+describe('PortfolioService.fetchMultiChainPortfolio', () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('maps holdings and gas balances into per-chain and aggregate totals', async () => {
+    const portfolio = await PortfolioService.fetchMultiChainPortfolio('0xdeadbeef');
+
+    expect(portfolio.error).toBeNull();
+    expect(portfolio.isLoading).toBe(false);
+    expect(portfolio.totalValueUSD).toBe(608570);
+    expect(portfolio.totalValueNative.get(1)).toBeCloseTo(130.65);
+    expect(portfolio.totalValueNative.get(137)).toBe(106500);
+    expect(portfolio.totalValueNative.get(56)).toBeCloseTo(138.2);
+
+    expect(portfolio.chains).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        chainId: 1,
+        totalValueUSD: 344000,
+        totalValueNative: expect.any(Number),
+        gasBalance: '2.45',
+        gasBalanceUSD: 6500,
+        holdings: expect.arrayContaining([
+          expect.objectContaining({ propertyId: 'prop-1', quantity: 150 }),
+          expect.objectContaining({ propertyId: 'prop-2', quantity: 75 }),
+        ]),
+      }),
+      expect.objectContaining({
+        chainId: 137,
+        totalValueUSD: 187650,
+        totalValueNative: 106500,
+        gasBalance: '8500',
+        gasBalanceUSD: 7650,
+        holdings: [expect.objectContaining({ propertyId: 'prop-3' })],
+      }),
+      expect.objectContaining({
+        chainId: 56,
+        totalValueUSD: 76920,
+        totalValueNative: 138.2,
+        gasBalance: '3.2',
+        gasBalanceUSD: 1920,
+        holdings: [expect.objectContaining({ propertyId: 'prop-4' })],
+      }),
+    ]));
+    expect(portfolio.chains.find((chain) => chain.chainId === 1)?.totalValueNative).toBeCloseTo(130.65);
   });
 });

@@ -63,9 +63,7 @@ describe('secondaryMarketService', () => {
 
     it('filters by blockchain', async () => {
       const ethereumListings = await secondaryMarketService.getListings({ blockchain: 'ethereum' });
-      for (const listing of ethereumListings) {
-        expect(listing.blockchain).toBe('ethereum');
-      }
+      expect(ethereumListings.map((listing) => listing.id)).toEqual(['sec-1']);
     });
 
     it('filters by property name (propertyId)', async () => {
@@ -74,17 +72,19 @@ describe('secondaryMarketService', () => {
       expect(filtered[0].propertyId).toBe('prop-1');
     });
 
-    it('filters by price range via propertyId and blockchain combined', async () => {
-      const allListings = await secondaryMarketService.getListings();
-      const allIds = allListings.map((l) => l.id);
+    it('applies propertyId and blockchain filters together', async () => {
+      const filtered = await secondaryMarketService.getListings({
+        propertyId: 'prop-1',
+        blockchain: 'ethereum',
+      });
 
-      const ethereumOnly = await secondaryMarketService.getListings({ blockchain: 'ethereum' });
-      const ethereumIds = ethereumOnly.map((l) => l.id);
+      expect(filtered.map((listing) => listing.id)).toEqual(['sec-1']);
+    });
 
-      expect(ethereumIds.length).toBeLessThanOrEqual(allIds.length);
-      for (const id of ethereumIds) {
-        expect(allIds).toContain(id);
-      }
+    it('returns no listings when a filter matches nothing', async () => {
+      await expect(
+        secondaryMarketService.getListings({ propertyId: 'missing-property' })
+      ).resolves.toEqual([]);
     });
   });
 });

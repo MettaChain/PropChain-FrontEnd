@@ -269,6 +269,25 @@ describe("BatchTransactionService", () => {
     expect(result.error).toBe("Insufficient balance");
   });
 
+  it("returns the provider message when no revert data is available", async () => {
+    const { BatchTransactionService } = await import("../batchTransaction");
+    const executor: BatchPurchaseExecutor = {
+      execute: jest.fn(async () => {
+        throw new Error("RPC connection failed");
+      }),
+    };
+
+    const result = await BatchTransactionService.executeBatchPurchase(
+      [validItem],
+      walletAddress,
+      0.005,
+      executor,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("RPC connection failed");
+  });
+
   it("returns a user rejection without fabricating a hash", async () => {
     const { BatchTransactionService } = await import("../batchTransaction");
     const executor: BatchPurchaseExecutor = {

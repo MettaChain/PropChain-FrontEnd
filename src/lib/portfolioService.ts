@@ -87,7 +87,7 @@ export class PortfolioService {
       const totalValueNative = new Map<ChainId, number>();
 
       // Fetch data for each supported chain
-      for (const chainId of Object.keys(CHAIN_CONFIG) as unknown as ChainId[]) {
+      for (const chainId of Object.keys(CHAIN_CONFIG).map(Number) as ChainId[]) {
         const holdings = MOCK_TOKEN_HOLDINGS[chainId] || [];
         const gasBalance = MOCK_GAS_BALANCES[chainId] || { balance: '0', balanceUSD: 0 };
 
