@@ -1,6 +1,7 @@
 import type { CartItem, BatchTransactionResult } from "@/types/cart";
 import { logger } from "@/utils/logger";
 import { decodeRevertReason } from "@/utils/revertDecoder";
+import { getBatchPurchaseContractAddress } from "@/config/batchPurchase";
 
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
@@ -8,6 +9,7 @@ export interface BatchPurchaseRequest {
   walletAddress: `0x${string}`;
   items: Array<{
     propertyId: string;
+    tokenAddress: string;
     quantity: number;
     expectedAmount: number;
     minimumAmount: number;
@@ -94,6 +96,21 @@ export const calculateMinimumAmount = (
   slippageTolerance: number,
 ): number => expectedAmount * (1 - slippageTolerance);
 
+/**
+ * Resolve the executor backed by the connected wallet and the configured
+ * batch-purchase contract. Returns null when no contract address is
+ * configured so checkout fails closed instead of fabricating a result.
+ */
+const resolveBatchPurchaseExecutor =
+  async (): Promise<BatchPurchaseExecutor | null> => {
+    const contractAddress = getBatchPurchaseContractAddress();
+    if (!contractAddress) return null;
+
+    const { createWagmiBatchPurchaseExecutor } =
+      await import("./batchPurchaseExecutor");
+    return createWagmiBatchPurchaseExecutor(contractAddress);
+  };
+
 export const BatchTransactionService = {
   executeBatchPurchase: async (
     items: CartItem[],
@@ -119,7 +136,8 @@ export const BatchTransactionService = {
       );
     }
 
-    if (!executor) {
+    const resolvedExecutor = executor ?? (await resolveBatchPurchaseExecutor());
+    if (!resolvedExecutor) {
       return failureResult(
         items,
         "Batch purchase is not configured for this network.",
@@ -133,6 +151,7 @@ export const BatchTransactionService = {
         const expectedAmount = item.quantity * item.property.price.perToken;
         return {
           propertyId: item.property.id,
+          tokenAddress: item.property.tokenInfo.contractAddress,
           quantity: item.quantity,
           expectedAmount,
           minimumAmount: calculateMinimumAmount(
@@ -151,7 +170,7 @@ export const BatchTransactionService = {
 
     try {
       const { transactionHash, receiptStatus } =
-        await executor.execute(request);
+        await resolvedExecutor.execute(request);
       if (receiptStatus !== "success") {
         return failureResult(items, "Batch purchase transaction reverted.");
       }

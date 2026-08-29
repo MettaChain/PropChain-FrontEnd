@@ -18,7 +18,14 @@ Set contract addresses via environment variables:
 NEXT_PUBLIC_PROPERTY_NFT_ADDRESS=0x...
 NEXT_PUBLIC_MARKETPLACE_ADDRESS=0x...
 NEXT_PUBLIC_STAKING_ADDRESS=0x...
+NEXT_PUBLIC_BATCH_PURCHASE_ADDRESS=0x...
 ```
+
+The batch purchase contract (`NEXT_PUBLIC_BATCH_PURCHASE_ADDRESS`) backs the
+cart checkout flow. When it is unset, checkout fails closed with a
+configuration error; when set, `src/lib/batchTransaction.ts` submits a real
+`batchPurchase` transaction via the connected wallet and only reports success
+after the receipt is observed on chain.
 
 ## ABI Files
 
