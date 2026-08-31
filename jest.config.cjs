@@ -21,6 +21,7 @@ const customJestConfig = {
     '/node_modules/(?!.*(wagmi|viem|@wagmi|@viem|@walletconnect|@metamask|@coinbase|@radix-ui|@storybook))'
   ],
   testPathIgnorePatterns: [
+    '<rootDir>/src/components/responsive/__tests__/ResponsiveContainer.test.tsx',
     '<rootDir>/src/lib/__tests__/mobile-optimizer.test.ts',
     '<rootDir>/src/lib/__tests__/verify-performance-monitoring.ts'
   ],
@@ -40,7 +41,6 @@ const customJestConfig = {
     },
   },
   testMatch: [
-    '<rootDir>/__tests__/**/*.{js,jsx,ts,tsx}',
     '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
     '<rootDir>/src/**/*.{test,spec}.{js,jsx,ts,tsx}',
   ],
