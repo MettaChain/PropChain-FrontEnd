@@ -4,11 +4,11 @@ import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ChainAwareProvider } from "@/providers/ChainAwareProvider";
 import { useWalletPersistence } from "@/utils/walletPersistence";
-import { setupExtensionErrorHandling } from "@/utils/extensionDetection";
-import { structuredLogger } from "@/utils/structuredLogger";
+import { setupExtensionErrorHandling, cleanupExtensionErrorHandling } from "@/utils/extensionDetection";
 import { errorMonitoring } from "@/utils/errorMonitoringService";
 import { ErrorCategory, ErrorSeverity } from "@/types/errors";
 import { logger } from "@/utils/logger";
+import { generateErrorId } from "@/utils/secureId";
 import { WalletConnector } from "@/components/WalletConnector";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
@@ -36,10 +36,10 @@ function HomeContent() {
     setupExtensionErrorHandling();
     
     // Initialize structured logging and error monitoring
-    structuredLogger.info('Application initialized', {
+    logger.info('Application initialized', {
       component: 'HomeContent',
       action: 'initialization',
-      metadata: { timestamp: new Date().toISOString() },
+      timestamp: new Date().toISOString(),
     });
 
     // Set up global error handling
@@ -48,7 +48,7 @@ function HomeContent() {
       error.stack = event.error?.stack;
       
       const appError = {
-        id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        id: generateErrorId(),
         category: ErrorCategory.UI,
         severity: ErrorSeverity.HIGH,
         message: event.message,
@@ -71,7 +71,7 @@ function HomeContent() {
       const error = new Error(event.reason?.message || 'Unhandled promise rejection');
       
       const appError = {
-        id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        id: generateErrorId(),
         category: ErrorCategory.NETWORK,
         severity: ErrorSeverity.MEDIUM,
         message: error.message,
@@ -94,6 +94,7 @@ function HomeContent() {
 
     // Cleanup function
     return () => {
+      cleanupExtensionErrorHandling();
       window.removeEventListener('error', handleUnhandledError);
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
@@ -112,7 +113,10 @@ function HomeContent() {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">PC</span>
               </div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h1
+                className="font-bold text-gray-900 dark:text-white"
+                style={{ fontSize: 'clamp(1.125rem, 2vw + 0.5rem, 1.25rem)' }}
+              >
                 PropChain
               </h1>
             </div>
@@ -129,16 +133,93 @@ function HomeContent() {
 
         <ChainAware
           fallback={
-            <div className="text-center py-12">
+            <section className="text-center py-12" aria-labelledby="connect-wallet-heading">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-md mx-auto">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h2
+                  id="connect-wallet-heading"
+                  className="font-semibold text-gray-900 dark:text-white mb-4"
+                  style={{ fontSize: 'clamp(1.125rem, 2vw + 0.5rem, 1.5rem)' }}
+                >
                   {t("wallet.connectYourWallet")}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                </h2>
+                <p
+                  className="text-gray-600 dark:text-gray-300 mb-6"
+                  style={{ fontSize: 'clamp(0.875rem, 1vw + 0.5rem, 1rem)' }}
+                >
                   {t("app.subtitle")}
                 </p>
+
+                <div className="space-y-3">
+                  <a
+                    href="https://metamask.io/download/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                  >
+                    Install MetaMask
+                  </a>
+                  <a
+                    href="https://www.coinbase.com/wallet"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Get Coinbase Wallet
+                  </a>
+                  <a
+                    href="https://walletconnect.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                  >
+                    WalletConnect
+                  </a>
+                </div>
+
+                <details className="mt-6 text-left">
+                  <summary className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:text-gray-900 dark:hover:text-white transition-colors">
+                    What is a wallet?
+                  </summary>
+                  <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                    <p>
+                      A crypto wallet is a digital tool that lets you store, send, and receive
+                      cryptocurrency. It also lets you interact with decentralized applications
+                      like PropChain.
+                    </p>
+                    <p>
+                      Popular options include{' '}
+                      <a
+                        href="https://metamask.io/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 dark:text-blue-400 underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        MetaMask
+                      </a>{' '}
+                      (browser extension),{' '}
+                      <a
+                        href="https://www.coinbase.com/wallet"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 dark:text-blue-400 underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        Coinbase Wallet
+                      </a>{' '}
+                      (mobile &amp; browser), and{' '}
+                      <a
+                        href="https://walletconnect.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 dark:text-blue-400 underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        WalletConnect
+                      </a>{' '}
+                      (connects any mobile wallet).
+                    </p>
+                  </div>
+                </details>
               </div>
-            </div>
+            </section>
           }
         >
           {({ chainName, chainSymbol, chainColor, address, balance }) => (
@@ -163,9 +244,10 @@ function HomeContent() {
         </ChainAware>
 
         {/* Feature links — Issues #75, #76, #85, #89 */}
-        <nav aria-label="Platform features" className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <nav aria-label="Platform features" className="mt-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             { href: '/properties', emoji: '🏠', label: 'Browse Properties', desc: 'Shareable property pages with QR codes' },
+            { href: '/transactions', emoji: '📜', label: 'Transaction History', desc: 'Search, filter, and export on-chain activity' },
             { href: '/governance', emoji: '🗳️', label: 'Governance', desc: 'Vote on property management decisions' },
             { href: '/tax-report', emoji: '📄', label: 'Tax Reports', desc: 'Form 8949 & Schedule D PDF export' },
             { href: '/accessibility', emoji: '♿', label: 'Accessibility', desc: 'WCAG 2.1 AA compliance demo' },
@@ -176,8 +258,18 @@ function HomeContent() {
               className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <div className="text-2xl mb-2" aria-hidden="true">{emoji}</div>
-              <p className="font-semibold text-gray-900 dark:text-white text-sm">{label}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{desc}</p>
+              <p
+                className="font-semibold text-gray-900 dark:text-white"
+                style={{ fontSize: 'clamp(0.75rem, 1vw + 0.25rem, 0.875rem)' }}
+              >
+                {label}
+              </p>
+              <p
+                className="text-gray-500 dark:text-gray-400 mt-1"
+                style={{ fontSize: 'clamp(0.625rem, 0.8vw + 0.25rem, 0.75rem)' }}
+              >
+                {desc}
+              </p>
             </a>
           ))}
         </nav>

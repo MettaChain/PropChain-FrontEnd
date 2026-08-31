@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense, useCallback, useEffect } from "react";
 import { SearchFilterForm } from "@/components/forms/SearchFilterForm";
 import { SearchResults } from "@/components/SearchResults";
 import { WalletConnector } from "@/components/WalletConnector";
@@ -13,6 +13,7 @@ import { useWalletStore } from "@/store/walletStore";
 import { useNotificationChecker } from "@/hooks/useNotificationChecker";
 import { useFavoritesStore } from "@/store/favoritesStore";
 import { usePaginationParams, isValidPageSize, type PageSize } from "@/hooks/usePaginationParams";
+import type { SortOption } from "@/types/property";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import PropertyPageSkeleton from "@/components/PropertyPageSkeleton";
@@ -29,7 +30,6 @@ function PropertiesContent() {
   // Ensure viewMode is only 'grid' or 'list' for now (map view not implemented yet)
   const viewMode: "grid" | "list" =
     storeViewMode === "map" ? "grid" : storeViewMode;
-  const setViewMode = (mode: "grid" | "list") => setStoreViewMode(mode);
 
   const { favorites } = useFavoritesStore();
 
@@ -68,14 +68,33 @@ function PropertiesContent() {
   }, [urlSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Page change: update URL (which triggers the effect above to sync the store)
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setUrlPage(newPage);
-  };
+  }, [setUrlPage]);
 
   // Page size change: update URL (resets to page 1 inside setUrlSize)
-  const handlePageSizeChange = (newSize: PageSize) => {
+  const handlePageSizeChange = useCallback((newSize: PageSize) => {
     setUrlSize(newSize);
-  };
+  }, [setUrlSize]);
+
+  const handleSortChange = useCallback((newSort: SortOption) => {
+    setSortBy(newSort);
+    setUrlPage(1);
+  }, [setSortBy, setUrlPage]);
+
+  const handleViewModeChange = useCallback((mode: "grid" | "list") => {
+    setStoreViewMode(mode);
+  }, [setStoreViewMode]);
+
+  const handleApplyFilters = useCallback((newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setUrlPage(1);
+  }, [setFilters, setUrlPage]);
+
+  const handleClearFilters = useCallback(() => {
+    clearFilters();
+    setUrlPage(1);
+  }, [clearFilters, setUrlPage]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -137,15 +156,8 @@ function PropertiesContent() {
           </h1>
           <SearchFilterForm
             filters={filters}
-            onApplyFilters={(newFilters) => {
-              // Apply full filter object and reset to page 1
-              setFilters(newFilters);
-              setUrlPage(1);
-            }}
-            onClearFilters={() => {
-              clearFilters();
-              setUrlPage(1);
-            }}
+            onApplyFilters={handleApplyFilters}
+            onClearFilters={handleClearFilters}
           />
         </div>
 
@@ -162,11 +174,8 @@ function PropertiesContent() {
             totalPages={totalPages}
             pageSize={urlSize}
             filters={filters}
-            onViewModeChange={setViewMode}
-            onSortChange={(newSort) => {
-              setSortBy(newSort);
-              setUrlPage(1);
-            }}
+            onViewModeChange={handleViewModeChange}
+            onSortChange={handleSortChange}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             buildPageHref={buildHref}

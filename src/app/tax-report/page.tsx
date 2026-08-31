@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { WalletConnector } from '@/components/WalletConnector';
+import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -180,7 +181,7 @@ async function generatePDF(
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TaxReportPage() {
+function TaxReportPage() {
   const [taxYear, setTaxYear] = useState('2024');
   const [method, setMethod] = useState<CostBasisMethod>('FIFO');
   const [generating, setGenerating] = useState(false);
@@ -358,3 +359,5 @@ export default function TaxReportPage() {
     </div>
   );
 }
+
+export default withRouteErrorBoundary(TaxReportPage, { routeName: 'tax-report' });

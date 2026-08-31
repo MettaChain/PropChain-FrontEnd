@@ -1,0 +1,52 @@
+<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="2" time="24.584994">
+<testsuite name="wallet-properties-integration.spec.ts" timestamp="2026-07-26T11:43:26.540Z" hostname="chromium" tests="1" failures="0" skipped="0" time="0.023" errors="1">
+<testcase name="Wallet + Properties Integration › should display properties and show connected wallet status" classname="wallet-properties-integration.spec.ts" time="0.023">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|wallet-properties-integrat-d99f5-how-connected-wallet-status-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="browserType.launch: Executable doesn&apos;t exist at /home/zakayola/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell" type="Error">
+<![CDATA[  [chromium] › wallet-properties-integration.spec.ts:4:3 › Wallet + Properties Integration › should display properties and show connected wallet status 
+
+    Error: browserType.launch: Executable doesn't exist at /home/zakayola/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: ../../test-results/wallet-properties-integrat-d99f5-how-connected-wallet-status-chromium/error-context.md
+]]>
+</error>
+</testcase>
+</testsuite>
+<testsuite name="walletconnect-only.spec.ts" timestamp="2026-07-26T11:43:26.540Z" hostname="chromium" tests="1" failures="0" skipped="0" time="0.019" errors="1">
+<testcase name="WalletConnect-Only Flow (No Injected Provider) › should offer WalletConnect as primary option and successfully connect" classname="walletconnect-only.spec.ts" time="0.019">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|walletconnect-only-WalletC-9f296-on-and-successfully-connect-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="browserType.launch: Executable doesn&apos;t exist at /home/zakayola/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell" type="Error">
+<![CDATA[  [chromium] › walletconnect-only.spec.ts:16:3 › WalletConnect-Only Flow (No Injected Provider) › should offer WalletConnect as primary option and successfully connect 
+
+    Error: browserType.launch: Executable doesn't exist at /home/zakayola/.cache/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: ../../test-results/walletconnect-only-WalletC-9f296-on-and-successfully-connect-chromium/error-context.md
+]]>
+</error>
+</testcase>
+</testsuite>
+</testsuites>

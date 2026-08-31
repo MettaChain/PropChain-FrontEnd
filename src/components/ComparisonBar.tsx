@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Copy, ArrowRight, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCompareStore } from '@/store/compareStore';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 
 const MAX_COMPARE = 3;
 
@@ -15,6 +16,7 @@ export const ComparisonBar = () => {
   const clearCompare = useCompareStore((state) => state.clearCompare);
   const [shareUrl, setShareUrl] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -28,7 +30,7 @@ export const ComparisonBar = () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopySuccess(true);
-      window.setTimeout(() => setCopySuccess(false), 2000);
+      setTimeoutSafe(() => setCopySuccess(false), 2000);
     } catch {
       setCopySuccess(false);
     }
@@ -46,20 +48,38 @@ export const ComparisonBar = () => {
             {t('comparison.title', { count: selectedIds.length, max: MAX_COMPARE })}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          {/* <488 fix: each chip wrapped as <li> for screen-reader list semantics (#488) */}
+          <ul
+            role="list"
+            aria-label={`Selected properties for comparison, ${selectedIds.length} ${selectedIds.length === 1 ? 'item' : 'items'}`}
+            className="flex flex-wrap gap-2 list-none p-0 m-0"
+          >
             {selectedIds.map((id) => (
+              <li key={id} className="list-none">
+                <button
+                  type="button"
+                  onClick={() => removeProperty(id)}
+                  className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:border-red-300 hover:bg-red-50 transition-colors"
+                  title={t('comparison.removeFromComparison')}
+                  aria-label={`Remove property ${id} from comparison`}
+                >
+                  <span>#{id}</span>
+                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
+              </li>
               <button
                 key={id}
                 type="button"
                 onClick={() => removeProperty(id)}
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:border-red-300 hover:bg-red-50 transition-colors"
-                title={t('comparison.removeFromComparison')}
+                aria-label={`${t('comparison.removeFromComparison')}: #${id}`}
               >
+                <span className="sr-only">{t('comparison.selected')}: </span>
                 <span>#{id}</span>
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             ))}
-          </div>
+          </ul>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">

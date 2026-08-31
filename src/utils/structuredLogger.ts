@@ -1,7 +1,18 @@
-'use client';
-
 /**
- * structuredLogger — thin domain-specific layer on top of logger.
+ * structuredLogger — **deprecated** thin domain-specific layer on top of logger.
+ *
+ * @deprecated This module is kept as a backwards-compatibility wrapper only.
+ *   The canonical logger lives in `@/utils/logger` — new code MUST import from
+ *   there directly (see README § "Logging").  Only `structuredLogger`,
+ *   `createStructuredLogger`, `createPerformanceTracker`, `logNetworkRequest`,
+ *   `logWeb3Activity`, and `logTransaction` plus the `StructuredLogger`,
+ *   `StructuredLogEntry`, and `StructuredLoggerConfig` types remain unique to
+ *   this module.
+ *
+ *   All other re-exports (`logger`, `createLogger`, `LogLevel`, …) are kept so
+ *   existing call sites compile, but they will be removed in a future release.
+ *   See ESLint rule `no-restricted-imports` in `eslint.config.mjs` for the
+ *   enforced single import path.
  *
  * All core logging (levels, JSON output, redaction, correlation IDs) lives in
  * logger.ts.  This module adds domain helpers (performance, network, web3,
@@ -28,6 +39,8 @@ import { logger, createLogger, LogLevel } from './logger';
 import { errorReporting } from './errorReporting';
 import { ErrorCategory, ErrorSeverity } from '@/types/errors';
 import type { AppError } from '@/types/errors';
+import { generateSessionId, generateErrorId } from './secureId';
+import { getCsrfToken } from '@/lib/csrfClient';
 
 // ============================================================================
 // Extended entry shape (superset of LogEntry)
@@ -83,8 +96,12 @@ class StructuredLogger {
       flushInterval: 5000,
       ...config,
     };
-    this.sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    this.sessionId = this.generateSessionId();
     this.startFlushTimer();
+  }
+
+  private generateSessionId(): string {
+    return generateSessionId();
   }
 
   private startFlushTimer(): void {
@@ -114,9 +131,18 @@ class StructuredLogger {
 
   private async sendBatch(logs: StructuredLogEntry[]): Promise<void> {
     try {
+      const csrfToken = await getCsrfToken().catch(() => '');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-Session-ID': this.sessionId,
+      };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       await fetch(this.cfg.remoteUrl!, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Session-ID': this.sessionId },
+        headers,
         body: JSON.stringify({
           logs,
           metadata: {
@@ -135,10 +161,10 @@ class StructuredLogger {
   private reportError(entry: StructuredLogEntry): void {
     if (!entry.error) return;
     const appError: AppError = {
-      id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      id: generateErrorId(),
       message: entry.error.message,
-      category: entry.category ?? ErrorCategory.UI,
-      severity: entry.severity ?? ErrorSeverity.MEDIUM,
+      category: entry.category || ErrorCategory.UI,
+      severity: entry.severity || ErrorSeverity.MEDIUM,
       timestamp: new Date(entry.timestamp),
       isRecoverable: false,
       shouldReport: true,
@@ -275,8 +301,16 @@ class StructuredLogger {
 
 export const structuredLogger = new StructuredLogger();
 
-export const createStructuredLogger = (config?: Partial<StructuredLoggerConfig>) =>
-  new StructuredLogger(config);
+export const createStructuredLogger = (config?: Partial<StructuredLoggerConfig>): StructuredLogger => {
+  return new StructuredLogger(config);
+};
+
+// Note: structuredLogger.destroy() should be called manually for cleanup
+// in test teardowns or before recreating the singleton.
+
+// ============================================================================
+// Performance Monitoring Helper
+// ============================================================================
 
 export const createPerformanceTracker = (operation: string, metadata?: Partial<StructuredLogEntry>) => {
   const start = performance.now();

@@ -1,7 +1,6 @@
 export enum ErrorCategory {
   WEB3 = 'web3',
   NETWORK = 'network',
-  AR = 'ar',
   VALIDATION = 'validation',
   UI = 'ui',
   AUTHENTICATION = 'authentication',
@@ -65,6 +64,8 @@ export interface ErrorReportingData {
   context?: Record<string, any>;
   userId?: string;
   sessionId: string;
+  technicalDetails?: string;
+  stack?: string;
 }
 
 export interface ErrorMetrics {

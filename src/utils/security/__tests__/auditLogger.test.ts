@@ -444,4 +444,43 @@ describe('SecurityAuditLogger', () => {
       expect(auditLogger).toBe(SecurityAuditLogger.getInstance());
     });
   });
+
+  describe('log rotation and eviction', () => {
+    beforeEach(() => {
+      (logger as any).logs = [];
+      (logger as any).evictionWarningIssued = false;
+      (logger as any).evictionCount = 0;
+    });
+
+    it('should evict oldest entries when max size is exceeded', () => {
+      const maxSize = (logger as any).MAX_LOG_SIZE;
+      for (let i = 0; i < maxSize + 100; i++) {
+        logger.logWalletConnection(`0x${i}`, 'metamask', 1, {});
+      }
+      expect((logger as any).logs.length).toBeLessThanOrEqual(maxSize);
+      expect((logger as any).evictionCount).toBeGreaterThan(0);
+    });
+
+    it('should issue warning when approaching capacity', () => {
+      const maxSize = (logger as any).MAX_LOG_SIZE;
+      const threshold = Math.floor(maxSize * (logger as any).EVICTION_THRESHOLD);
+      for (let i = 0; i < threshold + 1; i++) {
+        logger.logWalletConnection(`0x${i}`, 'metamask', 1, {});
+      }
+      expect((logger as any).evictionWarningIssued).toBe(true);
+    });
+
+    it('should sort alerts by recency when max alert size exceeded', () => {
+      const maxAlerts = (logger as any).MAX_ALERT_SIZE;
+      for (let i = 0; i < maxAlerts + 50; i++) {
+        logger.createSecurityAlert(
+          'unusual_activity',
+          'low',
+          `Alert ${i}`,
+          {}
+        );
+      }
+      expect((logger as any).alerts.length).toBeLessThanOrEqual(maxAlerts);
+    });
+  });
 });

@@ -2,11 +2,21 @@ import type { NextConfig } from "next";
 
 const isAnalyzeEnabled = process.env.ANALYZE === "true";
 const isDev = process.env.NODE_ENV === "development";
+const isProd = process.env.NODE_ENV === "production";
 
-const cspReportOnly = [
+// `BuildStatsPlugin` writes a JSON payload into `.next/` for on-demand
+// inspection.  It is ONLY meant for local development/debugging — production
+// builds must never emit it.
+//   - Gate on the explicit `ANALYZE=true` opt-in flag.
+//   - Hard-disable on production builds even if `ANALYZE=true` is set
+//     (e.g. misconfigured CI).
+//   - Skip on server builds (this plugin is client-side only).
+// See README § "Build stats plugin" for details.
+
+const csp = [
   "default-src 'self'",
   `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https:",
   isDev
@@ -24,6 +34,7 @@ const cspReportOnly = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   experimental: {
     optimizePackageImports: [
       "lucide-react",
@@ -77,7 +88,8 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=60, stale-while-revalidate=300, s-maxage=300",
+            value:
+              "public, max-age=60, stale-while-revalidate=300, s-maxage=300",
           },
           {
             key: "Vary",
@@ -98,8 +110,8 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           {
-            key: "Content-Security-Policy-Report-Only",
-            value: cspReportOnly,
+            key: "Content-Security-Policy",
+            value: csp,
           },
         ],
       },
@@ -109,14 +121,11 @@ const nextConfig: NextConfig = {
     config.resolve = config.resolve ?? {};
     config.resolve.alias = {
       ...(config.resolve.alias ?? {}),
-      "@walletconnect/ethereum-provider": false,
-      "@safe-global/safe-apps-sdk": false,
-      "@safe-global/safe-apps-provider": false,
-      "@base-org/account": false,
-      "@gemini-wallet/core": false,
-      "@react-native-async-storage/async-storage": false,
-      porto: false,
-      "porto/internal": false,
+      // Wallet SDKs are intentionally NOT aliased to `false`.
+      // They are lazy-loaded via dynamic imports in useWalletConnector.ts
+      // and the wallet connector modules under src/lib/walletConnectors/.
+      // Setting them to `false` breaks wagmi connector detection and
+      // prevents WalletConnect v2, Safe, Coinbase, and MetaMask connections.
     };
 
     if (!isServer && config.optimization?.splitChunks) {
@@ -136,17 +145,26 @@ const nextConfig: NextConfig = {
             chunks: "all",
             priority: 25,
           },
+          safe: {
+            name: "safe-vendors",
+            test: /[\\/]node_modules[\\/]@safe-global[\\/]/,
+            chunks: "all",
+            priority: 30,
+          },
         },
       };
     }
 
-    if (isAnalyzeEnabled && !isServer) {
+    if (isAnalyzeEnabled && !isServer && !isProd) {
       class BuildStatsPlugin {
         apply(compiler: any) {
           compiler.hooks.done.tap("BuildStatsPlugin", (stats: any) => {
             const fs = require("fs");
             const path = require("path");
-            const outputPath = path.join(compiler.options.output.path ?? ".next", "build-stats.json");
+            const outputPath = path.join(
+              compiler.options.output.path ?? ".next",
+              "build-stats.json",
+            );
             fs.writeFileSync(
               outputPath,
               JSON.stringify(
@@ -157,8 +175,8 @@ const nextConfig: NextConfig = {
                   chunkGroups: true,
                 }),
                 null,
-                2
-              )
+                2,
+              ),
             );
           });
         }

@@ -9,14 +9,18 @@ Built with modern web technologies and Web3 integration, this frontend serves as
 ## 🚀 Features
 
 ### Core Capabilities
+
 - **🏠 Property Discovery**: Browse and search tokenized real estate properties with advanced filtering
 - **💰 Wallet Integration**: Connect MetaMask, WalletConnect, and other Web3 wallets seamlessly
+- **⚙️ Optimized Developer Diagnostics**: Memoized error test scenarios for faster interactive debugging and smoother rendering
+- **🎯 Route-Level Error Handling**: Full-page route fallback UI with retry and home navigation using `RouteErrorBoundary`
 - **🔗 Smart Contract Interaction**: Execute property purchases, transfers, and management through intuitive UI
 - **📊 Real-Time Data**: Live property valuations, market trends, and portfolio analytics
 - **🔐 Web3 Authentication**: Secure wallet-based authentication with multi-network support
 - **� Responsive Design**: Mobile-first design that works perfectly on all devices
 
 ### Advanced Features
+
 - **🌐 Multi-Chain Support**: Switch between Ethereum, Polygon, and BSC networks
 - **📈 Portfolio Dashboard**: Track your real estate NFT investments and performance
 - **🔍 Advanced Search**: Filter by location, price range, property type, and ROI metrics
@@ -26,6 +30,7 @@ Built with modern web technologies and Web3 integration, this frontend serves as
 ## 👥 Target Audience
 
 This frontend is designed for:
+
 - **Real Estate Investors** looking to diversify into blockchain property assets
 - **Crypto Enthusiasts** seeking tangible real-world asset investments
 - **Property Developers** wanting to tokenize their real estate projects
@@ -35,7 +40,9 @@ This frontend is designed for:
 ## 🛠️ Quick Start
 
 ### Prerequisites
+
 Ensure you have the following installed:
+
 - **Node.js** v18+ (LTS recommended)
 - **npm**, **yarn**, or **pnpm** package manager
 - **Git** version control
@@ -72,13 +79,19 @@ The application will be available at `http://localhost:3000`.
 ## 🚀 Development & Deployment
 
 ### Development Environment
+
 ```bash
 npm run dev          # Start development server with hot reload
 npm run lint         # Run ESLint for code quality checks
 npm run type-check   # Run TypeScript type checking
 ```
 
+### Mocking
+
+For details on local mocking, see the [mocking documentation](./docs/mocking.md).
+
 ### Production Build
+
 ```bash
 npm run build        # Build optimized production bundle
 npm run start        # Start production server
@@ -86,6 +99,7 @@ npm run analyze      # Analyze bundle size with webpack-bundle-analyzer
 ```
 
 ### Testing Suite
+
 ```bash
 npm test             # Run unit tests
 npm run test:watch   # Run tests in watch mode
@@ -96,12 +110,14 @@ npm run test:e2e     # Run end-to-end tests
 ## 🌐 Network Configuration
 
 ### Supported Blockchains
+
 - **Ethereum** (Mainnet, Sepolia Testnet)
-- **Polygon** (Mainnet, Mumbai Testnet) 
+- **Polygon** (Mainnet, Mumbai Testnet)
 - **Binance Smart Chain** (Mainnet, Testnet)
 - **Local Development** (Hardhat Network)
 
 ### Environment Configuration
+
 ```env
 # API Configuration
 NEXT_PUBLIC_API_URL=http://localhost:3001
@@ -124,12 +140,15 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 ## 📚 Documentation & Resources
 
 ### Project Documentation
+
 - **[📖 Component Library](./docs/components.md)** - Reusable UI components and usage examples
 - **[🔗 Web3 Integration](./docs/web3.md)** - Wallet connection and blockchain interaction guides
 - **[🚀 Deployment Guide](./docs/deployment.md)** - Production deployment best practices
 - **[🏗️ Architecture](./docs/architecture.md)** - Frontend architecture and state management
+- **[🔧 Mocking](./docs/mocking.md)** - Local mocking and development overrides
 
 ### Repository Structure
+
 ```
 PropChain-FrontEnd/
 ├── 📁 src/
@@ -148,12 +167,14 @@ PropChain-FrontEnd/
 ```
 
 ### Contributing
+
 - **[🤝 Contributing Guide](./CONTRIBUTING.md)** - How to contribute effectively
 - **[📋 Code of Conduct](./CODE_OF_CONDUCT.md)** - Community guidelines and standards
 - **[🐛 Issue Templates](./.github/ISSUE_TEMPLATE/)** - Standardized issue reporting
 - **[💡 Feature Requests](./.github/ISSUE_TEMPLATE/feature_request.md)** - Feature proposal template
 
 ### Additional Resources
+
 - **[🔌 Backend API](https://github.com/MettaChain/PropChain-BackEnd)** - Server-side NestJS application
 - **[🎨 Design System](./docs/design-system.md)** - UI/UX guidelines and design tokens
 - **[📊 Performance Metrics](./docs/performance.md)** - Optimization guides and benchmarks
@@ -162,18 +183,21 @@ PropChain-FrontEnd/
 ## 🛠️ Technology Stack
 
 ### Frontend Framework
+
 - **⚛️ Framework**: Next.js 15 with App Router - Modern React framework
 - **🎨 UI Library**: React 19 - Latest React with concurrent features
 - **🎭 Styling**: Tailwind CSS 4 - Utility-first CSS framework
 - **� Components**: Headless UI + custom components - Accessible UI primitives
 
 ### State Management & Data
+
 - **🔄 State**: Zustand - Lightweight state management
 - **🌐 Data Fetching**: TanStack Query (React Query) - Server state management
 - **🔗 Web3**: ethers.js + wagmi - Modern Ethereum React hooks
 - **📝 Forms**: React Hook Form + Zod - Type-safe form handling
 
 ### Development & Tooling
+
 - **� Language**: TypeScript 5 - Type-safe JavaScript
 - **🧪 Testing**: Jest + Testing Library + Playwright - Comprehensive testing
 - **� Bundling**: Next.js built-in webpack - Optimized bundling
@@ -181,10 +205,78 @@ PropChain-FrontEnd/
 - **🐳 Containerization**: Docker - Consistent development environment
 
 ### UI/UX & Performance
+
 - **🎨 Design**: Tailwind CSS + custom design system - Consistent styling
 - **� Analytics**: Google Analytics + Vercel Analytics - User insights
 - **� SEO**: Next.js SEO optimizations - Search engine friendly
 - **⚡ Performance**: Next.js optimizations + lazy loading - Fast loading
+
+---
+
+## 📝 Logging
+
+All application code MUST log through the **canonical logger** at
+`@/utils/logger`:
+
+```ts
+import { logger } from "@/utils/logger";
+
+logger.debug("…");
+logger.info("…");
+logger.warn("…");
+logger.error("…", errorObject);
+```
+
+### Why a single import path?
+
+- One canonical implementation owns redaction, correlation IDs, JSON output,
+  environment-aware levels, and singleton config (`configureLogger`).
+- The legacy `@/utils/structuredLogger` module is kept as a thin
+  backwards-compat wrapper (re-exports + a domain-specific `StructuredLogger`
+  class with batching/remote delivery). It is marked **`@deprecated`** and an
+  ESLint `no-restricted-imports` rule blocks new imports outside the wrapper
+  itself. New code MUST NOT import from it.
+- Direct `console.*` calls are blocked by ESLint for everything except
+  `src/utils/earlyErrorSuppression.ts`, which intentionally operates on the
+  raw global `console` because it runs **before** `logger` is initialised to
+  silence noisy browser-extension errors.
+
+### Backwards compatibility
+
+`@/utils/structuredLogger` re-exports `logger`, `createLogger`, `LogLevel`,
+etc. from the canonical module so existing call sites continue to work
+without changes. The wrapper itself (`StructuredLogger`, `logNetworkRequest`,
+`logWeb3Activity`, `logTransaction`) is preserved for callers that rely on
+its batching/remote-send semantics.
+
+---
+
+## 📊 Build stats plugin
+
+`next.config.ts` includes a small `BuildStatsPlugin` that writes a JSON
+snapshot of webpack output to `.next/build-stats.json` for local inspection.
+
+To keep production builds lean and quiet, the plugin is gated by **two**
+conditions:
+
+| Condition              | Value                                         |
+| ---------------------- | --------------------------------------------- |
+| `process.env.ANALYZE`  | MUST be set to `'true'`                       |
+| `process.env.NODE_ENV` | MUST NOT be `production`                      |
+| Server-side build?     | Plugin is client-only — skipped on `isServer` |
+
+In other words:
+
+```bash
+# Quiet (default for `next build` in production)
+npm run build
+
+# Opt-in to the JSON build-stats snapshot — local dev only
+ANALYZE=true npm run dev    # or: ANALYZE=true next build
+```
+
+Production CI MUST NOT pass `ANALYZE=true`; if it does the plugin is still
+disabled by the `NODE_ENV === 'production'` guard.
 
 ---
 
@@ -195,14 +287,17 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 🤝 Support & Community
 
 ### Get Help
+
 - **🐛 Report Issues**: [GitHub Issues](https://github.com/MettaChain/PropChain-FrontEnd/issues)
 - **📧 Email Support**: frontend@propchain.io
 - **📖 Documentation**: [docs.propchain.io](https://docs.propchain.io)
 
 ### Contributing
-We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md) to get started. 
+
+We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md) to get started.
 
 **Quick contribution steps:**
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
@@ -218,3 +313,20 @@ We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md
 Made with ❤️ by the PropChain Team
 
 </div>
+
+## 🛠️ Local Development Guardrails (Git Hooks)
+
+To maximize code reliability and streamline PR review cycles, this project uses **Husky** to enforce local quality validation checks prior to remote integration.
+
+### Active Git Hook Safeguards
+
+- **Pre-Commit Hook:** Triggered automatically upon running `git commit`. Performs light syntax linting on modified files.
+- **Pre-Push Hook:** Triggered automatically when executing `git push`. This gate forces an application-wide compile verification check (`tsc --noEmit`) and runs all matching unit tests. If compilation faults are surfaced or unit assertions fail, the push is safely aborted locally, keeping broken code off the remote origin branch.
+
+### Bypassing in Emergencies
+
+If you must explicitly push an intermediate draft up to a private backup branch without running validations, you can bypass Husky checks by appending the `--no-verify` flag:
+
+```bash
+git push origin feature/my-branch --no-verify
+```

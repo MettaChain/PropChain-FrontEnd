@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useTransaction } from "@/hooks/useTransaction";
 import { GasEstimator } from "@/components/GasEstimator";
 import { useState } from "react";
+import { generateMockTxHash } from "@/utils/secureId";
 
 interface Property {
   id: string;
@@ -32,7 +33,7 @@ export const PropertyCard = ({ property, index }: PropertyCardProps) => {
 
   const handlePurchase = () => {
     // Simulate a transaction hash for demo purposes
-    const mockTxHash = `0x${Math.random().toString(16).substr(2, 64)}`;
+    const mockTxHash = generateMockTxHash();
     
     addTransactionToQueue({
       hash: mockTxHash,

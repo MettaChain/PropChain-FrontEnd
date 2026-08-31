@@ -49,7 +49,23 @@ interface DiversificationPieProps {
   title: string;
 }
 
+/**
+ * Derives allocation percentages from raw values, normalized to sum to 100.
+ * Returns all zeros for an empty or zero-total input so charts never show
+ * invalid (NaN/Infinity) allocations.
+ */
+export const computeAllocationPercents = (values: number[]): number[] => {
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (total <= 0) {
+    return values.map(() => 0);
+  }
+  return values.map((value) => Math.round((value / total) * 100));
+};
+
 const DiversificationPie = ({ data, title }: DiversificationPieProps) => {
+  const percents = computeAllocationPercents(data.map((entry) => entry.value));
+  const chartData = data.map((entry, index) => ({ ...entry, value: percents[index] }));
+
   return (
     <div className="flex-1">
       <h4 className="text-sm font-medium text-muted-foreground mb-4 text-center">{title}</h4>
@@ -57,7 +73,7 @@ const DiversificationPie = ({ data, title }: DiversificationPieProps) => {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="50%"
               innerRadius={50}
@@ -65,7 +81,7 @@ const DiversificationPie = ({ data, title }: DiversificationPieProps) => {
               paddingAngle={2}
               dataKey="value"
             >
-              {data.map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>

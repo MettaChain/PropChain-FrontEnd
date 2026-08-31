@@ -54,12 +54,6 @@ export class WalletValidator {
     // Add more known scam addresses as needed
   ];
 
-  private static readonly KNOWN_SCAM_ADDRESSES: string[] = [
-    // Known scam addresses (to be updated regularly)
-    '0x1234567890123456789012345678901234567890', // Example scam address
-    // Add more known scam addresses
-  ];
-
   // Ethereum address regex pattern
   private static readonly ETHEREUM_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
   
@@ -192,8 +186,7 @@ export class WalletValidator {
     // Blacklist check
     if (checkBlacklist) {
       const normalizedAddress = address.toLowerCase();
-      if (this.RISKY_WALLETS.includes(normalizedAddress) || 
-          this.KNOWN_SCAM_ADDRESSES.includes(normalizedAddress)) {
+      if (this.RISKY_WALLETS.includes(normalizedAddress)) {
         isBlacklisted = true;
         errors.push('Address is flagged as known scam or compromised');
         riskScore += 50;
@@ -456,23 +449,21 @@ export class WalletValidator {
   }
 
   /**
-   * Checks if address has similarity to known addresses (placeholder implementation)
+   * Detects addresses that are close (edit-distance) to known risky addresses,
+   * catching typosquatting/impersonation attempts against the blocklist.
    */
   private static hasSimilarityToKnownAddresses(address: string): boolean {
-    // This would need a more sophisticated implementation
-    // Could compare against known exchange addresses, project addresses, etc.
-    return false;
+    const normalizedAddress = address.toLowerCase();
+    return this.RISKY_WALLETS.some(known =>
+      this.calculateSimilarity(normalizedAddress, known.toLowerCase()) > 0.8
+    );
   }
 
   /**
-   * Checks if address is a known scam contract (placeholder implementation)
+   * Checks if address is a known scam/compromised contract against the blocklist.
    */
   private static isKnownScamContract(address: string): boolean {
-    // This would need to be maintained and updated regularly
-    const knownScamContracts: string[] = [
-      // Add known scam contract addresses
-    ];
-    return knownScamContracts.includes(address.toLowerCase());
+    return this.RISKY_WALLETS.includes(address.toLowerCase());
   }
 
   /**

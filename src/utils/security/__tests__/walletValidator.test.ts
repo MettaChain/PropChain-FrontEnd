@@ -1,5 +1,16 @@
 import { WalletValidator, AddressValidationResult } from '../walletValidator';
 
+// Mock the canonical logger so importing walletValidator does not pull in the
+// logger → csrfClient → walletStore → chains module graph (which needs browser globals).
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
 // Mock viem functions
 jest.mock('viem', () => ({
   isAddress: jest.fn(),
@@ -24,9 +35,13 @@ jest.mock('@/lib/viem-client', () => ({
 }));
 
 describe('WalletValidator', () => {
+  // Snapshot the static blocklist so tests that mutate it do not leak state.
+  const originalRiskyWallets = [...(WalletValidator as any).RISKY_WALLETS];
+
   beforeEach(() => {
     jest.clearAllMocks();
-    
+    (WalletValidator as any).RISKY_WALLETS = [...originalRiskyWallets];
+
     // Mock window.location
     Object.defineProperty(window, 'location', {
       value: {
@@ -35,6 +50,10 @@ describe('WalletValidator', () => {
       },
       writable: true
     });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('validateWalletAddressInput', () => {
@@ -738,16 +757,27 @@ describe('WalletValidator', () => {
     });
 
     describe('hasSimilarityToKnownAddresses', () => {
-      it('should return false (placeholder implementation)', () => {
+      it('should return false for addresses not similar to known risky addresses', () => {
         const result = (WalletValidator as any).hasSimilarityToKnownAddresses('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
         expect(result).toBe(false);
+      });
+
+      it('should return true for addresses similar to a known risky address', () => {
+        // 0x0000000000000000000000000000000000000001 has >80 % similarity with the null address
+        const result = (WalletValidator as any).hasSimilarityToKnownAddresses('0x0000000000000000000000000000000000000001');
+        expect(result).toBe(true);
       });
     });
 
     describe('isKnownScamContract', () => {
-      it('should return false (placeholder implementation)', () => {
+      it('should return false for addresses not in the blocklist', () => {
         const result = (WalletValidator as any).isKnownScamContract('0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45');
         expect(result).toBe(false);
+      });
+
+      it('should return true for null address (in blocklist)', () => {
+        const result = (WalletValidator as any).isKnownScamContract('0x0000000000000000000000000000000000000000');
+        expect(result).toBe(true);
       });
     });
 

@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Copy, Check, Code, ExternalLink } from 'lucide-react';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ export default function WidgetEmbedCodePage() {
   const [ctaText, setCtaText] = useState('Invest on PropChain');
   const [compact, setCompact] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   const widgetWidth = compact ? '400px' : '600px';
   const widgetHeight = compact ? '450px' : '800px';
@@ -54,7 +56,7 @@ export default function WidgetEmbedCodePage() {
     const code = generateEmbedCode();
     await navigator.clipboard.writeText(code);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeoutSafe(() => setCopied(false), 2000);
   };
 
   return (

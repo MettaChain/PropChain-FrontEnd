@@ -24,11 +24,14 @@ const envSchema = z.object({
   // API Configurations
   NEXT_PUBLIC_PROPERTY_API_URL: z.string().url().optional(),
   NEXT_PUBLIC_ANALYTICS_API_URL: z.string().url().optional(),
+  ERROR_REPORTING_ENDPOINT: z.string().url().optional(),
+  ERROR_REPORTING_API_KEY: z.string().optional(),
 
   // Web3 / Blockchain RPC Configurations
   ETHEREUM_MAINNET_RPC_URL: z.string().url().optional(),
   POLYGON_MAINNET_RPC_URL: z.string().url().optional(),
   BSC_MAINNET_RPC_URL: z.string().url().optional(),
+  LOCAL_RPC_URL: z.string().url().optional(),
 
   // Wallet Connect Configuration
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().optional(),
@@ -82,6 +85,10 @@ const envSchema = z.object({
     .string()
     .transform((val: string) => parseInt(val, 10))
     .default(50), // 50 requests per wallet per window
+
+  // Upstash Redis Configuration
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 });
 
 /**
@@ -178,9 +185,12 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
   NEXT_PUBLIC_PROPERTY_API_URL:
     "Property API endpoint for fetching property data",
   NEXT_PUBLIC_ANALYTICS_API_URL: "Analytics API endpoint",
+  ERROR_REPORTING_ENDPOINT: "Server-side error reporting destination",
+  ERROR_REPORTING_API_KEY: "Bearer token for the error reporting destination",
   ETHEREUM_MAINNET_RPC_URL: "Ethereum Mainnet RPC URL",
   POLYGON_MAINNET_RPC_URL: "Polygon Mainnet RPC URL",
   BSC_MAINNET_RPC_URL: "Binance Smart Chain Mainnet RPC URL",
+  LOCAL_RPC_URL: "Local Foundry/Anvil RPC URL for offline development (http://localhost:8545)",
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:
     "WalletConnect Project ID (required for WalletConnect)",
   NEXT_PUBLIC_ANALYTICS_ENABLED: "Enable/disable analytics tracking",
@@ -196,6 +206,8 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
   RATE_LIMIT_WINDOW_MS: "Rate limit time window in milliseconds",
   RATE_LIMIT_MAX_REQUESTS: "Maximum requests per IP per window",
   RATE_LIMIT_MAX_REQUESTS_PER_WALLET: "Maximum requests per wallet per window",
+  UPSTASH_REDIS_REST_URL: "Upstash Redis REST URL for distributed rate limiting",
+  UPSTASH_REDIS_REST_TOKEN: "Upstash Redis REST token for distributed rate limiting",
 };
 
 /**
@@ -207,6 +219,7 @@ export const sensitiveVariables: (keyof EnvConfig)[] = [
   "BSC_MAINNET_RPC_URL",
   "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID",
   "NEXT_PUBLIC_SENTRY_DSN",
+  "ERROR_REPORTING_API_KEY",
 ];
 
 export {envSchema, envRequirementsSchema};

@@ -62,7 +62,7 @@ interface WalletConnectedViewProps {
  * - Disconnect button
  * - Error messages
  */
-export function WalletConnectedView({ address }: WalletConnectedViewProps) {
+const WalletConnectedViewInner: React.FC<WalletConnectedViewProps> = ({ address }) => {
   const { setDisconnected, clearError, balance, error } = useWalletStore();
   const { chainConfig } = useChain();
   const { profile } = useKycStore();
@@ -113,4 +113,6 @@ export function WalletConnectedView({ address }: WalletConnectedViewProps) {
       )}
     </div>
   );
-}
+};
+
+export const WalletConnectedView = React.memo(WalletConnectedViewInner);

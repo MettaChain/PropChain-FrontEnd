@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import type { SavedSearch, Property, PropertyAlert, NotificationFrequency } from '@/types/property';
 import { propertyService } from './propertyService';
+import { generateSecureId } from '@/utils/secureId';
 
 /**
  * Notification Service
@@ -179,7 +180,7 @@ class NotificationService {
    * Generate unique ID
    */
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return generateSecureId();
   }
 
   /**

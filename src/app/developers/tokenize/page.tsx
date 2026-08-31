@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 import { 
   Building2, 
   Coins, 
@@ -32,7 +33,7 @@ const STEPS = [
   { id: 5, title: 'Review & Submit', icon: CheckCircle2 },
 ];
 
-export default function TokenizationWizardPage() {
+function TokenizationWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -382,3 +383,5 @@ export default function TokenizationWizardPage() {
     </div>
   );
 }
+
+export default withRouteErrorBoundary(TokenizationWizardPage, { routeName: 'developers/tokenize' });

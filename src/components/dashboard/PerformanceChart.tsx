@@ -117,7 +117,7 @@ export const PerformanceChart = () => {
         </div>
       </div>
 
-      <div className="h-[300px] md:h-[350px]">
+      <div className="h-[300px] md:h-[350px]" role="img" aria-label={`Area chart: Portfolio performance over ${activeTimeframe}. Shows actual portfolio value and projected value over time. Latest value: $${data.at(-1)?.value?.toLocaleString() ?? 'N/A'}.`}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}

@@ -12,6 +12,7 @@ import { createWalletAddress } from '@/types/referral';
 import CopyButton from './CopyButton';
 import ShareButton from './ShareButton';
 import CreateReferralLinkModal from './CreateReferralLinkModal';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 
 export interface ReferralLinksCardProps {
   maxLinksToShow?: number;
@@ -25,12 +26,13 @@ export default function ReferralLinksCard({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [loadingShortUrl, setLoadingShortUrl] = useState<string | null>(null);
+  const { setTimeoutSafe } = useSafeTimeout();
 
   const handleCopy = useCallback(
     (code: string, url: string) => {
       navigator.clipboard.writeText(url);
       setCopiedCode(code);
-      setTimeout(() => setCopiedCode(null), 2000);
+      setTimeoutSafe(() => setCopiedCode(null), 2000);
     },
     []
   );

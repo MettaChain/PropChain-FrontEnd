@@ -1,166 +1,193 @@
-import type { CartItem } from '@/types/cart';
-import type { BatchTransactionResult } from '@/types/cart';
-import { logger } from '@/utils/logger';
+import type { CartItem, BatchTransactionResult } from "@/types/cart";
+import { logger } from "@/utils/logger";
+import { decodeRevertReason } from "@/utils/revertDecoder";
+import { getBatchPurchaseContractAddress } from "@/config/batchPurchase";
 
-// Mock multicall implementation - in production, this would use actual smart contracts
-export class BatchTransactionService {
-  /**
-   * Execute batch token purchase using multicall
-   */
-  static async executeBatchPurchase(
-    items: CartItem[],
-    walletAddress: string
-  ): Promise<BatchTransactionResult> {
-    try {
-      logger.info('Starting batch transaction', { items: items.length, walletAddress });
+const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
-      // Validate all items before proceeding
-      const validationResults = items.map(item => ({
-        propertyId: item.property.id,
-        success: this.validatePurchase(item),
-        error: this.validatePurchase(item) ? undefined : 'Insufficient tokens available'
-      }));
-
-      const hasValidationErrors = validationResults.some(result => !result.success);
-      if (hasValidationErrors) {
-        return {
-          success: false,
-          results: validationResults,
-          error: 'Validation failed for some items'
-        };
-      }
-
-      // Simulate blockchain transaction delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Generate mock transaction hash
-      const transactionHash = `0x${Array.from({length: 64}, () => 
-        Math.floor(Math.random() * 16).toString(16)).join('')}`;
-
-      // Simulate individual transaction results
-      const results = items.map(item => ({
-        propertyId: item.property.id,
-        success: Math.random() > 0.1, // 90% success rate for demo
-        transactionHash: Math.random() > 0.1 ? transactionHash : undefined,
-        error: Math.random() > 0.1 ? undefined : 'Transaction failed: Insufficient gas'
-      }));
-
-      const allSuccessful = results.every(result => result.success);
-      const totalGasUsed = items.length * 0.0025 + 0.005; // Base gas + per transaction
-
-      logger.info('Batch transaction completed', {
-        success: allSuccessful,
-        transactionHash,
-        totalGasUsed,
-        itemsProcessed: items.length
-      });
-
-      return {
-        success: allSuccessful,
-        transactionHash: allSuccessful ? transactionHash : undefined,
-        results,
-        totalGasUsed,
-        error: allSuccessful ? undefined : 'Some transactions failed'
-      };
-
-    } catch (error) {
-      logger.error('Batch transaction failed:', error);
-      return {
-        success: false,
-        results: items.map(item => ({
-          propertyId: item.property.id,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        })),
-        error: error instanceof Error ? error.message : 'Transaction failed'
-      };
-    }
-  }
-
-  /**
-   * Estimate gas for batch transaction
-   */
-  static estimateGas(items: CartItem[]): number {
-    const BASE_GAS = 0.005; // Base gas for batch transaction
-    const GAS_PER_TRANSACTION = 0.0025; // Gas per individual transaction
-    return BASE_GAS + (items.length * GAS_PER_TRANSACTION);
-  }
-
-  /**
-   * Validate if purchase can be executed
-   */
-  private static validatePurchase(item: CartItem): boolean {
-    return item.quantity > 0 && 
-           item.quantity <= item.property.tokenInfo.available &&
-           item.property.status === 'active';
-  }
-
-  /**
-   * Get transaction status
-   */
-  static async getTransactionStatus(transactionHash: string): Promise<{
-    status: 'pending' | 'confirmed' | 'failed';
-    blockNumber?: number;
-    confirmations?: number;
-  }> {
-    // Mock transaction status check
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulate different statuses
-    const random = Math.random();
-    if (random < 0.7) {
-      return {
-        status: 'confirmed',
-        blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
-        confirmations: Math.floor(Math.random() * 50) + 1
-      };
-    } else if (random < 0.9) {
-      return {
-        status: 'pending'
-      };
-    } else {
-      return {
-        status: 'failed'
-      };
-    }
-  }
-
-  /**
-   * Wait for transaction confirmation
-   */
-  static async waitForConfirmation(
-    transactionHash: string,
-    maxWaitTime: number = 300000 // 5 minutes
-  ): Promise<{
-    status: 'confirmed' | 'failed' | 'timeout';
-    blockNumber?: number;
-    confirmations?: number;
-  }> {
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < maxWaitTime) {
-      const status = await this.getTransactionStatus(transactionHash);
-      
-      if (status.status === 'confirmed') {
-        return {
-          status: 'confirmed',
-          blockNumber: status.blockNumber,
-          confirmations: status.confirmations
-        };
-      }
-      
-      if (status.status === 'failed') {
-        return {
-          status: 'failed'
-        };
-      }
-      
-      // Wait 5 seconds before checking again
-      await new Promise(resolve => setTimeout(resolve, 5000));
-    }
-    
-    return {
-      status: 'timeout'
-    };
-  }
+export interface BatchPurchaseRequest {
+  walletAddress: `0x${string}`;
+  items: Array<{
+    propertyId: string;
+    tokenAddress: string;
+    quantity: number;
+    expectedAmount: number;
+    minimumAmount: number;
+  }>;
+  slippageTolerance: number;
 }
+
+/**
+ * Adapter boundary for the deployed batch-purchase contract.
+ * The adapter must return only after it has observed the transaction receipt.
+ */
+export interface BatchPurchaseExecutor {
+  execute: (request: BatchPurchaseRequest) => Promise<{
+    transactionHash: `0x${string}`;
+    receiptStatus: "success" | "reverted";
+  }>;
+}
+
+const failureResult = (
+  items: CartItem[],
+  error: string,
+): BatchTransactionResult => ({
+  success: false,
+  results: items.map((item) => ({
+    propertyId: item.property.id,
+    success: false,
+    error,
+  })),
+  error,
+});
+
+const getErrorData = (error: unknown): `0x${string}` | undefined => {
+  if (typeof error !== "object" || error === null || !("data" in error)) {
+    return undefined;
+  }
+
+  const data = error.data;
+  return typeof data === "string" && /^0x[\da-fA-F]*$/.test(data)
+    ? (data as `0x${string}`)
+    : undefined;
+};
+
+const getFailureReason = (error: unknown): string => {
+  const data = getErrorData(error);
+  if (data) return decodeRevertReason(data);
+
+  if (typeof error === "object" && error !== null && "code" in error) {
+    if (error.code === 4001) return "Transaction rejected by the user.";
+  }
+
+  if (error instanceof Error && error.message) return error.message;
+  return "Batch purchase failed.";
+};
+
+const validateItems = (items: CartItem[]): string | undefined => {
+  if (items.length === 0) return "At least one item is required.";
+
+  for (const item of items) {
+    if (item.property.status !== "active") {
+      return `Property ${item.property.id} is not available for purchase.`;
+    }
+    if (
+      !Number.isInteger(item.quantity) ||
+      item.quantity <= 0 ||
+      !Number.isFinite(item.property.tokenInfo.available) ||
+      item.quantity > item.property.tokenInfo.available
+    ) {
+      return `Insufficient tokens available for property ${item.property.id}.`;
+    }
+    if (
+      !Number.isFinite(item.property.price.perToken) ||
+      item.property.price.perToken < 0 ||
+      !Number.isFinite(item.quantity * item.property.price.perToken)
+    ) {
+      return `Invalid price for property ${item.property.id}.`;
+    }
+  }
+
+  return undefined;
+};
+
+export const calculateMinimumAmount = (
+  expectedAmount: number,
+  slippageTolerance: number,
+): number => expectedAmount * (1 - slippageTolerance);
+
+/**
+ * Resolve the executor backed by the connected wallet and the configured
+ * batch-purchase contract. Returns null when no contract address is
+ * configured so checkout fails closed instead of fabricating a result.
+ */
+const resolveBatchPurchaseExecutor =
+  async (): Promise<BatchPurchaseExecutor | null> => {
+    const contractAddress = getBatchPurchaseContractAddress();
+    if (!contractAddress) return null;
+
+    const { createWagmiBatchPurchaseExecutor } =
+      await import("./batchPurchaseExecutor");
+    return createWagmiBatchPurchaseExecutor(contractAddress);
+  };
+
+export const BatchTransactionService = {
+  executeBatchPurchase: async (
+    items: CartItem[],
+    walletAddress: string,
+    slippageTolerance: number,
+    executor?: BatchPurchaseExecutor,
+  ): Promise<BatchTransactionResult> => {
+    const validationError = validateItems(items);
+    if (validationError) return failureResult(items, validationError);
+
+    if (!ADDRESS_PATTERN.test(walletAddress)) {
+      return failureResult(items, "A connected wallet is required.");
+    }
+
+    if (
+      !Number.isFinite(slippageTolerance) ||
+      slippageTolerance < 0 ||
+      slippageTolerance >= 1
+    ) {
+      return failureResult(
+        items,
+        "Slippage tolerance must be between 0 and 1.",
+      );
+    }
+
+    const resolvedExecutor = executor ?? (await resolveBatchPurchaseExecutor());
+    if (!resolvedExecutor) {
+      return failureResult(
+        items,
+        "Batch purchase is not configured for this network.",
+      );
+    }
+
+    const request: BatchPurchaseRequest = {
+      walletAddress: walletAddress as `0x${string}`,
+      slippageTolerance,
+      items: items.map((item) => {
+        const expectedAmount = item.quantity * item.property.price.perToken;
+        return {
+          propertyId: item.property.id,
+          tokenAddress: item.property.tokenInfo.contractAddress,
+          quantity: item.quantity,
+          expectedAmount,
+          minimumAmount: calculateMinimumAmount(
+            expectedAmount,
+            slippageTolerance,
+          ),
+        };
+      }),
+    };
+
+    logger.info("Executing configured batch purchase", {
+      itemCount: items.length,
+      walletAddress,
+      slippageTolerance,
+    });
+
+    try {
+      const { transactionHash, receiptStatus } =
+        await resolvedExecutor.execute(request);
+      if (receiptStatus !== "success") {
+        return failureResult(items, "Batch purchase transaction reverted.");
+      }
+
+      return {
+        success: true,
+        transactionHash,
+        results: items.map((item) => ({
+          propertyId: item.property.id,
+          success: true,
+          transactionHash,
+        })),
+      };
+    } catch (error: unknown) {
+      const reason = getFailureReason(error);
+      logger.error("Batch purchase failed", { error: reason });
+      return failureResult(items, reason);
+    }
+  },
+};

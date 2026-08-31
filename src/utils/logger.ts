@@ -1,6 +1,7 @@
-'use client';
-
-import { getErrorMessage } from './typeGuards';
+import { getErrorMessage } from "./typeGuards";
+import { genId } from "@/utils/genId";
+import { generateChildId } from "./secureId";
+import { getCsrfToken } from "@/lib/csrfClient";
 
 // ============================================================================
 // Log Levels
@@ -18,21 +19,45 @@ export enum LogLevel {
 // Environment
 // ============================================================================
 
-type Environment = 'development' | 'production' | 'test';
+type Environment = "development" | "production" | "test";
 
-const getEnvironment = (): Environment =>
-  (process.env.NODE_ENV as Environment) || 'development';
+const getEnvironment = (): Environment => {
+  if (typeof process !== "undefined" && process.env?.NODE_ENV) {
+    return process.env.NODE_ENV as Environment;
+  }
+  return "development";
+};
 
 // ============================================================================
 // Sensitive Data Redaction
 // ============================================================================
 
 const SENSITIVE_KEYS = new Set([
-  'password', 'passwd', 'pwd', 'secret', 'apiKey', 'api_key',
-  'accessToken', 'access_token', 'refreshToken', 'refresh_token',
-  'privateKey', 'private_key', 'mnemonic', 'seedPhrase', 'seed_phrase',
-  'token', 'authorization', 'auth', 'sessionId', 'session_id',
-  'cookie', 'ssn', 'creditCard', 'credit_card', 'cvv',
+  "password",
+  "passwd",
+  "pwd",
+  "secret",
+  "apiKey",
+  "api_key",
+  "accessToken",
+  "access_token",
+  "refreshToken",
+  "refresh_token",
+  "privateKey",
+  "private_key",
+  "mnemonic",
+  "seedPhrase",
+  "seed_phrase",
+  "token",
+  "authorization",
+  "auth",
+  "sessionId",
+  "session_id",
+  "cookie",
+  "ssn",
+  "creditCard",
+  "credit_card",
+  "cvv",
 ]);
 
 const SENSITIVE_PATTERNS: RegExp[] = [
@@ -43,18 +68,20 @@ const SENSITIVE_PATTERNS: RegExp[] = [
 const redactValue = (value: unknown): unknown => {
   if (value === null || value === undefined) return value;
 
-  if (typeof value === 'string') {
-    let v = value.replace(/0x[a-fA-F0-9]{64}/g, '0x[REDACTED_PRIVATE_KEY]');
-    for (const p of SENSITIVE_PATTERNS) v = v.replace(p, '[REDACTED]');
+  if (typeof value === "string") {
+    let v = value.replace(/0x[a-fA-F0-9]{64}/g, "0x[REDACTED_PRIVATE_KEY]");
+    for (const p of SENSITIVE_PATTERNS) v = v.replace(p, "[REDACTED]");
     return v;
   }
 
   if (Array.isArray(value)) return value.map(redactValue);
 
-  if (typeof value === 'object') {
+  if (typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = SENSITIVE_KEYS.has(k.toLowerCase()) ? '[REDACTED]' : redactValue(v);
+      out[k] = SENSITIVE_KEYS.has(k.toLowerCase())
+        ? "[REDACTED]"
+        : redactValue(v);
     }
     return out;
   }
@@ -83,9 +110,9 @@ export interface LoggerConfig {
 
 const getDefaultConfig = (): LoggerConfig => {
   const env = getEnvironment();
-  const isProd = env === 'production';
+  const isProd = env === "production";
   return {
-    level: env === 'development' ? LogLevel.DEBUG : LogLevel.INFO,
+    level: env === "development" ? LogLevel.DEBUG : LogLevel.INFO,
     enableConsole: true,
     enableRemote: false,
     jsonOutput: isProd,
@@ -103,11 +130,12 @@ let globalConfig = getDefaultConfig();
 // ============================================================================
 
 const generateCorrelationId = (): string =>
-  `corr-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 15)}`;
+  genId(`corr-${Date.now().toString(36)}`);
 
 class CorrelationIdManager {
   private static instance: CorrelationIdManager;
-  private id: string = generateCorrelationId();
+  private correlationId: string = generateCorrelationId();
+  private correlationStack: string[] = [];
 
   static getInstance(): CorrelationIdManager {
     if (!CorrelationIdManager.instance) {
@@ -116,11 +144,28 @@ class CorrelationIdManager {
     return CorrelationIdManager.instance;
   }
 
-  getId(): string { return this.id; }
-  setId(id: string): void { this.id = id; }
-  reset(): void { this.id = generateCorrelationId(); }
-  fork(): string { return generateCorrelationId(); }
-  createChild(): string { return `${this.id}-${Math.random().toString(36).substring(2, 8)}`; }
+  getId(): string {
+    return this.correlationId;
+  }
+
+  setId(id: string): void {
+    this.correlationStack.push(this.correlationId);
+    this.correlationId = id;
+  }
+
+  reset(): void {
+    this.correlationId = generateCorrelationId();
+    this.correlationStack = [];
+  }
+
+  createChild(): string {
+    return generateChildId(this.correlationId);
+  }
+
+  // For async operations - returns a new correlation ID
+  fork(): string {
+    return generateCorrelationId();
+  }
 }
 
 // ============================================================================
@@ -133,6 +178,7 @@ export interface LogEntry {
   timestamp: string;
   correlationId?: string;
   source?: string;
+  callSite?: string;
   data?: unknown;
   stack?: string;
 }
@@ -162,11 +208,25 @@ class Logger {
     try {
       throw new Error();
     } catch (e) {
-      return (e as Error).stack?.split('\n').slice(3).join('\n');
+      return (e as Error).stack?.split("\n").slice(3).join("\n");
     }
   }
 
-  private createLogEntry(level: string, message: string, data?: unknown): LogEntry {
+  private createLogEntry(
+    level: string,
+    message: string,
+    data?: unknown,
+  ): LogEntry {
+    let callSite: string | undefined;
+    let processedData = data;
+
+    // Special handling for call site from withSourceMapping
+    if (data && typeof data === "object" && (data as any).__callSite) {
+      callSite = (data as any).__callSite;
+      const { __callSite, ...rest } = data as any;
+      processedData = Object.keys(rest).length > 0 ? rest : undefined;
+    }
+
     const entry: LogEntry = {
       level,
       message,
@@ -176,13 +236,23 @@ class Logger {
       entry.correlationId = this.correlationManager.getId();
     }
     if (this.source) entry.source = this.source;
-    if (data !== undefined) entry.data = redactValue(data);
-    const stack = this.getStackTrace();
-    if (stack) entry.stack = stack;
+    if (callSite) entry.callSite = callSite;
+    if (processedData !== undefined) entry.data = redactValue(processedData);
+
+    // Don't include default stack if we have a precise call site
+    if (!entry.callSite) {
+      const stack = this.getStackTrace();
+      if (stack) entry.stack = stack;
+    }
     return entry;
   }
 
-  private emit(level: LogLevel, levelName: string, message: string, data?: unknown): void {
+  private emit(
+    level: LogLevel,
+    levelName: string,
+    message: string,
+    data?: unknown,
+  ): void {
     if (!this.shouldLog(level)) return;
 
     const entry = this.createLogEntry(levelName, message, data);
@@ -192,10 +262,18 @@ class Logger {
         // Structured JSON line — single console.log so log aggregators get one line
         const line = JSON.stringify(entry);
         switch (level) {
-          case LogLevel.DEBUG: console.debug(line); break;
-          case LogLevel.INFO:  console.info(line);  break;
-          case LogLevel.WARN:  console.warn(line);  break;
-          case LogLevel.ERROR: console.error(line); break;
+          case LogLevel.DEBUG:
+            if (this.config.environment === "development") console.debug(line);
+            break;
+          case LogLevel.INFO:
+            console.info(line);
+            break;
+          case LogLevel.WARN:
+            console.warn(line);
+            break;
+          case LogLevel.ERROR:
+            console.error(line);
+            break;
         }
       } else {
         // Human-readable for development
@@ -206,16 +284,27 @@ class Logger {
           parts.push(`[${entry.correlationId}]`);
         }
         if (this.source) parts.push(`[${this.source}]`);
+        if (entry.callSite) parts.push(`@ ${entry.callSite}`);
         parts.push(message);
-        const formatted = parts.join(' ');
+        const formatted = parts.join(" ");
+
+        const consoleArgs = [formatted];
+        if (entry.data) consoleArgs.push(entry.data);
 
         switch (level) {
           case LogLevel.DEBUG:
-            if (this.config.environment === 'development') console.debug(formatted, entry.data ?? '');
+            if (this.config.environment === "development")
+              console.debug(...consoleArgs);
             break;
-          case LogLevel.INFO:  console.info(formatted, entry.data ?? '');  break;
-          case LogLevel.WARN:  console.warn(formatted, entry.data ?? '');  break;
-          case LogLevel.ERROR: console.error(formatted, entry.data ?? ''); break;
+          case LogLevel.INFO:
+            console.info(...consoleArgs);
+            break;
+          case LogLevel.WARN:
+            console.warn(...consoleArgs);
+            break;
+          case LogLevel.ERROR:
+            console.error(...consoleArgs);
+            break;
         }
       }
     }
@@ -227,9 +316,17 @@ class Logger {
 
   private async sendToRemote(entry: LogEntry): Promise<void> {
     try {
+      const csrfToken = await getCsrfToken().catch(() => "");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (csrfToken) {
+        headers["X-CSRF-Token"] = csrfToken;
+      }
+
       await fetch(this.config.remoteUrl!, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers,
         body: JSON.stringify(entry),
         keepalive: true,
       });
@@ -241,25 +338,29 @@ class Logger {
   // ── Public API ──────────────────────────────────────────────────────────
 
   debug(message: string, ...args: unknown[]): void {
-    this.emit(LogLevel.DEBUG, 'DEBUG', message, args.length ? args : undefined);
+    this.emit(LogLevel.DEBUG, "DEBUG", message, args.length ? args : undefined);
   }
 
   info(message: string, ...args: unknown[]): void {
-    this.emit(LogLevel.INFO, 'INFO', message, args.length ? args : undefined);
+    this.emit(LogLevel.INFO, "INFO", message, args.length ? args : undefined);
   }
 
   warn(message: string, ...args: unknown[]): void {
-    this.emit(LogLevel.WARN, 'WARN', message, args.length ? args : undefined);
+    this.emit(LogLevel.WARN, "WARN", message, args.length ? args : undefined);
   }
 
   error(message: string, ...args: unknown[]): void {
-    this.emit(LogLevel.ERROR, 'ERROR', message, args.length ? args : undefined);
+    this.emit(LogLevel.ERROR, "ERROR", message, args.length ? args : undefined);
   }
 
   errorWithStack(message: string, error: unknown, context?: unknown): void {
-    const errorMessage = getErrorMessage(error, 'Unknown error');
+    const errorMessage = getErrorMessage(error, "Unknown error");
     const stack = error instanceof Error ? error.stack : this.getStackTrace();
-    this.emit(LogLevel.ERROR, 'ERROR', message, { error: errorMessage, stack, context });
+    this.emit(LogLevel.ERROR, "ERROR", message, {
+      error: errorMessage,
+      stack,
+      context,
+    });
   }
 
   child(source: string): Logger {
@@ -268,16 +369,26 @@ class Logger {
     return child;
   }
 
-  setLevel(level: LogLevel): void { this.localLevel = level; }
+  setLevel(level: LogLevel): void {
+    this.localLevel = level;
+  }
 
   setConfig(config: Partial<LoggerConfig>): void {
     this.config = { ...this.config, ...config };
   }
 
-  getCorrelationId(): string { return this.correlationManager.getId(); }
-  forkCorrelationId(): string { return this.correlationManager.fork(); }
-  setCorrelationId(id: string): void { this.correlationManager.setId(id); }
-  resetCorrelationId(): void { this.correlationManager.reset(); }
+  getCorrelationId(): string {
+    return this.correlationManager.getId();
+  }
+  forkCorrelationId(): string {
+    return this.correlationManager.fork();
+  }
+  setCorrelationId(id: string): void {
+    this.correlationManager.setId(id);
+  }
+  resetCorrelationId(): void {
+    this.correlationManager.reset();
+  }
 }
 
 // ============================================================================
@@ -287,7 +398,7 @@ class Logger {
 const loggers = new Map<string, Logger>();
 
 export const createLogger = (source?: string): Logger => {
-  const key = source ?? 'default';
+  const key = source ?? "default";
   if (!loggers.has(key)) loggers.set(key, new Logger(source));
   return loggers.get(key)!;
 };
@@ -303,6 +414,54 @@ export const configureLogger = (config: Partial<LoggerConfig>): void => {
 };
 
 export const getLoggerConfig = (): LoggerConfig => ({ ...globalConfig });
+
+// ============================================================================
+// Call Site & Source Mapping
+// ============================================================================
+
+const getCallSite = (stackOffset = 0): string | undefined => {
+  if (typeof Error.captureStackTrace !== "function") return undefined;
+
+  const obj: { stack?: string } = {};
+  Error.captureStackTrace(obj, getCallSite); // Capture stack, skipping this function
+
+  if (!obj.stack) return undefined;
+
+  // Stack format varies across browsers. A common format is:
+  // "at functionName (filePath:lineNumber:columnNumber)"
+  // We'll try to parse this robustly.
+  const lines = obj.stack.split("\n");
+  const callLine = lines[3 + stackOffset]; // Adjust offset to get the original caller
+
+  if (!callLine) return undefined;
+
+  const match =
+    callLine.match(/\((.*?):(\d+):(\d+)\)$/) ??
+    callLine.match(/at (.*?):(\d+):(\d+)$/);
+  if (match) {
+    const [_, filePath, line, col] = match;
+    // Return a clickable source link for dev tools
+    return `${filePath}:${line}:${col}`;
+  }
+
+  return callLine.trim().replace(/^at /, "");
+};
+
+type LogFn = (message: string, ...args: unknown[]) => void;
+
+const withSourceMapping = (logFn: LogFn): ((...args: unknown[]) => void) => {
+  return (...args: unknown[]) => {
+    const callSite = getCallSite();
+    const message = args
+      .map((a) => (typeof a === "string" ? a : JSON.stringify(a)))
+      .join(" ");
+    // We need to pass the call site to the underlying logger.
+    // This requires modifying the logger's emit/createLogEntry methods.
+    // For now, let's assume the logger can accept a callSite parameter.
+    // We will adjust the logger implementation next.
+    (logFn as any)(message, { __callSite: callSite });
+  };
+};
 
 // ============================================================================
 // Helpers
@@ -324,13 +483,13 @@ export const replaceConsole = (): (() => void) => {
   };
 
   const toMessage = (...args: unknown[]) =>
-    args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+    args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
 
   console.debug = (...args: unknown[]) => logger.debug(toMessage(...args));
-  console.info  = (...args: unknown[]) => logger.info(toMessage(...args));
-  console.warn  = (...args: unknown[]) => logger.warn(toMessage(...args));
+  console.info = (...args: unknown[]) => logger.info(toMessage(...args));
+  console.warn = (...args: unknown[]) => logger.warn(toMessage(...args));
   console.error = (...args: unknown[]) => logger.error(toMessage(...args));
-  console.log   = (...args: unknown[]) => logger.info(toMessage(...args));
+  console.log = (...args: unknown[]) => logger.info(toMessage(...args));
 
   return () => Object.assign(console, orig);
 };
@@ -343,7 +502,10 @@ export const createPerformanceLogger = () => {
     },
     endTimer(label: string, thresholdMs = 16): void {
       const start = startTimes.get(label);
-      if (start === undefined) { logger.warn(`Timer '${label}' was not started`); return; }
+      if (start === undefined) {
+        logger.warn(`Timer '${label}' was not started`);
+        return;
+      }
       const duration = performance.now() - start;
       startTimes.delete(label);
       if (duration > thresholdMs) {

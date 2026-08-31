@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { WalletConnector } from "@/components/WalletConnector";
 import { TransactionQueue } from "@/components/TransactionQueue";
@@ -12,6 +12,7 @@ import { ComplianceAuditLog } from "@/components/kyc/ComplianceAuditLog";
 import { KycStatusBadge } from "@/components/kyc/KycStatusBadge";
 import { useKycStore } from "@/store/kycStore";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 import { TransactionSecuritySettings } from "@/components/security/TransactionSecuritySettings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sidebar } from "@/components/dashboard/Sidebar";
@@ -64,9 +65,25 @@ const DataRefreshWrapper = dynamic(
 );
 
 const Index = () => {
+  const { t } = useTranslation("common");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { profile } = useKycStore();
+
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState) {
+      setSidebarCollapsed(JSON.parse(savedState));
+    }
+  }, []);
+
+  const handleToggleCollapse = () => {
+    setSidebarCollapsed((prev) => {
+      const newState = !prev;
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+      return newState;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background flex w-full">
@@ -74,7 +91,7 @@ const Index = () => {
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
         onClose={() => setSidebarOpen(false)}
-        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        onToggleCollapse={handleToggleCollapse}
       />
       <div className="flex-1 flex flex-col min-w-0">
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -161,14 +178,22 @@ const Index = () => {
               <Tabs defaultValue="queue" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="queue">Transaction Queue</TabsTrigger>
-                  <TabsTrigger value="history">Transaction History</TabsTrigger>
+                  <TabsTrigger value="history">Transactions</TabsTrigger>
                   <TabsTrigger value="staking">Staking & Yield</TabsTrigger>
                   <TabsTrigger value="certificates">My Certificates</TabsTrigger>
                 </TabsList>
                 <TabsContent value="queue">
                   <TransactionQueue />
                 </TabsContent>
-                <TabsContent value="history">
+                <TabsContent value="history" className="space-y-3">
+                  <div className="flex justify-end">
+                    <Link
+                      href="/transactions"
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      {t("transactions.viewFullHistory")} →
+                    </Link>
+                  </div>
                   <TransactionHistory />
                 </TabsContent>
                 <TabsContent value="certificates">

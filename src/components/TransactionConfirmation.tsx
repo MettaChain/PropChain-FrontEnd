@@ -1,15 +1,9 @@
-'use client';
-import { logger } from '@/utils/logger';
+"use client";
+import { logger } from "@/utils/logger";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useSecurity } from '@/hooks/useSecurity';
-import { AlertTriangle, Shield, CheckCircle, X, Eye, EyeOff, Info } from 'lucide-react';
-import { useWalletStore } from '@/store/walletStore';
-import { useKycStore } from '@/store/kycStore';
-import { formatEthAmount, shouldRequireKyc, weiToEth } from '@/lib/kyc';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useSecurity } from '@/hooks/useSecurity';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useSecurity } from "@/hooks/useSecurity";
 import {
   AlertTriangle,
   Shield,
@@ -22,22 +16,33 @@ import {
   Wallet,
   ShieldCheck,
   Lock,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTransactionSecurityStore } from '@/store/transactionSecurityStore';
+} from "lucide-react";
+import { useWalletStore } from "@/store/walletStore";
+import { useKycStore } from "@/store/kycStore";
+import { formatEthAmount, shouldRequireKyc, weiToEth } from "@/lib/kyc";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTransactionSecurityStore } from "@/store/transactionSecurityStore";
 import {
   decideStepUpSecurity,
   formatEth,
   getSecurityDeviceId,
   getSecurityDeviceLabel,
   weiToEth,
-} from '@/utils/security/transactionSecurity';
-import { normalizeTotpCode } from '@/utils/security/totp';
-import { toast } from 'sonner';
+} from "@/utils/security/transactionSecurity";
+import { normalizeTotpCode } from "@/utils/security/totp";
+import { toast } from "sonner";
+import {
+  simulateTransaction,
+  SimulationResult,
+} from "@/utils/tenderlySimulation";
 
 interface TransactionConfirmationProps {
   isOpen: boolean;
@@ -47,19 +52,16 @@ interface TransactionConfirmationProps {
     data?: string;
     gasLimit?: string;
     gasPrice?: string;
+    from: string;
   };
-  onConfirm: () => void;
+  onConfirm: (error?: string) => void;
   onCancel: () => void;
   loading?: boolean;
 }
 
-export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = ({
-  isOpen,
-  transaction,
-  onConfirm,
-  onCancel,
-  loading = false,
-}) => {
+export const TransactionConfirmation: React.FC<
+  TransactionConfirmationProps
+> = ({ isOpen, transaction, onConfirm, onCancel, loading = false }) => {
   const { validateTransaction } = useSecurity();
   const walletAddress = useWalletStore((state) => state.address);
   const { profile, logTransactionScreening } = useKycStore();
@@ -77,26 +79,51 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
   const [showRawData, setShowRawData] = useState(false);
   const [transactionEth, setTransactionEth] = useState(0);
   const [kycRequired, setKycRequired] = useState(false);
-  const [verificationTab, setVerificationTab] = useState<'totp' | 'hardware'>('totp');
-  const [totpCode, setTotpCode] = useState('');
+  const [verificationTab, setVerificationTab] = useState<"totp" | "hardware">(
+    "totp",
+  );
+  const [totpCode, setTotpCode] = useState("");
   const [trustThisDevice, setTrustThisDevice] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
   const hardwareTimerRef = useRef<number | null>(null);
+  const [simulation, setSimulation] = useState<SimulationResult | null>(null);
+  const [simulating, setSimulating] = useState(false);
+  const [skipSimulation, setSkipSimulation] = useState(false);
+  const [showSimulation, setShowSimulation] = useState(false);
 
   const currentDeviceId = useMemo(() => getSecurityDeviceId(), []);
   const currentDeviceLabel = useMemo(() => getSecurityDeviceLabel(), []);
 
-  useEffect(() => {
-    if (isOpen && transaction) {
-      validateTransactionData();
-      const valueEth = weiToEth(transaction.value);
-      const requiresKyc = shouldRequireKyc(transaction.value, profile.thresholdEth);
-      setTransactionEth(valueEth);
-      setKycRequired(requiresKyc);
-      logTransactionScreening(valueEth, requiresKyc, profile.status === 'verified' || !requiresKyc);
+      if (isOpen && transaction) {
+        validateTransactionData();
+        const valueEth = weiToEth(transaction.value);
+        const requiresKyc = shouldRequireKyc(
+            transaction.value,
+            profile.thresholdEth,
+        );
+        setTransactionEth(valueEth);
+        setKycRequired(requiresKyc);
+        logTransactionScreening(
+            valueEth,
+            requiresKyc,
+            profile.status === "verified" || !requiresKyc,
+        );
+
+        if (!skipSimulation) {
+            runSimulation();
+        } else {
+            setSimulation(null);
+        }
     }
-  }, [isOpen, transaction, profile.status, profile.thresholdEth, logTransactionScreening]);
-  }, [isOpen, transaction.to, transaction.value, transaction.data]);
+}, [
+    isOpen,
+    transaction,
+    profile.status,
+    profile.thresholdEth,
+    logTransactionScreening,
+    skipSimulation,
+    runSimulation,
+]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -108,10 +135,14 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
       setValidating(false);
       setShowDetails(false);
       setShowRawData(false);
-      setVerificationTab('totp');
-      setTotpCode('');
+      setVerificationTab("totp");
+      setTotpCode("");
       setTrustThisDevice(false);
       setIsConfirming(false);
+      setTransactionError(null);
+      setSimulation(null);
+      setSimulating(false);
+      setShowSimulation(false);
     }
   }, [isOpen]);
 
@@ -119,11 +150,11 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
     if (!isOpen) return;
 
     if (!settings.totpEnabled && settings.hardwareWalletEnabled) {
-      setVerificationTab('hardware');
+      setVerificationTab("hardware");
     }
 
     if (settings.totpEnabled && !settings.hardwareWalletEnabled) {
-      setVerificationTab('totp');
+      setVerificationTab("totp");
     }
   }, [isOpen, settings.totpEnabled, settings.hardwareWalletEnabled]);
 
@@ -135,22 +166,43 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
     };
   }, []);
 
+  const runSimulation = async () => {
+    setSimulating(true);
+    setSimulation(null);
+    try {
+      const result = await simulateTransaction({
+        ...transaction,
+        from: walletAddress || transaction.from,
+      });
+      setSimulation(result);
+    } catch (error) {
+      logger.error("Simulation failed in component:", error);
+      setSimulation({
+        gasEstimate: BigInt(0),
+        tenderlyResponse: null,
+        error: "Simulation failed to run.",
+      });
+    } finally {
+      setSimulating(false);
+    }
+  };
+
   const validateTransactionData = async () => {
     setValidating(true);
     try {
       const result = await validateTransaction(
         transaction.to,
         transaction.value,
-        transaction.data || '0x'
+        transaction.data || "0x",
       );
       setValidation(result);
     } catch (error) {
-      logger.error('Transaction validation failed:', error);
+      logger.error("Transaction validation failed:", error);
       setValidation({
         isValid: false,
         riskScore: 100,
-        warnings: ['Validation failed'],
-        blocks: ['Unable to validate transaction'],
+        warnings: ["Validation failed"],
+        blocks: ["Unable to validate transaction"],
         requiresConfirmation: true,
       });
     } finally {
@@ -176,10 +228,11 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
   ]);
 
   const trustedDevice = getActiveTrustedDevice(currentDeviceId);
-  const transactionEth = weiToEth(transaction.value);
+  const transactionEthValue = weiToEth(transaction.value);
   const gasPriceEth = weiToEth(transaction.gasPrice);
   const stepUpRequired = stepUpDecision.requiresStepUp;
-  const noVerificationMethodEnabled = stepUpRequired && !settings.totpEnabled && !settings.hardwareWalletEnabled;
+  const noVerificationMethodEnabled =
+    stepUpRequired && !settings.totpEnabled && !settings.hardwareWalletEnabled;
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -187,9 +240,9 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
 
   const handleHardwareWalletConfirm = () => {
     setIsConfirming(true);
-    toast.info('Waiting for hardware wallet confirmation...');
+    toast.info("Waiting for hardware wallet confirmation...");
     hardwareTimerRef.current = window.setTimeout(() => {
-      setLastVerification('hardware-wallet');
+      setLastVerification("hardware-wallet");
       if (trustThisDevice && settings.trustedDeviceBypass) {
         trustDevice(currentDeviceId, currentDeviceLabel);
       }
@@ -209,15 +262,15 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
     }
 
     if (trustedDevice) {
-      setLastVerification('trusted-device');
+      setLastVerification("trusted-device");
       onConfirm();
       setIsConfirming(false);
       return;
     }
 
-    if (verificationTab === 'hardware') {
+    if (verificationTab === "hardware") {
       if (!settings.hardwareWalletEnabled) {
-        toast.error('Hardware wallet confirmation is disabled in settings');
+        toast.error("Hardware wallet confirmation is disabled in settings");
         setIsConfirming(false);
         return;
       }
@@ -227,52 +280,111 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
     }
 
     if (!settings.totpEnabled || !settings.totpSecret) {
-      toast.error('Set up your authenticator in Security settings first');
+      toast.error("Set up your authenticator in Security settings first");
       setIsConfirming(false);
       return;
     }
 
     const isValid = await verifyTotpCode(normalizeTotpCode(totpCode));
     if (!isValid) {
-      toast.error('Authenticator code is not valid');
+      toast.error("Authenticator code is not valid");
       setIsConfirming(false);
       return;
     }
 
-    setLastVerification('totp');
+    setLastVerification("totp");
     if (trustThisDevice && settings.trustedDeviceBypass) {
       trustDevice(currentDeviceId, currentDeviceLabel);
     }
-    onConfirm();
+    if (transactionError) {
+      onConfirm(transactionError);
+    } else {
+      onConfirm();
+    }
     setIsConfirming(false);
   };
 
   const getRiskLevelColor = (riskScore: number) => {
-    if (riskScore >= 75) return 'text-red-600 dark:text-red-400';
-    if (riskScore >= 50) return 'text-yellow-600 dark:text-yellow-400';
-    if (riskScore >= 25) return 'text-orange-600 dark:text-orange-400';
-    return 'text-green-600 dark:text-green-400';
+    if (riskScore >= 75) return "text-red-600 dark:text-red-400";
+    if (riskScore >= 50) return "text-yellow-600 dark:text-yellow-400";
+    if (riskScore >= 25) return "text-orange-600 dark:text-orange-400";
+    return "text-green-600 dark:text-green-400";
   };
 
   const getRiskLevelBg = (riskScore: number) => {
-    if (riskScore >= 75) return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-    if (riskScore >= 50) return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
-    if (riskScore >= 25) return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800';
-    return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
+    if (riskScore >= 75)
+      return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800";
+    if (riskScore >= 50)
+      return "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800";
+    if (riskScore >= 25)
+      return "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800";
+    return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
   };
 
   const getRiskLevelText = (riskScore: number) => {
-    if (riskScore >= 75) return 'Critical Risk';
-    if (riskScore >= 50) return 'High Risk';
-    if (riskScore >= 25) return 'Medium Risk';
-    return 'Low Risk';
+    if (riskScore >= 75) return "Critical Risk";
+    if (riskScore >= 50) return "High Risk";
+    if (riskScore >= 25) return "Medium Risk";
+    return "Low Risk";
+  };
+
+  const renderStateChanges = () => {
+    if (!simulation || !simulation.tenderlyResponse) return null;
+
+    const { transaction } = simulation.tenderlyResponse;
+    if (
+      !transaction ||
+      !transaction.transaction_info ||
+      !transaction.transaction_info.state_diff
+    ) {
+      return (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No state changes detected.
+        </p>
+      );
+    }
+
+    const stateChanges = transaction.transaction_info.state_diff.slice(0, 3);
+
+    return (
+      <div className="space-y-2">
+        {stateChanges.map((change: any, index: number) => (
+          <div
+            key={index}
+            className="text-sm p-2 rounded-md bg-gray-100 dark:bg-gray-700"
+          >
+            <p className="font-mono text-xs break-all">
+              <span className="font-semibold">Address:</span> {change.address}
+            </p>
+            <p className="font-mono text-xs">
+              <span className="font-semibold">Key:</span> {change.key}
+            </p>
+            <div className="flex justify-between items-center mt-1">
+              <p className="font-mono text-xs text-red-500">
+                <span className="font-semibold">Original:</span>{" "}
+                {change.original}
+              </p>
+              <p className="font-mono text-xs text-green-500">
+                <span className="font-semibold">Dirty:</span> {change.dirty}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" data-testid="transaction-confirmation">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onCancel} />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      data-testid="transaction-confirmation"
+    >
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50"
+        onClick={onCancel}
+      />
 
       <div
         className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-xl dark:bg-gray-800"
@@ -282,11 +394,15 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
       >
         <div className="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-700">
           <div className="space-y-1">
-            <h2 id="transaction-confirmation-title" className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2
+              id="transaction-confirmation-title"
+              className="text-xl font-semibold text-gray-900 dark:text-white"
+            >
               Confirm Transaction
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Review the transfer and complete any step-up verification that your security policy requires.
+              Review the transfer and complete any step-up verification that
+              your security policy requires.
             </p>
           </div>
           <button
@@ -324,37 +440,56 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                         <h3 className="font-medium text-blue-900 dark:text-blue-100">
                           Additional verification required
                         </h3>
-                        <Badge variant="secondary">{formatEth(transactionEth, 2)} ETH</Badge>
+                        <Badge variant="secondary">
+                          {formatEth(transactionEth, 2)} ETH
+                        </Badge>
                       </div>
                       <p className="text-sm text-blue-800 dark:text-blue-200">
                         {stepUpDecision.reason}
                       </p>
                       <p className="text-xs text-blue-700 dark:text-blue-300">
-                        This protects high-value transfers by asking for a second proof before the transaction is allowed through.
+                        This protects high-value transfers by asking for a
+                        second proof before the transaction is allowed through.
                       </p>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className={`mb-6 rounded-lg border p-4 ${getRiskLevelBg(validation.riskScore)}`}>
+              <div
+                className={`mb-6 rounded-lg border p-4 ${validation.riskVerified ? getRiskLevelBg(validation.riskScore) : "bg-gray-50 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700"}`}
+              >
                 <div className="flex items-center gap-3">
-                  {validation.riskScore >= 50 ? (
-                    <AlertTriangle className={`h-5 w-5 ${getRiskLevelColor(validation.riskScore)}`} />
+                  {!validation.riskVerified ? (
+                    <Info className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  ) : validation.riskScore >= 50 ? (
+                    <AlertTriangle
+                      className={`h-5 w-5 ${getRiskLevelColor(validation.riskScore)}`}
+                    />
                   ) : (
-                    <Shield className={`h-5 w-5 ${getRiskLevelColor(validation.riskScore)}`} />
+                    <Shield
+                      className={`h-5 w-5 ${getRiskLevelColor(validation.riskScore)}`}
+                    />
                   )}
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className={`font-medium ${getRiskLevelColor(validation.riskScore)}`}>
+                      <h3
+                        className={`font-medium ${validation.riskVerified ? getRiskLevelColor(validation.riskScore) : "text-gray-700 dark:text-gray-300"}`}
+                      >
                         Security Assessment
                       </h3>
-                      <span className={`rounded-full px-2 py-1 text-sm ${getRiskLevelBg(validation.riskScore)} ${getRiskLevelColor(validation.riskScore)}`}>
-                        {getRiskLevelText(validation.riskScore)}
+                      <span
+                        className={`rounded-full px-2 py-1 text-sm ${validation.riskVerified ? `${getRiskLevelBg(validation.riskScore)} ${getRiskLevelColor(validation.riskScore)}` : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"}`}
+                      >
+                        {validation.riskVerified
+                          ? getRiskLevelText(validation.riskScore)
+                          : "Not verified"}
                       </span>
                     </div>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                      Risk Score: {validation.riskScore}/100
+                      {validation.riskVerified
+                        ? `Risk Score: ${validation.riskScore}/100`
+                        : "Address risk screening is unavailable, so no risk score is available. Verify the recipient address manually."}
                     </p>
                   </div>
                 </div>
@@ -369,16 +504,88 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                         Security Warnings
                       </h4>
                       <div className="space-y-1">
-                        {validation.warnings.map((warning: string, index: number) => (
-                          <p key={index} className="text-sm text-yellow-700 dark:text-yellow-300">
-                            • {warning}
-                          </p>
-                        ))}
+                        {validation.warnings.map(
+                          (warning: string, index: number) => (
+                            <p
+                              key={`${warning}-${index}`}
+                              className="text-sm text-yellow-700 dark:text-yellow-300"
+                            >
+                              • {warning}
+                            </p>
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
+
+              <div className="mt-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-gray-900 dark:text-white">
+                    Simulated Result
+                  </h3>
+                  <button
+                    onClick={() => setShowSimulation(!showSimulation)}
+                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    {showSimulation ? "Hide" : "Show"}
+                  </button>
+                </div>
+                {showSimulation && (
+                  <div className="mt-2 space-y-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                    {transactionError && (
+                      <p className="text-sm text-red-500">
+                        Error: {transactionError}
+                      </p>
+                    )}
+                    {simulating ? (
+                      <div className="flex items-center">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                        <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                          Simulating...
+                        </span>
+                      </div>
+                    ) : simulation ? (
+                      <>
+                        {simulation.error ? (
+                          <p className="text-sm text-red-500">
+                            Error: {simulation.error}
+                          </p>
+                        ) : (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">
+                                Estimated Gas:
+                              </span>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {simulation.gasEstimate.toString()}
+                              </span>
+                            </div>
+                            <h4 className="text-md mt-2 font-medium text-gray-900 dark:text-white">
+                              State Changes:
+                            </h4>
+                            {renderStateChanges()}
+                          </>
+                        )}
+                      </>
+                    ) : null}
+                  </div>
+                )}
+                <div className="mt-4 flex items-center justify-end">
+                  <label
+                    htmlFor="skip-simulation"
+                    className="mr-2 text-sm text-gray-600 dark:text-gray-400"
+                  >
+                    Skip simulation for low-value tx
+                  </label>
+                  <Switch
+                    id="skip-simulation"
+                    checked={skipSimulation}
+                    onCheckedChange={setSkipSimulation}
+                  />
+                </div>
+              </div>
 
               {validation.blocks.length > 0 && (
                 <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
@@ -389,11 +596,16 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                         Transaction Blocked
                       </h4>
                       <div className="space-y-1">
-                        {validation.blocks.map((block: string, index: number) => (
-                          <p key={index} className="text-sm text-red-700 dark:text-red-300">
-                            • {block}
-                          </p>
-                        ))}
+                        {validation.blocks.map(
+                          (block: string, index: number) => (
+                            <p
+                              key={`${block}-${index}`}
+                              className="text-sm text-red-700 dark:text-red-300"
+                            >
+                              • {block}
+                            </p>
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
@@ -409,28 +621,36 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                     onClick={() => setShowDetails(!showDetails)}
                     className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                   >
-                    {showDetails ? 'Hide' : 'Show'} Details
+                    {showDetails ? "Hide" : "Show"} Details
                   </button>
                 </div>
 
-                <div className={`${showDetails ? 'block' : 'hidden'} space-y-3`}>
+                <div
+                  className={`${showDetails ? "block" : "hidden"} space-y-3`}
+                >
                   <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">To:</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      To:
+                    </span>
                     <span className="font-mono text-sm text-gray-900 dark:text-white">
                       {formatAddress(transaction.to)}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Value:</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Value:
+                    </span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {formatEth(transactionEth, 6)} ETH
+                      {formatEth(transactionEthValue, 6)} ETH
                     </span>
                   </div>
 
                   {transaction.gasLimit && (
                     <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Gas Limit:</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Gas Limit:
+                      </span>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {transaction.gasLimit}
                       </span>
@@ -439,22 +659,30 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
 
                   {transaction.gasPrice && (
                     <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Gas Price:</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Gas Price:
+                      </span>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {formatEth(gasPriceEth, 6)} ETH
                       </span>
                     </div>
                   )}
 
-                  {transaction.data && transaction.data !== '0x' && (
+                  {transaction.data && transaction.data !== "0x" && (
                     <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Data:</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Data:
+                        </span>
                         <button
                           onClick={() => setShowRawData(!showRawData)}
                           className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                         >
-                          {showRawData ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showRawData ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                       {showRawData ? (
@@ -463,11 +691,69 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                         </div>
                       ) : (
                         <div className="text-xs text-gray-600 dark:text-gray-400">
-                          Contract interaction data ({transaction.data.length} bytes)
+                          Contract interaction data ({transaction.data.length}{" "}
+                          bytes)
                         </div>
                       )}
                     </div>
                   )}
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-medium text-gray-900 dark:text-white">
+                    Simulated Result
+                  </h3>
+                  <button
+                    onClick={() => setShowSimulation(!showSimulation)}
+                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    {showSimulation ? "Hide" : "Show"}
+                  </button>
+                </div>
+                {showSimulation && (
+                  <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+                    {simulating ? (
+                      <div className="flex items-center">
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                        <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                          Running simulation...
+                        </span>
+                      </div>
+                    ) : simulation ? (
+                      <div>
+                        {simulation.error && (
+                          <p className="text-sm text-red-500">
+                            {simulation.error}
+                          </p>
+                        )}
+                        {simulation.tenderlyResponse && (
+                          <div>
+                            <p className="text-sm text-green-600">
+                              Simulation successful. Gas estimate:{" "}
+                              {simulation.gasEstimate.toString()}
+                            </p>
+                            {renderStateChanges()}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+                <div className="flex items-center space-x-2 mt-4">
+                  <Switch
+                    id="skip-simulation"
+                    checked={skipSimulation}
+                    onCheckedChange={setSkipSimulation}
+                    disabled={transactionEthValue > 0.1}
+                  />
+                  <label
+                    htmlFor="skip-simulation"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Skip simulation for low-value transaction
+                  </label>
                 </div>
               </div>
 
@@ -478,31 +764,41 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">Verification method</h3>
+                        <h3 className="font-medium text-gray-900 dark:text-white">
+                          Verification method
+                        </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           Choose the path that matches your setup.
                         </p>
                       </div>
                       <Badge variant="outline">
-                        {settings.totpEnabled ? 'Authenticator ready' : 'Authenticator off'}
+                        {settings.totpEnabled
+                          ? "Authenticator ready"
+                          : "Authenticator off"}
                       </Badge>
                     </div>
 
                     {trustedDevice && settings.trustedDeviceBypass && (
                       <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900 dark:border-green-900 dark:bg-green-950/30 dark:text-green-100">
-                        Trusted device bypass is active for {trustedDevice.label}. You can confirm immediately, or verify again for a fresh approval.
+                        Trusted device bypass is active for{" "}
+                        {trustedDevice.label}. You can confirm immediately, or
+                        verify again for a fresh approval.
                       </div>
                     )}
 
                     {noVerificationMethodEnabled && (
                       <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100">
-                        Step-up is required for this transaction, but both TOTP and hardware-wallet confirmation are disabled in settings.
+                        Step-up is required for this transaction, but both TOTP
+                        and hardware-wallet confirmation are disabled in
+                        settings.
                       </div>
                     )}
 
                     <Tabs
                       value={verificationTab}
-                      onValueChange={(value) => setVerificationTab(value as 'totp' | 'hardware')}
+                      onValueChange={(value) =>
+                        setVerificationTab(value as "totp" | "hardware")
+                      }
                       className="mt-4"
                     >
                       <TabsList className="grid w-full grid-cols-2">
@@ -527,7 +823,8 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                       <TabsContent value="totp" className="mt-4 space-y-4">
                         <div className="space-y-2">
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Enter the 6-digit code from Google Authenticator or another TOTP app.
+                            Enter the 6-digit code from Google Authenticator or
+                            another TOTP app.
                           </p>
                           <InputOTP
                             maxLength={6}
@@ -537,7 +834,10 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                           >
                             <InputOTPGroup>
                               {Array.from({ length: 6 }, (_, index) => (
-                                <InputOTPSlot key={index} index={index} />
+                                <InputOTPSlot
+                                  key={`otp-slot-${index}`}
+                                  index={index}
+                                />
                               ))}
                             </InputOTPGroup>
                           </InputOTP>
@@ -545,7 +845,10 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
 
                         {settings.trustedDeviceBypass && (
                           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <Switch checked={trustThisDevice} onCheckedChange={setTrustThisDevice} />
+                            <Switch
+                              checked={trustThisDevice}
+                              onCheckedChange={setTrustThisDevice}
+                            />
                             Trust this device after verification
                           </label>
                         )}
@@ -560,7 +863,8 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                                 Confirm with your hardware wallet
                               </h4>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Approve the signature on your connected hardware wallet to complete this transaction.
+                                Approve the signature on your connected hardware
+                                wallet to complete this transaction.
                               </p>
                             </div>
                           </div>
@@ -568,7 +872,10 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
 
                         {settings.trustedDeviceBypass && (
                           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <Switch checked={trustThisDevice} onCheckedChange={setTrustThisDevice} />
+                            <Switch
+                              checked={trustThisDevice}
+                              onCheckedChange={setTrustThisDevice}
+                            />
                             Trust this device after hardware confirmation
                           </label>
                         )}
@@ -587,14 +894,17 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                   Cancel
                 </button>
 
-                {validation.isValid && (!kycRequired || profile.status === 'verified') ? (
+                {validation.isValid &&
+                (!kycRequired || profile.status === "verified") ? (
                   <button
                     onClick={handleFinalConfirm}
                     disabled={
                       loading ||
                       isConfirming ||
                       noVerificationMethodEnabled ||
-                      (stepUpRequired && verificationTab === 'totp' && totpCode.length !== 6)
+                      (stepUpRequired &&
+                        verificationTab === "totp" &&
+                        totpCode.length !== 6)
                     }
                     className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -603,7 +913,7 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                         Confirming...
                       </>
-                    ) : stepUpRequired && verificationTab === 'hardware' ? (
+                    ) : stepUpRequired && verificationTab === "hardware" ? (
                       <>
                         <Wallet className="h-4 w-4" />
                         Confirm on hardware wallet
@@ -626,9 +936,9 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                     className="flex flex-1 cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-gray-400 px-4 py-3 font-medium text-white"
                   >
                     <X className="w-4 h-4" />
-                    {kycRequired && profile.status !== 'verified' ? 'Complete KYC' : 'Transaction Blocked'}
-                    <X className="h-4 w-4" />
-                    Transaction Blocked
+                    {kycRequired && profile.status !== "verified"
+                      ? "Complete KYC"
+                      : "Transaction Blocked"}
                   </button>
                 )}
               </div>
@@ -638,7 +948,9 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                   <div className="flex items-start gap-2">
                     <Info className="mt-0.5 h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <p className="text-xs text-blue-700 dark:text-blue-300">
-                      You can trust this browser after a successful step-up. The trusted-device bypass is stored locally and can be revoked from Security settings.
+                      You can trust this browser after a successful step-up. The
+                      trusted-device bypass is stored locally and can be revoked
+                      from Security settings.
                     </p>
                   </div>
                 </div>
@@ -649,14 +961,15 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                   <div className="flex items-start gap-2">
                     <Info className="mt-0.5 h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <p className="text-xs text-blue-700 dark:text-blue-300">
-                      This transaction requires additional confirmation due to security considerations.
-                      Please review all details carefully before proceeding.
+                      This transaction requires additional confirmation due to
+                      security considerations. Please review all details
+                      carefully before proceeding.
                     </p>
                   </div>
                 </div>
               )}
 
-              {kycRequired && profile.status !== 'verified' && (
+              {kycRequired && profile.status !== "verified" && (
                 <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                   <div className="flex items-start gap-3">
                     <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
@@ -665,11 +978,17 @@ export const TransactionConfirmation: React.FC<TransactionConfirmationProps> = (
                         KYC required before approval
                       </h4>
                       <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                        Transactions at or above {formatEthAmount(profile.thresholdEth)} ETH require a verified identity.
+                        Transactions at or above{" "}
+                        {formatEthAmount(profile.thresholdEth)} ETH require a
+                        verified identity.
                       </p>
                       <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-2">
-                        This transfer is approximately {formatEthAmount(transactionEth)} ETH for wallet{' '}
-                        {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'unknown'}.
+                        This transfer is approximately{" "}
+                        {formatEthAmount(transactionEth)} ETH for wallet{" "}
+                        {walletAddress
+                          ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                          : "unknown"}
+                        .
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Link

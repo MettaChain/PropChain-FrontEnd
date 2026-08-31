@@ -3,10 +3,6 @@ import { useSavedSearchStore } from '../savedSearchStore';
 
 test('debug useSavedSearchStore shape', () => {
   const { result } = renderHook(() => useSavedSearchStore());
-  // eslint-disable-next-line no-console
-  console.log('useSavedSearchStore typeof', typeof useSavedSearchStore);
-  // eslint-disable-next-line no-console
-  console.log('result.current keys', Object.keys(result.current || {}));
 
   // Assert methods exist and are callable
   expect(typeof result.current.addSearch).toBe('function');

@@ -1,21 +1,25 @@
-'use client';
-import { createLogger } from '@/utils/logger';
+"use client";
+import { createLogger } from "@/utils/logger";
 
-import React from 'react';
-import Image from 'next/image';
-import { X, Plus, Minus, ShoppingCart, Trash2, Fuel } from 'lucide-react';
-import { useCartStore } from '@/store/cartStore';
-import { formatPrice } from '@/utils/searchUtils';
-import type { CartItem } from '@/types/cart';
+import React from "react";
+import Image from "next/image";
+import { SlippageControl } from "./SlippageControl";
+import { X, Plus, Minus, ShoppingCart, Trash2, Fuel } from "lucide-react";
+import { useCartStore } from "@/store/cartStore";
+import { useWalletStore } from "@/store/walletStore";
+import { formatPrice } from "@/utils/searchUtils";
+import type { CartItem } from "@/types/cart";
 
-const logger = createLogger('CartSidebar');
+const logger = createLogger("CartSidebar");
 
 export const CartSidebar: React.FC = () => {
+  const address = useWalletStore((state) => state.address);
   const {
     items,
     totalCost,
     totalGasEstimate,
     isOpen,
+    slippageTolerance,
     removeItem,
     updateQuantity,
     clearCart,
@@ -25,43 +29,47 @@ export const CartSidebar: React.FC = () => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleToggleCart = () => {
-    logger.debug('Toggling cart', { newState: !isOpen });
+    logger.debug("Toggling cart", { newState: !isOpen });
     toggleCart();
   };
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
 
-    logger.info('Initiating checkout', { 
-      itemCount: items.length, 
+    logger.info("Initiating checkout", {
+      itemCount: items.length,
       totalCost,
-      totalGas: totalGasEstimate 
+      totalGas: totalGasEstimate,
+      slippageTolerance,
     });
 
     try {
       // Import dynamically to avoid SSR issues
-      const { BatchTransactionService } = await import('@/lib/batchTransaction');
-      
-      // Mock wallet address - in real app, this would come from wallet connection
-      const walletAddress = '0x1234567890123456789012345678901234567890';
-      
-      // Show loading state
-      const result = await BatchTransactionService.executeBatchPurchase(items, walletAddress);
-      
+      const { BatchTransactionService } =
+        await import("@/lib/batchTransaction");
+
+      const result = await BatchTransactionService.executeBatchPurchase(
+        items,
+        address ?? "",
+        slippageTolerance,
+      );
+
       if (result.success) {
-        logger.info('Checkout successful', { transactionHash: result.transactionHash });
+        logger.info("Checkout successful", {
+          transactionHash: result.transactionHash,
+        });
         // Clear cart on successful purchase
         clearCart();
         // Show success message
-        alert('Batch purchase completed successfully!');
+        alert("Batch purchase completed successfully!");
       } else {
-        logger.warn('Checkout failed', { error: result.error });
+        logger.warn("Checkout failed", { error: result.error });
         // Show error message
         alert(`Purchase failed: ${result.error}`);
       }
     } catch (error) {
-      logger.error('Checkout error:', error);
-      alert('Checkout failed. Please try again.');
+      logger.error("Checkout error:", error);
+      alert("Checkout failed. Please try again.");
     }
   };
 
@@ -130,11 +138,16 @@ export const CartSidebar: React.FC = () => {
                     key={item.id}
                     item={item}
                     onUpdateQuantity={(quantity) => {
-                      logger.debug('Updating item quantity', { propertyId: item.property.id, newQuantity: quantity });
+                      logger.debug("Updating item quantity", {
+                        propertyId: item.property.id,
+                        newQuantity: quantity,
+                      });
                       updateQuantity(item.property.id, quantity);
                     }}
                     onRemove={() => {
-                      logger.debug('Removing item from cart', { propertyId: item.property.id });
+                      logger.debug("Removing item from cart", {
+                        propertyId: item.property.id,
+                      });
                       removeItem(item.property.id);
                     }}
                   />
@@ -166,14 +179,14 @@ export const CartSidebar: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-900 dark:text-white">
-                    Total
-                  </span>
+                  <span className="text-gray-900 dark:text-white">Total</span>
                   <span className="text-blue-600">
                     {formatPrice(totalCost)}
                   </span>
                 </div>
               </div>
+
+              <SlippageControl />
 
               {/* Actions */}
               <div className="space-y-2">
@@ -185,7 +198,7 @@ export const CartSidebar: React.FC = () => {
                 </button>
                 <button
                   onClick={() => {
-                    logger.debug('Clearing cart');
+                    logger.debug("Clearing cart");
                     clearCart();
                   }}
                   className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 px-4 rounded-lg transition-colors"

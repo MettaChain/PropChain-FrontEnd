@@ -28,6 +28,8 @@ export interface TransactionMetrics {
   transactionFrequency: number; // transactions per hour
 }
 
+import { generateSecureId } from '@/utils/secureId';
+
 export class TransactionMonitor {
   private static instance: TransactionMonitor;
   private transactionHistory: Map<string, any[]> = new Map(); // wallet -> transactions
@@ -186,23 +188,6 @@ export class TransactionMonitor {
   private detectRecipientAnomaly(walletAddress: string, transaction: any, history: any[]): AnomalyDetection | null {
     const recipient = transaction.to;
     if (!recipient) return null;
-
-    // Check for transactions to known suspicious addresses
-    if (this.isSuspiciousAddress(recipient)) {
-      return {
-        id: this.generateId(),
-        timestamp: Date.now(),
-        walletAddress,
-        anomalyType: 'suspicious_recipient',
-        severity: 'high',
-        description: `Transaction to suspicious address detected: ${recipient}`,
-        details: {
-          recipient,
-          reason: 'Address flagged in security database'
-        },
-        suggestedAction: 'Block transaction and investigate immediately'
-      };
-    }
 
     // Check for new recipient (first time interaction)
     const previousRecipients = new Set(history.map(tx => tx.to).filter(Boolean));
@@ -475,15 +460,6 @@ export class TransactionMonitor {
   }
 
   /**
-   * Checks if an address is suspicious
-   */
-  private isSuspiciousAddress(address: string): boolean {
-    // This would integrate with external security databases
-    // For now, return false as placeholder
-    return false;
-  }
-
-  /**
    * Formats ether values
    */
   private formatEther(wei: bigint): string {
@@ -515,7 +491,7 @@ export class TransactionMonitor {
    * Generates a unique ID
    */
   private generateId(): string {
-    return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    return generateSecureId();
   }
 }
 

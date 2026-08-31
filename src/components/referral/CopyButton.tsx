@@ -1,11 +1,7 @@
 'use client';
+
+import { memo } from 'react';
 import { logger } from '@/utils/logger';
-
-/**
- * CopyButton - Button for copying referral links to clipboard
- */
-
-import { useState } from 'react';
 
 export interface CopyButtonProps {
   text: string;
@@ -13,7 +9,7 @@ export interface CopyButtonProps {
   isCopied?: boolean;
 }
 
-export default function CopyButton({
+const CopyButton = memo(function CopyButton({
   text,
   onCopy,
   isCopied = false,
@@ -23,13 +19,14 @@ export default function CopyButton({
       await navigator.clipboard.writeText(text);
       onCopy?.();
     } catch (error) {
-      logger.error('Failed to copy:', error);
+      logger.error('Failed to copy to clipboard:', error);
     }
   };
 
   return (
     <button
       onClick={handleClick}
+      aria-label={isCopied ? 'Link copied' : 'Copy referral link'}
       className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
         isCopied
           ? 'bg-green-100 text-green-700'
@@ -38,15 +35,17 @@ export default function CopyButton({
     >
       {isCopied ? (
         <>
-          <span>✓</span>
+          <span aria-hidden="true">✓</span>
           Copied!
         </>
       ) : (
         <>
-          <span>📋</span>
+          <span aria-hidden="true">📋</span>
           Copy Link
         </>
       )}
     </button>
   );
-}
+});
+
+export default CopyButton;

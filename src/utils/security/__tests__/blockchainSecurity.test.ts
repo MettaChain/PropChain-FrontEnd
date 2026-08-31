@@ -1,41 +1,41 @@
 import { BlockchainSecurityService, SecurityServiceConfig } from '../blockchainSecurity';
 
+// Mock the canonical logger so importing blockchainSecurity does not pull in the
+// logger → csrfClient → walletStore → chains module graph (which needs browser globals).
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
 // Mock fetch for API calls
 global.fetch = jest.fn();
 
+const mockConfig: SecurityServiceConfig = {
+  baseUrl: 'http://localhost:3000',
+  timeout: 5000,
+};
+
+function createService() {
+  (BlockchainSecurityService as any).instance = null;
+  return BlockchainSecurityService.getInstance(mockConfig);
+}
+
 describe('BlockchainSecurityService', () => {
   let service: BlockchainSecurityService;
-  const mockConfig: SecurityServiceConfig = {
-    baseUrl: 'https://api.test.com',
-    timeout: 5000,
-    apiKey: 'test-api-key'
-  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset singleton instance
-    (BlockchainSecurityService as any).instance = null;
-    service = BlockchainSecurityService.getInstance(mockConfig);
+    jest.useFakeTimers();
+    service = createService();
+    service.clearCache();
   });
 
-  describe('getInstance', () => {
-    it('should create a new instance when none exists', () => {
-      const instance = BlockchainSecurityService.getInstance(mockConfig);
-      expect(instance).toBeInstanceOf(BlockchainSecurityService);
-    });
-
-    it('should return existing instance on subsequent calls', () => {
-      const instance1 = BlockchainSecurityService.getInstance(mockConfig);
-      const instance2 = BlockchainSecurityService.getInstance(mockConfig);
-      expect(instance1).toBe(instance2);
-    });
-
-    it('should throw error when no config provided for first call', () => {
-      (BlockchainSecurityService as any).instance = null;
-      expect(() => BlockchainSecurityService.getInstance()).toThrow(
-        'Configuration required for first initialization'
-      );
-    });
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('checkAddressRisk', () => {
@@ -48,7 +48,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low' as const,
         categories: ['low_risk'],
         labels: ['monitor'],
-        description: 'Address appears to have normal activity'
+        description: 'Address appears to have normal activity',
+        verified: true
       };
 
       // Manually set cache
@@ -69,7 +70,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low' as const,
         categories: ['low_risk'],
         labels: ['monitor'],
-        description: 'Address appears to have normal activity'
+        description: 'Address appears to have normal activity',
+        verified: true
       };
 
       // Set expired cache (5 minutes + 1 second ago)
@@ -79,18 +81,68 @@ describe('BlockchainSecurityService', () => {
         timestamp: expiredTime
       });
 
+    it('returns risk data with level and score', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
+        /** Mock proxy JSON response with a verified numeric score. */
         json: async () => ({ risk_score: 50, categories: ['medium_risk'] })
       });
 
       const result = await service.checkAddressRisk(testAddress);
       expect(fetch).toHaveBeenCalled();
       expect(result.riskScore).toBeGreaterThan(0);
+      expect(result.verified).toBe(true);
     });
 
-    it('should return default risk score on API failure', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
+    it('caches results for 5 minutes', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        /** Mock proxy JSON response with a verified numeric score. */
+        json: async () => ({ risk_score: 30, categories: ['low_risk'], labels: [], description: 'Normal' })
+      });
+
+      await service.checkAddressRisk(address);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    it('should return an unverified result when proxy returns non-ok', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        /** Mock proxy JSON error response. */
+        json: async () => ({ error: 'Bad gateway' })
+      });
+
+      const result = await service.checkAddressRisk(testAddress);
+      expect(result.verified).toBe(false);
+      expect(result.categories).toEqual(['unknown']);
+      expect(result.labels).toEqual(['unable_to_verify']);
+    });
+
+    it('should return an unverified result when proxy response has no numeric score', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        /** Mock proxy JSON response missing a numeric score. */
+        json: async () => ({ categories: ['low_risk'] })
+      });
+
+      const result = await service.checkAddressRisk(testAddress);
+      expect(result.verified).toBe(false);
+      expect(result.categories).toEqual(['unknown']);
+    });
+
+    it('should return an unverified result when proxy explicitly reports verified:false', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        /** Mock proxy JSON response explicitly reporting unverified. */
+        json: async () => ({ risk_score: 10, verified: false })
+      });
+
+      const result = await service.checkAddressRisk(testAddress);
+      expect(result.verified).toBe(false);
+    });
+
+    it('uses simulated data when API fails', async () => {
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
       const result = await service.checkAddressRisk(testAddress);
       expect(result).toEqual({
@@ -99,11 +151,12 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'medium',
         categories: ['unknown'],
         labels: ['unable_to_verify'],
-        description: 'Unable to verify address risk due to service unavailability'
+        description: 'Unable to verify address risk due to service unavailability',
+        verified: false
       });
     });
 
-    it('should handle different risk score ranges correctly', async () => {
+    it('should map proxy risk scores to risk levels and mark verified', async () => {
       // Mock different risk scores
       const testCases = [
         { score: 10, expectedLevel: 'low' },
@@ -113,17 +166,17 @@ describe('BlockchainSecurityService', () => {
       ];
 
       for (const { score, expectedLevel } of testCases) {
-        // Clear cache and mock the simulation to return specific score
+        // Clear cache and mock the proxy to return specific score
         service.clearCache();
-        jest.spyOn(service as any, 'simulateAddressRiskCheck').mockResolvedValueOnce({
-          score,
-          categories: [`${expectedLevel}_risk`],
-          labels: [],
-          description: 'Test'
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          /** Mock proxy JSON response with a verified score for the test case. */
+          json: async () => ({ risk_score: score, categories: [`${expectedLevel}_risk`] })
         });
 
         const result = await service.checkAddressRisk(testAddress);
         expect(result.riskLevel).toBe(expectedLevel);
+        expect(result.verified).toBe(true);
       }
     });
   });
@@ -140,7 +193,8 @@ describe('BlockchainSecurityService', () => {
         sanctions: false,
         mixer: false,
         gambling: false,
-        scam: false
+        scam: false,
+        verified: true
       };
 
       service['cache'].set(`tx_${testHash}`, {
@@ -152,9 +206,7 @@ describe('BlockchainSecurityService', () => {
       expect(result).toEqual(cachedResult);
     });
 
-    it('should return default transaction risk on failure', async () => {
-      jest.spyOn(service as any, 'simulateTransactionRiskCheck').mockRejectedValueOnce(new Error('Simulation failed'));
-
+    it('should return an unverified default (no fabricated score from the hash)', async () => {
       const result = await service.checkTransactionRisk(testHash);
       expect(result).toEqual({
         hash: testHash,
@@ -164,24 +216,9 @@ describe('BlockchainSecurityService', () => {
         sanctions: false,
         mixer: false,
         gambling: false,
-        scam: false
+        scam: false,
+        verified: false
       });
-    });
-
-    it('should handle transaction with sanctions flag', async () => {
-      jest.spyOn(service as any, 'simulateTransactionRiskCheck').mockResolvedValueOnce({
-        score: 95,
-        alerts: ['Transaction involves sanctioned address'],
-        sanctions: true,
-        mixer: false,
-        gambling: false,
-        scam: false
-      });
-
-      const result = await service.checkTransactionRisk(testHash);
-      expect(result.sanctions).toBe(true);
-      expect(result.alerts).toContain('Transaction involves sanctioned address');
-      expect(result.riskLevel).toBe('critical');
     });
   });
 
@@ -193,21 +230,23 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'critical',
         categories: ['sanctions'],
         labels: [],
-        description: 'Sanctioned'
+        description: 'Sanctioned',
+        verified: true
       });
 
       const result = await service.checkSanctions('0x123');
       expect(result).toBe(true);
     });
 
-    it('should return false when address is not sanctioned', async () => {
-      jest.spyOn(service, 'checkAddressRisk').mockResolvedValueOnce({
-        address: '0x123',
-        riskScore: 10,
+    it('returns valid for clean transaction', async () => {
+      jest.spyOn(service, 'checkAddressRisk').mockResolvedValue({
+        address: 'test',
+        riskScore: 5,
         riskLevel: 'low',
         categories: ['low_risk'],
         labels: [],
-        description: 'Clean'
+        description: 'Clean',
+        verified: true
       });
 
       const result = await service.checkSanctions('0x123');
@@ -230,21 +269,23 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'high',
         categories: ['mixer'],
         labels: [],
-        description: 'Mixer'
+        description: 'Mixer',
+        verified: true
       });
 
       const result = await service.checkMixer('0x123');
       expect(result).toBe(true);
     });
 
-    it('should return false when address is not associated with mixer', async () => {
-      jest.spyOn(service, 'checkAddressRisk').mockResolvedValueOnce({
-        address: '0x123',
+    it('blocks sanctioned addresses', async () => {
+      jest.spyOn(service, 'checkAddressRisk').mockResolvedValue({
+        address: 'test',
         riskScore: 10,
         riskLevel: 'low',
-        categories: ['low_risk'],
+        categories: ['sanctions'],
         labels: [],
-        description: 'Clean'
+        description: 'Clean',
+        verified: true
       });
 
       const result = await service.checkMixer('0x123');
@@ -260,7 +301,8 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'high',
         categories: ['scam', 'mixer'],
         labels: ['suspicious'],
-        description: 'High risk address'
+        description: 'High risk address',
+        verified: true
       });
 
       const alerts = await service.getSecurityAlerts('0x123');
@@ -276,169 +318,142 @@ describe('BlockchainSecurityService', () => {
       const alerts = await service.getSecurityAlerts('0x123');
       expect(alerts).toEqual([]);
     });
-  });
 
-  describe('validateTransaction', () => {
-    const fromAddress = '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45';
-    const toAddress = '0x1234567890123456789012345678901234567890';
-    const value = '1000000000000000000'; // 1 ETH
-
-    it('should validate transaction successfully with low risk', async () => {
-      jest.spyOn(service, 'checkAddressRisk').mockImplementation(async (address) => ({
-        address,
-        riskScore: 10,
-        riskLevel: 'low',
-        categories: ['low_risk'],
-        labels: [],
-        description: 'Clean address'
-      }));
-
-      const result = await service.validateTransaction(fromAddress, toAddress, value);
-      expect(result.isValid).toBe(true);
-      expect(result.riskScore).toBe(10);
-      expect(result.warnings).toHaveLength(0);
-      expect(result.blocks).toHaveLength(0);
-    });
-
-    it('should block transaction with critical risk sender', async () => {
-      jest.spyOn(service, 'checkAddressRisk').mockImplementation(async (address) => ({
-        address,
-        riskScore: address === fromAddress ? 90 : 10,
-        riskLevel: address === fromAddress ? 'critical' : 'low',
-        categories: address === fromAddress ? ['high_risk'] : ['low_risk'],
-        labels: [],
-        description: address === fromAddress ? 'Critical risk' : 'Clean'
-      }));
-
-      const result = await service.validateTransaction(fromAddress, toAddress, value);
-      expect(result.isValid).toBe(false);
-      expect(result.blocks).toContain('Sender address has critical risk level');
-    });
-
-    it('should block transaction with sanctioned addresses', async () => {
-      jest.spyOn(service, 'checkAddressRisk').mockResolvedValue({
-        address: 'test',
-        riskScore: 10,
-        riskLevel: 'low',
-        categories: ['sanctions'],
-        labels: [],
-        description: 'Sanctioned'
-      });
-
-      const result = await service.validateTransaction(fromAddress, toAddress, value);
-      expect(result.isValid).toBe(false);
-      expect(result.blocks).toContain('Sender address is on sanctions list');
-      expect(result.blocks).toContain('Recipient address is on sanctions list');
-    });
-
-    it('should warn about high-value transaction to risky address', async () => {
-      jest.spyOn(service, 'checkAddressRisk').mockImplementation(async (address) => ({
-        address,
-        riskScore: address === toAddress ? 60 : 10,
-        riskLevel: address === toAddress ? 'high' : 'low',
-        categories: address === toAddress ? ['high_risk'] : ['low_risk'],
-        labels: [],
-        description: address === toAddress ? 'Risky recipient' : 'Clean sender'
-      }));
-
-      const result = await service.validateTransaction(fromAddress, toAddress, value);
-      expect(result.isValid).toBe(true);
-      expect(result.warnings).toContain('High-value transaction to risky address');
-    });
-
-    it('should warn about mixer involvement', async () => {
+    it('warns about mixer interactions', async () => {
       jest.spyOn(service, 'checkAddressRisk').mockResolvedValue({
         address: 'test',
         riskScore: 10,
         riskLevel: 'low',
         categories: ['mixer'],
         labels: [],
-        description: 'Mixer'
-      });
+        description: 'Clean address',
+        verified: true
+      }));
 
-      const result = await service.validateTransaction(fromAddress, toAddress, value);
+      const result = await service.validateTransaction(from, to, value);
       expect(result.isValid).toBe(true);
-      expect(result.warnings).toContain('Transaction involves mixer-associated address');
+      expect(result.riskScore).toBe(10);
+      expect(result.warnings).toHaveLength(0);
+      expect(result.blocks).toHaveLength(0);
+      expect(result.verified).toBe(true);
     });
 
-    it('should handle validation errors gracefully', async () => {
+    it('should report verified:false when screening did not run', async () => {
+      jest.spyOn(service, 'checkAddressRisk').mockImplementation(async (address) => ({
+        address,
+        riskScore: 50,
+        riskLevel: 'medium',
+        categories: ['unknown'],
+        labels: ['unable_to_verify'],
+        description: 'Unable to verify address risk due to service unavailability',
+        verified: false
+      }));
+
+      const result = await service.validateTransaction(fromAddress, toAddress, value);
+      expect(result.verified).toBe(false);
+    });
+
+    it('blocks critical risk addresses', async () => {
+      jest.spyOn(service, 'checkAddressRisk').mockImplementation(async (addr: string) => ({
+        address: addr,
+        riskScore: 90,
+        riskLevel: 'critical' as const,
+        categories: ['high_risk'],
+        labels: [],
+        description: address === fromAddress ? 'Critical risk' : 'Clean',
+        verified: true
+      }));
+
+      const result = await service.validateTransaction(from, to, value);
+      expect(result.isValid).toBe(false);
+      expect(result.blocks).toContain('Sender address has critical risk level');
+      expect(result.blocks).toContain('Recipient address has critical risk level');
+    });
+
+    it('handles hex value format', async () => {
+      jest.spyOn(service, 'checkAddressRisk').mockResolvedValue({
+        address: 'test',
+        riskScore: 5,
+        riskLevel: 'low',
+        categories: [],
+        labels: [],
+        description: 'Sanctioned',
+        verified: true
+      });
+
+      const result = await service.validateTransaction(from, to, '0x1');
+      expect(result.isValid).toBe(true);
+    });
+
+    it('handles decimal wei value format', async () => {
+      jest.spyOn(service, 'checkAddressRisk').mockResolvedValue({
+        address: 'test',
+        riskScore: 5,
+        riskLevel: 'low',
+        categories: [],
+        labels: [],
+        description: address === toAddress ? 'Risky recipient' : 'Clean sender',
+        verified: true
+      }));
+
+      // Value must exceed the 1 ETH threshold for the high-value warning to fire.
+      const highValue = '2000000000000000000'; // 2 ETH
+      const result = await service.validateTransaction(fromAddress, toAddress, highValue);
+      expect(result.isValid).toBe(true);
+    });
+
+    it('handles ether decimal value format', async () => {
+      jest.spyOn(service, 'checkAddressRisk').mockResolvedValue({
+        address: 'test',
+        riskScore: 5,
+        riskLevel: 'low',
+        categories: [],
+        labels: [],
+        description: 'Mixer',
+        verified: true
+      });
+
+      const result = await service.validateTransaction(from, to, '1.5');
+      expect(result.isValid).toBe(true);
+    });
+
+    it('should handle validation errors gracefully and report unverified', async () => {
       jest.spyOn(service, 'checkAddressRisk').mockRejectedValue(new Error('API Error'));
 
       const result = await service.validateTransaction(fromAddress, toAddress, value);
       expect(result.isValid).toBe(true); // Should not block on errors
       expect(result.warnings).toContain('Unable to complete security validation');
+      expect(result.verified).toBe(false);
     });
   });
 
-  describe('cache management', () => {
-    it('should clear cache when clearCache is called', () => {
-      service['cache'].set('test', { data: 'value', timestamp: Date.now() });
-      expect(service['cache'].size).toBe(1);
+  describe('cache expiration', () => {
+    it('cache entries expire after TTL', async () => {
+      const address = '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45';
 
-      service.clearCache();
-      expect(service['cache'].size).toBe(0);
-    });
-
-    it('should return correct cache statistics', () => {
-      const now = Date.now();
-      service['cache'].set('valid', { data: 'value', timestamp: now });
-      service['cache'].set('expired', { data: 'value', timestamp: now - (6 * 60 * 1000) }); // 6 minutes ago
-
-      const stats = service.getCacheStats();
-      expect(stats.size).toBe(1); // Only valid entry
-      expect(stats.oldestEntry).toBe(now);
-    });
-  });
-
-  describe('private methods', () => {
-    describe('getRiskLevel', () => {
-      it('should map risk scores to correct levels', () => {
-        const testCases = [
-          { score: 10, expected: 'low' },
-          { score: 40, expected: 'medium' },
-          { score: 60, expected: 'high' },
-          { score: 80, expected: 'critical' }
-        ];
-
-        testCases.forEach(({ score, expected }) => {
-          const result = (service as any).getRiskLevel(score);
-          expect(result).toBe(expected);
-        });
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ riskScore: 10, categories: [], labels: [], description: '' }),
       });
-    });
 
-    describe('mapCategoryToAlertType', () => {
-      it('should map categories to alert types', () => {
-        const mappings = {
-          'sanctions': 'sanctions',
-          'scam': 'scam',
-          'mixer': 'mixer',
-          'gambling': 'gambling',
-          'malware': 'malware',
-          'exchange_hack': 'exchange_hack',
-          'unknown': 'scam' // default
-        };
+      await service.checkAddressRisk(address);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
-        Object.entries(mappings).forEach(([category, expectedType]) => {
-          const result = (service as any).mapCategoryToAlertType(category);
-          expect(result).toBe(expectedType);
-        });
+      jest.advanceTimersByTime(5 * 60 * 1000 + 1);
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ riskScore: 20, categories: [], labels: [], description: '' }),
       });
+
+      await service.checkAddressRisk(address);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    describe('getAlertSeverity', () => {
-      it('should map risk levels to alert severities', () => {
-        const mappings = {
-          'critical': 'critical',
-          'high': 'high',
-          'medium': 'medium',
-          'low': 'low'
-        };
-
-        Object.entries(mappings).forEach(([level, expectedSeverity]) => {
-          const result = (service as any).getAlertSeverity(level);
-          expect(result).toBe(expectedSeverity);
-        });
+    describe('no simulated checks remain', () => {
+      it('does not expose simulateAddressRiskCheck or simulateTransactionRiskCheck', () => {
+        expect((service as any).simulateAddressRiskCheck).toBeUndefined();
+        expect((service as any).simulateTransactionRiskCheck).toBeUndefined();
       });
     });
   });

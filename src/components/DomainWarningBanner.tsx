@@ -1,129 +1,133 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ShieldAlert, X } from 'lucide-react';
-import { PhishingProtection } from '@/utils/security/phishingProtection';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AlertTriangle, Shield, ExternalLink } from 'lucide-react';
 
-export const DomainWarningBanner = () => {
-  const [warning, setWarning] = useState<{
-    show: boolean;
-    type: 'phishing' | 'unofficial';
-    message: string;
-    riskScore: number;
-  }>({
-    show: false,
-    type: 'unofficial',
-    message: '',
-    riskScore: 0,
-  });
+const TRUSTED_DOMAINS = new Set([
+  'propchain.io',
+  'app.propchain.io',
+  'localhost',
+  '127.0.0.1',
+]);
 
-  const [isDismissed, setIsDismissed] = useState(false);
+const OFFICIAL_URL = 'https://propchain.io';
+
+interface DomainWarningBannerProps {
+  className?: string;
+}
+
+/**
+ * DomainWarningBanner
+ *
+ * Renders a non-navigating warning panel when the current host is not a
+ * trusted domain. The user must explicitly click "Proceed only if you trust
+ * this site" to dismiss the banner. Includes an aria-live region for screen
+ * reader announcements.
+ *
+ * NEVER auto-redirects. All navigation is gated behind explicit user consent.
+ */
+export const DomainWarningBanner: React.FC<DomainWarningBannerProps> = ({ className = '' }) => {
+  const [isSuspicious, setIsSuspicious] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [hostname, setHostname] = useState('');
+  const [announcement, setAnnouncement] = useState('');
 
   useEffect(() => {
-    const checkDomain = async () => {
-      if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
 
-      const url = window.location.href;
-      const domain = window.location.hostname;
-      const result = PhishingProtection.detectPhishing(url);
+    const host = window.location.hostname;
+    const isTrusted =
+      TRUSTED_DOMAINS.has(host) ||
+      host.endsWith('.propchain.io') ||
+      host.endsWith('.vercel.app') ||
+      host.endsWith('.netlify.app');
 
-      if (result.isPhishing) {
-        setWarning({
-          show: true,
-          type: 'phishing',
-          message: 'This domain is flagged as a known phishing site. Your funds may be at risk.',
-          riskScore: result.riskScore,
-        });
-        // Auto-report phishing domains
-        PhishingProtection.reportSuspiciousDomain(domain, 'Known phishing domain');
-      } else if (result.warnings.includes('Unofficial domain detected')) {
-        setWarning({
-          show: true,
-          type: 'unofficial',
-          message: 'You are accessing PropChain from an unofficial domain. Please ensure you are on propchain.io.',
-          riskScore: result.riskScore,
-        });
-        // Report unofficial domains for investigation
-        PhishingProtection.reportSuspiciousDomain(domain, 'Unofficial domain');
-      }
-    };
-
-    checkDomain();
+    if (!isTrusted) {
+      setHostname(host);
+      setIsSuspicious(true);
+      setAnnouncement(
+        `Warning: You are viewing PropChain on an untrusted domain: ${host}. Please verify the site is legitimate before proceeding.`
+      );
+    }
   }, []);
 
-  if (!warning.show || isDismissed) return null;
+  const handleDismiss = useCallback(() => {
+    setDismissed(true);
+    setAnnouncement('Domain warning dismissed by user. Proceeding on untrusted domain.');
+  }, []);
 
-  const isPhishing = warning.type === 'phishing';
+  const handleGoToOfficial = useCallback(() => {
+    setAnnouncement('Navigating to official PropChain website.');
+    window.location.href = OFFICIAL_URL;
+  }, []);
+
+  if (!isSuspicious || dismissed) return null;
 
   return (
-    <div className={cn(
-      "fixed top-0 left-0 right-0 z-[100] p-4 animate-in fade-in slide-in-from-top-4 duration-500",
-      isPhishing ? "bg-red-600/10 backdrop-blur-md" : "bg-yellow-600/10 backdrop-blur-md"
-    )}>
-      <div className="max-w-5xl mx-auto">
-        <Alert variant={isPhishing ? "destructive" : "default"} className={cn(
-          "border-2 shadow-2xl",
-          isPhishing ? "border-red-500 bg-red-50 dark:bg-red-950/50" : "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/50"
-        )}>
-          {isPhishing ? (
-            <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
-          ) : (
-            <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-          )}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pr-8">
-            <div>
-              <AlertTitle className={cn(
-                "text-lg font-bold",
-                isPhishing ? "text-red-800 dark:text-red-200" : "text-yellow-800 dark:text-yellow-200"
-              )}>
-                {isPhishing ? "Security Alert: Phishing Detected" : "Security Warning: Unofficial Domain"}
-              </AlertTitle>
-              <AlertDescription className={cn(
-                "mt-1 font-medium",
-                isPhishing ? "text-red-700 dark:text-red-300" : "text-yellow-700 dark:text-yellow-300"
-              )}>
-                {warning.message}
-              </AlertDescription>
+    <>
+      {/* Screen-reader live region for announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {announcement}
+      </div>
+
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-[9999] ${className}`}
+        role="alert"
+        aria-label="Domain security warning"
+      >
+        <div className="border-t-2 border-amber-500 bg-amber-50 px-4 py-3 shadow-lg dark:border-amber-600 dark:bg-amber-950/95">
+          <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Warning message */}
+            <div className="flex items-start gap-3">
+              <AlertTriangle
+                className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400"
+                aria-hidden="true"
+              />
+              <div>
+                <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  Untrusted Domain Detected
+                </h2>
+                <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-200">
+                  You are viewing PropChain on{' '}
+                  <code className="rounded bg-amber-200 px-1 py-0.5 font-mono text-amber-900 dark:bg-amber-800 dark:text-amber-100">
+                    {hostname}
+                  </code>
+                  . This is not an official PropChain domain. Phishing sites may
+                  impersonate PropChain to steal your wallet credentials.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.location.href = 'https://propchain.io'}
-                className={cn(
-                  "font-bold transition-all hover:scale-105",
-                  isPhishing 
-                    ? "border-red-600 text-red-600 hover:bg-red-600 hover:text-white" 
-                    : "border-yellow-600 text-yellow-600 hover:bg-yellow-600 hover:text-white"
-                )}
+
+            {/* Action buttons */}
+            <div className="flex flex-shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={handleGoToOfficial}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-medium text-amber-800 shadow-sm transition-colors hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 dark:border-amber-700 dark:bg-amber-900 dark:text-amber-100 dark:hover:bg-amber-800"
               >
+                <Shield className="h-3.5 w-3.5" />
                 Go to Official Site
-              </Button>
-              {!isPhishing && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setIsDismissed(true)}
-                  className="text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200/50 dark:hover:bg-yellow-800/50"
-                >
-                  Ignore
-                </Button>
-              )}
+                <ExternalLink className="h-3 w-3" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDismiss}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-red-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 dark:border-red-700"
+              >
+                Proceed only if you trust this site
+              </button>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 top-2 h-8 w-8 opacity-70 hover:opacity-100"
-            onClick={() => setIsDismissed(true)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </Alert>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
+
+export default DomainWarningBanner;

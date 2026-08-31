@@ -73,6 +73,7 @@ class ValidationError extends Error {
 
 - `<RootErrorBoundary>` wraps the entire app and shows a full-page error screen for catastrophic failures
 - `<SectionErrorBoundary>` wraps major page sections (property list, wallet panel) and shows inline fallback UI
+- `<RouteErrorBoundary>` renders route-level full-screen fallback UI for page-specific failures with retry and home navigation
 - `<ComponentErrorBoundary>` wraps individual widgets and renders a compact error state
 
 ### Global Error Handler

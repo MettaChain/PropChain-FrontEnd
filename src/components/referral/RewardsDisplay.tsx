@@ -1,9 +1,5 @@
 'use client';
 
-/**
- * RewardsDisplay - Displays user's recent referral rewards
- */
-
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
 import { ReferralReward, ReferralRewardStatus } from '@/types/referral';
@@ -12,6 +8,28 @@ import { referralService } from '@/lib/referralService';
 import { createWalletAddress } from '@/types/referral';
 import { formatUnits } from 'viem';
 import ClaimRewardsModal from './ClaimRewardsModal';
+
+export function getClaimableRewards(rewards: ReferralReward[]): ReferralReward[] {
+  return rewards.filter(
+    (r) =>
+      r.status === ReferralRewardStatus.PENDING ||
+      r.status === ReferralRewardStatus.COMPLETED,
+  );
+}
+
+export function calculateTotalClaimable(rewards: ReferralReward[], selectedIds: string[]): bigint {
+  return selectedIds.reduce((sum, id) => {
+    const reward = rewards.find((r) => r.id === id);
+    return sum + BigInt(reward?.rewardAmount || 0);
+  }, BigInt(0));
+}
+
+export function isRewardClaimable(reward: ReferralReward): boolean {
+  return (
+    reward.status === ReferralRewardStatus.PENDING ||
+    reward.status === ReferralRewardStatus.COMPLETED
+  );
+}
 
 export interface RewardsDisplayProps {
   rewards: ReferralReward[];
@@ -62,16 +80,13 @@ export default function RewardsDisplay({
   const displayRewards = rewards.slice(0, maxRewardsToShow);
   const hasMoreRewards = rewards.length > maxRewardsToShow;
 
-  const claimableRewards = rewards.filter(
-    (r) => r.status === ReferralRewardStatus.PENDING ||
-           r.status === ReferralRewardStatus.COMPLETED
-  );
+  const claimableRewards = getClaimableRewards(rewards);
 
   const handleSelectReward = (rewardId: string) => {
     setSelectedRewards((prev) =>
       prev.includes(rewardId)
         ? prev.filter((id) => id !== rewardId)
-        : [...prev, rewardId]
+        : [...prev, rewardId],
     );
   };
 
@@ -83,12 +98,7 @@ export default function RewardsDisplay({
     }
   };
 
-  const totalClaimable = selectedRewards
-    .filter((id) => claimableRewards.find((r) => r.id === id))
-    .reduce((sum, id) => {
-      const reward = rewards.find((r) => r.id === id);
-      return sum + BigInt(reward?.rewardAmount || 0);
-    }, BigInt(0));
+  const totalClaimable = calculateTotalClaimable(rewards, selectedRewards);
 
   return (
     <>
@@ -137,9 +147,7 @@ export default function RewardsDisplay({
               const colors =
                 statusColors[reward.status] ||
                 statusColors[ReferralRewardStatus.PENDING];
-              const isClaimable =
-                reward.status === ReferralRewardStatus.PENDING ||
-                reward.status === ReferralRewardStatus.COMPLETED;
+              const isClaimable = isRewardClaimable(reward);
               const amount = formatUnits(BigInt(reward.rewardAmount), 18);
 
               return (

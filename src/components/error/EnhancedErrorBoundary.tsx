@@ -6,7 +6,6 @@ import { ErrorCategory } from '@/types/errors';
 import type { AppError } from '@/types/errors';
 import { Web3ErrorBoundary } from './Web3ErrorBoundary';
 import { NetworkErrorBoundary } from './NetworkErrorBoundary';
-import { ARErrorBoundary } from './ARErrorBoundary';
 import { UIErrorBoundary } from './UIErrorBoundary';
 import { ErrorFactory } from '@/utils/errorFactory';
 
@@ -65,80 +64,31 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
   }
 
   private getErrorBoundary = (): ReactNode => {
-    const { category, ...commonProps } = this.props;
+    const { category, children, onError, ...commonProps } = this.props;
 
-    // If category is specified, use the specific boundary
-    if (category) {
-      switch (category) {
-        case ErrorCategory.WEB3:
-          return (
-            <Web3ErrorBoundary
-              {...commonProps}
-              onError={this.props.onError}
-            >
-              {this.props.children}
-            </Web3ErrorBoundary>
-          );
-        
-        case ErrorCategory.NETWORK:
-          return (
-            <NetworkErrorBoundary
-              {...commonProps}
-              onError={this.props.onError}
-            >
-              {this.props.children}
-            </NetworkErrorBoundary>
-          );
-        
-        case ErrorCategory.AR:
-          return (
-            <ARErrorBoundary
-              {...commonProps}
-              onError={this.props.onError}
-            >
-              {this.props.children}
-            </ARErrorBoundary>
-          );
-        
-        case ErrorCategory.UI:
-        case ErrorCategory.VALIDATION:
-        case ErrorCategory.PERMISSION:
-        case ErrorCategory.RESOURCE:
-          return (
-            <UIErrorBoundary
-              {...commonProps}
-              onError={this.props.onError}
-            >
-              {this.props.children}
-            </UIErrorBoundary>
-          );
-        
-        default:
-          return (
-            <UIErrorBoundary
-              {...commonProps}
-              onError={this.props.onError}
-            >
-              {this.props.children}
-            </UIErrorBoundary>
-          );
-      }
+    // Prop category takes precedence, then error-detected category, then UI default
+    const activeCategory = category || this.state.error?.category || ErrorCategory.UI;
+
+    switch (activeCategory) {
+      case ErrorCategory.WEB3:
+        return (
+          <Web3ErrorBoundary {...commonProps} onError={onError}>
+            {children}
+          </Web3ErrorBoundary>
+        );
+      case ErrorCategory.NETWORK:
+        return (
+          <NetworkErrorBoundary {...commonProps} onError={onError}>
+            {children}
+          </NetworkErrorBoundary>
+        );
+      default:
+        return (
+          <UIErrorBoundary {...commonProps} onError={onError}>
+            {children}
+          </UIErrorBoundary>
+        );
     }
-
-    // Auto-detect category based on error
-    if (this.state.hasError && this.state.error) {
-      return this.getErrorBoundary();
-    }
-
-    // Default to UI boundary for general protection
-    return (
-      <UIErrorBoundary
-        {...commonProps}
-        onError={this.props.onError}
-      >
-        {this.props.children}
-      </UIErrorBoundary>
-    );
   };
 
   render() {
@@ -181,10 +131,6 @@ export const ErrorBoundaryPresets = {
   
   network: (props: Omit<Props, 'category'>) => (
     <EnhancedErrorBoundary {...props} category={ErrorCategory.NETWORK} />
-  ),
-  
-  ar: (props: Omit<Props, 'category'>) => (
-    <EnhancedErrorBoundary {...props} category={ErrorCategory.AR} />
   ),
   
   ui: (props: Omit<Props, 'category'>) => (

@@ -11,7 +11,6 @@ export const portfolioQueryKeys = {
   multiChain: (address: string) => ["portfolio", "multiChain", address] as const,
   performance: (address: string, days: number) => ["portfolio", "performance", address, days] as const,
   gasPrices: () => ["portfolio", "gasPrices"] as const,
-  bridgeSuggestions: (address: string) => ["portfolio", "bridgeSuggestions", address] as const,
 };
 
 /**
@@ -73,51 +72,60 @@ export function useGasPricesQuery() {
  */
 export function useRefreshPortfolioMutation() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (address: string) => PortfolioService.refreshPortfolio(address),
-    onSuccess: (_, address) => {
-      // Invalidate all portfolio queries for this address
-      queryClient.invalidateQueries({ queryKey: ["portfolio", "multiChain", address] });
-      queryClient.invalidateQueries({ queryKey: ["portfolio", "performance", address] });
+    onSuccess: (_) => {
+      // Invalidate every portfolio query at once. `portfolioQueryKeys.all`
+      // (the prefix `["portfolio"]`) is a superset match in @tanstack/react-
+      // query, so this purges `multiChain`, `performance`, `gasPrices`, and
+      // the new `overview` key introduced by #504. Callers of
+      // `usePortfolioOverview.refresh()` therefore see fresh data on next
+      // render rather than waiting out the cached `staleTime` window.
+      queryClient.invalidateQueries({ queryKey: portfolioQueryKeys.all });
     },
     retry: 1,
   });
 }
 
 /**
- * Hook for getting bridge suggestions based on portfolio
+ * Combined hook for portfolio overview data.
+ *
+ * Issues the portfolio, performance and gas-price fetches in parallel via
+ * `Promise.all` inside `PortfolioService.fetchPortfolioOverview`, eliminating
+ * the sequential waterfall that arose from waiting on `portfolioQuery.data`
+ * before triggering bridge-suggestions (#504).
  */
-export function useBridgeSuggestionsQuery(address: string, enabled: boolean = true) {
-  const portfolioQuery = useMultiChainPortfolioQuery(address, enabled);
-  
+export function usePortfolioOverviewQuery(
+  address: string,
+  days: number = 30,
+  enabled: boolean = true
+) {
   return useQuery({
-    queryKey: portfolioQueryKeys.bridgeSuggestions(address),
-    queryFn: () => {
-      if (portfolioQuery.data) {
-        return PortfolioService.calculateBridgeSuggestions(portfolioQuery.data);
-      }
-      return [];
-    },
-    enabled: enabled && !!address && !!portfolioQuery.data,
-    staleTime: 1000 * 60 * 10, // 10 minutes for suggestions
-    gcTime: 1000 * 60 * 30, // 30 minutes
+    queryKey: [...portfolioQueryKeys.all, 'overview', address, days] as const,
+    queryFn: () => PortfolioService.fetchPortfolioOverview(address, days),
+    enabled: enabled && !!address,
+    // Align on the portfolio slice's prior freshness window (2 minutes):
+    // gas prices cached shorter previously, but the overview is a coalesced
+    // unit so reusing the portfolio window avoids 2x fetches per minute
+    // while still being much faster than the previous bridge-suggestions
+    // 10-minute window.
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
+    retry: 2,
   });
 }
 
 /**
- * Combined hook for portfolio overview data
+ * Combined hook for portfolio overview data (legacy).
+ *
+ * Kept for compatibility with callers that haven't migrated to
+ * `usePortfolioOverviewQuery`. Internally delegates to the parallel fetcher.
  */
 export function usePortfolioOverview(address: string, enabled: boolean = true) {
-  const portfolioQuery = useMultiChainPortfolioQuery(address, enabled);
-  const performanceQuery = usePortfolioPerformanceQuery(address, 30, enabled);
-  const gasPricesQuery = useGasPricesQuery();
-  const bridgeSuggestionsQuery = useBridgeSuggestionsQuery(address, enabled);
+  const overviewQuery = usePortfolioOverviewQuery(address, 30, enabled);
   const refreshMutation = useRefreshPortfolioMutation();
-
-  const isLoading = portfolioQuery.isLoading || performanceQuery.isLoading || gasPricesQuery.isLoading;
-  const error = portfolioQuery.error || performanceQuery.error || gasPricesQuery.error;
 
   const handleRefresh = () => {
     if (address) {
@@ -127,25 +135,20 @@ export function usePortfolioOverview(address: string, enabled: boolean = true) {
 
   return {
     // Portfolio data
-    portfolio: portfolioQuery.data,
-    performance: performanceQuery.data,
-    gasPrices: gasPricesQuery.data,
-    bridgeSuggestions: bridgeSuggestionsQuery.data,
-    
+    portfolio: overviewQuery.data?.portfolio,
+    performance: overviewQuery.data?.performance,
+    gasPrices: overviewQuery.data?.gasPrices,
+    bridgeSuggestions: overviewQuery.data?.bridgeSuggestions,
+
     // Loading states
-    isLoading,
+    isLoading: overviewQuery.isLoading,
     isRefreshing: refreshMutation.isPending,
-    
+
     // Error handling
-    error,
-    
+    error: overviewQuery.error,
+
     // Actions
     refresh: handleRefresh,
-    refetch: () => {
-      portfolioQuery.refetch();
-      performanceQuery.refetch();
-      gasPricesQuery.refetch();
-      bridgeSuggestionsQuery.refetch();
-    },
+    refetch: overviewQuery.refetch,
   };
 }

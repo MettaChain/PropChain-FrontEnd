@@ -3,19 +3,19 @@
  * Listens for blockchain events and invalidates Redis cache accordingly
  */
 
-import { redisCacheService } from './redisCache';
-import { logger } from '@/utils/logger';
+import { redisCacheService } from "./redisCache";
+import { logger } from "@/utils/logger";
 
 // Blockchain event types that should trigger cache invalidation
-export type BlockchainEventType = 
-  | 'PropertyCreated'
-  | 'PropertyUpdated'
-  | 'PropertySold'
-  | 'PropertyListed'
-  | 'PropertyDelisted'
-  | 'OwnershipTransferred'
-  | 'PriceUpdated'
-  | 'MetadataUpdated';
+export type BlockchainEventType =
+  | "PropertyCreated"
+  | "PropertyUpdated"
+  | "PropertySold"
+  | "PropertyListed"
+  | "PropertyDelisted"
+  | "OwnershipTransferred"
+  | "PriceUpdated"
+  | "MetadataUpdated";
 
 interface BlockchainEvent {
   type: BlockchainEventType;
@@ -23,7 +23,7 @@ interface BlockchainEvent {
   transactionHash: string;
   blockNumber: number;
   timestamp: number;
-  data?: any;
+  data?: unknown;
 }
 
 /**
@@ -39,24 +39,24 @@ class BlockchainCacheInvalidator {
    */
   async start(): Promise<void> {
     if (this.isListening) {
-      logger.warn('Blockchain cache invalidator is already running');
+      logger.warn("Blockchain cache invalidator is already running");
       return;
     }
 
     try {
       // Initialize Redis connection
       await redisCacheService.healthCheck();
-      
+
       // Start processing queue
       this.startQueueProcessor();
-      
+
       // Set up blockchain event listeners
       await this.setupBlockchainListeners();
-      
+
       this.isListening = true;
-      logger.info('Blockchain cache invalidator started');
+      logger.info("Blockchain cache invalidator started");
     } catch (error) {
-      logger.error('Failed to start blockchain cache invalidator:', error);
+      logger.error("Failed to start blockchain cache invalidator:", error);
       throw error;
     }
   }
@@ -70,13 +70,13 @@ class BlockchainCacheInvalidator {
     }
 
     this.isListening = false;
-    
+
     if (this.processingInterval) {
       clearInterval(this.processingInterval);
       this.processingInterval = null;
     }
 
-    logger.info('Blockchain cache invalidator stopped');
+    logger.info("Blockchain cache invalidator stopped");
   }
 
   /**
@@ -87,7 +87,7 @@ class BlockchainCacheInvalidator {
     try {
       // Example implementation with ethers.js
       // You would need to adapt this to your actual blockchain integration
-      
+
       /*
       const provider = new ethers.JsonRpcProvider(process.env.BLOCKCHAIN_RPC_URL);
       const contract = new ethers.Contract(
@@ -185,9 +185,9 @@ class BlockchainCacheInvalidator {
       });
       */
 
-      logger.info('Blockchain event listeners set up');
+      logger.info("Blockchain event listeners set up");
     } catch (error) {
-      logger.error('Failed to set up blockchain listeners:', error);
+      logger.error("Failed to set up blockchain listeners:", error);
       throw error;
     }
   }
@@ -197,7 +197,9 @@ class BlockchainCacheInvalidator {
    */
   private queueEvent(event: BlockchainEvent): void {
     this.eventQueue.push(event);
-    logger.debug(`Queued blockchain event: ${event.type} for property: ${event.propertyId}`);
+    logger.debug(
+      `Queued blockchain event: ${event.type} for property: ${event.propertyId}`,
+    );
   }
 
   /**
@@ -218,12 +220,15 @@ class BlockchainCacheInvalidator {
     }
 
     const eventsToProcess = this.eventQueue.splice(0, 10); // Process up to 10 events at a time
-    
+
     for (const event of eventsToProcess) {
       try {
         await this.processEvent(event);
       } catch (error) {
-        logger.error(`Failed to process blockchain event ${event.type}:`, error);
+        logger.error(
+          `Failed to process blockchain event ${event.type}:`,
+          error,
+        );
         // Re-queue failed events for retry
         this.eventQueue.unshift(event);
         break; // Stop processing on first error to avoid infinite loops
@@ -238,18 +243,20 @@ class BlockchainCacheInvalidator {
     logger.debug(`Processing blockchain event: ${event.type}`);
 
     switch (event.type) {
-      case 'PropertyCreated':
-      case 'PropertyUpdated':
-      case 'PropertySold':
-      case 'PropertyListed':
-      case 'PropertyDelisted':
-      case 'OwnershipTransferred':
-      case 'PriceUpdated':
-      case 'MetadataUpdated':
+      case "PropertyCreated":
+      case "PropertyUpdated":
+      case "PropertySold":
+      case "PropertyListed":
+      case "PropertyDelisted":
+      case "OwnershipTransferred":
+      case "PriceUpdated":
+      case "MetadataUpdated":
         if (event.propertyId) {
           // Invalidate specific property cache
           await redisCacheService.invalidateProperty(event.propertyId);
-          logger.info(`Invalidated cache for property ${event.propertyId} due to ${event.type}`);
+          logger.info(
+            `Invalidated cache for property ${event.propertyId} due to ${event.type}`,
+          );
         }
         break;
 
@@ -259,9 +266,17 @@ class BlockchainCacheInvalidator {
     }
 
     // For events that affect listings, also invalidate listing cache
-    if (['PropertyCreated', 'PropertyUpdated', 'PropertySold', 'PropertyListed', 'PropertyDelisted'].includes(event.type)) {
-      await redisCacheService.invalidatePattern('listing:*');
-      await redisCacheService.invalidatePattern('search:*');
+    if (
+      [
+        "PropertyCreated",
+        "PropertyUpdated",
+        "PropertySold",
+        "PropertyListed",
+        "PropertyDelisted",
+      ].includes(event.type)
+    ) {
+      await redisCacheService.invalidatePattern("listing:*");
+      await redisCacheService.invalidatePattern("search:*");
       logger.info(`Invalidated listing and search cache due to ${event.type}`);
     }
   }
@@ -269,15 +284,20 @@ class BlockchainCacheInvalidator {
   /**
    * Manually trigger cache invalidation for a property
    */
-  async invalidateProperty(propertyId: string, reason: string = 'Manual'): Promise<void> {
+  async invalidateProperty(
+    propertyId: string,
+    reason: string = "Manual",
+  ): Promise<void> {
     await redisCacheService.invalidateProperty(propertyId);
-    logger.info(`Manually invalidated cache for property ${propertyId} (${reason})`);
+    logger.info(
+      `Manually invalidated cache for property ${propertyId} (${reason})`,
+    );
   }
 
   /**
    * Manually trigger cache invalidation for all properties
    */
-  async invalidateAllProperties(reason: string = 'Manual'): Promise<void> {
+  async invalidateAllProperties(reason: string = "Manual"): Promise<void> {
     await redisCacheService.invalidateAllProperties();
     logger.info(`Manually invalidated all property cache (${reason})`);
   }

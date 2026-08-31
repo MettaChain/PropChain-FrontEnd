@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { WalletConnector } from '@/components/WalletConnector';
+import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -235,7 +236,7 @@ function ProposalCard({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function GovernancePage() {
+function GovernancePage() {
   const [proposals, setProposals] = useState<Proposal[]>(MOCK_PROPOSALS);
   const [userVotes, setUserVotes] = useState<Record<string, VoteChoice>>({});
   const [filter, setFilter] = useState<'all' | Proposal['status']>('all');
@@ -331,3 +332,5 @@ export default function GovernancePage() {
     </div>
   );
 }
+
+export default withRouteErrorBoundary(GovernancePage, { routeName: 'governance' });

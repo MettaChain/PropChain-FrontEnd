@@ -16,34 +16,43 @@ import { DomainWarningBanner } from "@/components/DomainWarningBanner";
 import { useEffect } from "react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GlobalThemeToggle } from "@/components/GlobalThemeToggle";
+import HydrationProvider from "./HydrationProvider";
 
 interface ClientProvidersProps {
   children: React.ReactNode;
 }
 
 const TransactionMonitor = dynamic(
-  () => import("@/components/TransactionMonitor").then((m) => m.TransactionMonitor),
-  { ssr: false }
+  () =>
+    import("@/components/TransactionMonitor").then((m) => m.TransactionMonitor),
+  { ssr: false },
 );
 const NotificationSystem = dynamic(
-  () => import("@/components/NotificationSystem").then((m) => m.NotificationSystem),
-  { ssr: false }
+  () =>
+    import("@/components/NotificationSystem").then((m) => m.NotificationSystem),
+  { ssr: false },
 );
 const Toaster = dynamic(
   () => import("@/components/ui/sonner").then((m) => m.Toaster),
-  { ssr: false }
+  { ssr: false },
 );
 const FloatingComparisonBar = dynamic(
-  () => import("@/components/FloatingComparisonBar").then((m) => m.FloatingComparisonBar),
-  { ssr: false }
+  () =>
+    import("@/components/FloatingComparisonBar").then(
+      (m) => m.FloatingComparisonBar,
+    ),
+  { ssr: false },
 );
 const MobileBottomNavigation = dynamic(
-  () => import("@/components/MobileBottomNavigation").then((m) => m.MobileBottomNavigation),
-  { ssr: false }
+  () =>
+    import("@/components/MobileBottomNavigation").then(
+      (m) => m.MobileBottomNavigation,
+    ),
+  { ssr: false },
 );
 const OnboardingTour = dynamic(
   () => import("@/components/OnboardingTour").then((m) => m.OnboardingTour),
-  { ssr: false }
+  { ssr: false },
 );
 
 export function ClientProviders({ children }: ClientProvidersProps) {
@@ -65,9 +74,17 @@ export function ClientProviders({ children }: ClientProvidersProps) {
       <WagmiProvider config={config}>
         <QueryProvider>
           <ChainAwareProvider>
+            {/* aria-live region: announces loading, offline, and notification changes to screen readers */}
+            <div
+              aria-live="polite"
+              aria-atomic="false"
+              className="sr-only"
+              id="app-status-announcer"
+            />
             <LoadingProgressBar />
             <PerformanceMonitor />
             <ServiceWorkerRegistration />
+            {/* role="status" on OfflineIndicator is handled within the component; wrapper ensures it is in the a11y tree */}
             <OfflineIndicator />
             <DomainWarningBanner />
             {children}

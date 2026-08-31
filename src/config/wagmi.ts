@@ -1,12 +1,85 @@
-import {http, createConfig} from "wagmi";
-import {mainnet, polygon, bsc} from "wagmi/chains";
-import {injected} from "wagmi/connectors";
-import {getRpcUrl} from "./env";
+import { http, createConfig } from "wagmi";
+import { mainnet, polygon, bsc } from "wagmi/chains";
+import { defineChain } from "viem";
+import { injected } from "wagmi/connectors";
+import { getRpcUrl, getLocalRpcUrl } from "./env";
+import { mockConnector } from "./mockConnector";
+
+/**
+ * Whether the dev-only mock wallet connector is enabled.
+ *
+ * The mock connector is only ever active when the flag is explicitly set to
+ * "true" AND the build is not production. This keeps the mock (and its
+ * generated per-session key) out of production builds entirely.
+ */
+export const isMockWalletEnabled = (): boolean => {
+  return (
+    process.env.NEXT_PUBLIC_MOCK_WALLET === "true" &&
+    process.env.NODE_ENV !== "production"
+  );
+};
+
+/**
+ * Define the Foundry/Anvil local development chain
+ */
+const foundry = defineChain({
+  id: 31337,
+  name: "Foundry (Local)",
+  network: "foundry",
+  nativeCurrency: {
+    name: "Ether",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ["http://localhost:8545"],
+    },
+    public: {
+      http: ["http://localhost:8545"],
+    },
+  },
+  testnet: true,
+});
+
+/**
+ * Define the Hardhat preview fork chain for PR preview environments
+ */
+const hardhatPreview = defineChain({
+  id: 31338,
+  name: "Hardhat Preview Fork",
+  network: "hardhat-preview",
+  nativeCurrency: {
+    name: "Ether",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ["http://preview-fork:8545"],
+    },
+    public: {
+      http: ["http://preview-fork:8545"],
+    },
+  },
+  testnet: true,
+});
 
 /**
  * Get RPC URL for a chain, returning undefined to use default
  */
 const getWagmiRpcUrl = (chainId: number): string | undefined => {
+  // Check for preview fork RPC URL
+  const previewForkUrl = getLocalRpcUrl();
+  if (chainId === 31338 && process.env.NEXT_PUBLIC_PREVIEW_FORK_URL) {
+    return process.env.NEXT_PUBLIC_PREVIEW_FORK_URL;
+  }
+
+  // Check for local RPC URL first
+  if (chainId === 31337 && previewForkUrl) {
+    return previewForkUrl;
+  }
+
   switch (chainId) {
     case mainnet.id:
       return getRpcUrl("ethereum");
@@ -19,12 +92,47 @@ const getWagmiRpcUrl = (chainId: number): string | undefined => {
   }
 };
 
+/**
+ * Build the list of supported chains
+ * Includes foundry if LOCAL_RPC_URL is configured
+ * Includes hardhat preview if NEXT_PUBLIC_PREVIEW_FORK_URL is configured
+ */
+const buildSupportedChains = () => {
+  const chains = [mainnet, polygon, bsc];
+  const localRpcUrl = getLocalRpcUrl();
+
+  if (localRpcUrl) {
+    chains.push(foundry);
+  }
+
+  if (process.env.NEXT_PUBLIC_PREVIEW_FORK_URL) {
+    chains.push(hardhatPreview);
+  }
+
+  return chains;
+};
+
+/**
+ * Build the transports configuration for all chains
+ */
+const buildTransports = () => {
+  const chains = buildSupportedChains();
+  const transports: Record<number, ReturnType<typeof http>> = {};
+
+  chains.forEach((chain) => {
+    transports[chain.id] = http(getWagmiRpcUrl(chain.id));
+  });
+
+  return transports;
+};
+
+const supportedChains = buildSupportedChains();
+const transports = buildTransports();
+
+const connectors = isMockWalletEnabled() ? [mockConnector] : [injected()];
+
 export const config = createConfig({
-  chains: [mainnet, polygon, bsc],
-  connectors: [injected()],
-  transports: {
-    [mainnet.id]: http(getWagmiRpcUrl(mainnet.id)),
-    [polygon.id]: http(getWagmiRpcUrl(polygon.id)),
-    [bsc.id]: http(getWagmiRpcUrl(bsc.id)),
-  },
+  chains: supportedChains,
+  connectors,
+  transports,
 });

@@ -1,11 +1,7 @@
 'use client';
 
-/**
- * ReferralDashboard - Main referral dashboard component
- * Displays user's referral stats, links, rewards, and leaderboard
- */
-
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccount } from 'wagmi';
 import {
   useReferralStore,
@@ -31,6 +27,7 @@ export default function ReferralDashboard({
   showLeaderboard = true,
   compact = false,
 }: ReferralDashboardProps) {
+  const { t } = useTranslation('common');
   const { address, isConnected } = useAccount();
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -89,10 +86,10 @@ export default function ReferralDashboard({
     return (
       <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-center">
         <h3 className="mb-2 text-lg font-semibold text-yellow-900">
-          Connect Wallet
+          {t('referral.connectWallet')}
         </h3>
         <p className="text-yellow-800">
-          Please connect your wallet to access the referral program
+          {t('referral.connectWalletPrompt')}
         </p>
       </div>
     );
@@ -116,17 +113,17 @@ export default function ReferralDashboard({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            Referral Program
+            {t('referral.title')}
           </h1>
           <p className="mt-1 text-slate-600">
-            Earn rewards by inviting investors to PropChain
+            {t('referral.subtitle')}
           </p>
         </div>
         <Link
           href="/referral/terms"
           className="text-sm text-blue-600 underline hover:text-blue-700"
         >
-          View Terms
+          {t('referral.viewTerms')}
         </Link>
       </div>
 
@@ -149,17 +146,17 @@ export default function ReferralDashboard({
       {showLeaderboard && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
           <h3 className="mb-2 flex items-center text-lg font-semibold text-blue-900">
-            <span className="mr-2">🏆</span>
-            Top Referrers
+            <span className="mr-2" aria-hidden="true">🏆</span>
+            {t('referral.topReferrers')}
           </h3>
           <p className="mb-4 text-blue-800">
-            Check how you rank among other referrers in the PropChain community.
+            {t('referral.leaderboardBlurb')}
           </p>
           <Link
             href="/referral/leaderboard"
             className="inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
           >
-            View Leaderboard →
+            {t('referral.viewLeaderboard')} →
           </Link>
         </div>
       )}

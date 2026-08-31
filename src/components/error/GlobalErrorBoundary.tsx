@@ -3,7 +3,7 @@
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { ErrorCategory, ErrorSeverity, type AppError } from '@/types/errors';
 import { ErrorFactory } from '@/utils/errorFactory';
-import { structuredLogger } from '@/utils/structuredLogger';
+import { logger } from '@/utils/logger';
 import { errorMonitoring } from '@/utils/errorMonitoringService';
 
 interface Props {
@@ -58,13 +58,11 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     this.setState({ error: appError });
 
     // Log structured error
-    structuredLogger.error('Error caught by global boundary', appError, {
+    logger.errorWithStack('Error caught by global boundary', appError, {
       component: 'GlobalErrorBoundary',
       action: 'error_boundary_catch',
-      metadata: {
-        errorId: appError.id,
-        componentStack: errorInfo.componentStack,
-      },
+      errorId: appError.id,
+      componentStack: errorInfo.componentStack,
     });
 
     // Monitor error
@@ -78,14 +76,12 @@ export class GlobalErrorBoundary extends Component<Props, State> {
 
   handleRetry = async (): Promise<void> => {
     if (this.state.retryCount >= this.maxRetries) {
-      structuredLogger.warn('Max retry attempts reached', {
+      logger.warn('Max retry attempts reached', {
         component: 'GlobalErrorBoundary',
         action: 'retry_limit_reached',
-        metadata: {
-          errorId: this.state.errorId,
-          retryCount: this.state.retryCount,
-          maxRetries: this.maxRetries,
-        },
+        errorId: this.state.errorId,
+        retryCount: this.state.retryCount,
+        maxRetries: this.maxRetries,
       });
       return;
     }
@@ -102,13 +98,11 @@ export class GlobalErrorBoundary extends Component<Props, State> {
         const recovered = await errorMonitoring.attemptRecovery(this.state.error);
         
         if (recovered) {
-          structuredLogger.info('Error recovery successful', {
+          logger.info('Error recovery successful', {
             component: 'GlobalErrorBoundary',
             action: 'recovery_success',
-            metadata: {
-              errorId: this.state.errorId,
-              retryCount: this.state.retryCount + 1,
-            },
+            errorId: this.state.errorId,
+            retryCount: this.state.retryCount + 1,
           });
         }
       }
@@ -121,13 +115,11 @@ export class GlobalErrorBoundary extends Component<Props, State> {
         isRecovering: false,
       }));
     } catch (recoveryError) {
-      structuredLogger.error('Error recovery failed', recoveryError as Error, {
+      logger.errorWithStack('Error recovery failed', recoveryError as Error, {
         component: 'GlobalErrorBoundary',
         action: 'recovery_failed',
-        metadata: {
-          errorId: this.state.errorId,
-          retryCount: this.state.retryCount + 1,
-        },
+        errorId: this.state.errorId,
+        retryCount: this.state.retryCount + 1,
       });
 
       this.setState({
@@ -146,7 +138,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
       isRecovering: false,
     });
 
-    structuredLogger.info('Error boundary reset', {
+    logger.info('Error boundary reset', {
       component: 'GlobalErrorBoundary',
       action: 'boundary_reset',
     });

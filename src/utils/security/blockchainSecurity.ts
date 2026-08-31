@@ -1,4 +1,6 @@
+import { parseEther } from 'viem';
 import { logger } from '@/utils/logger';
+
 export interface SecurityServiceConfig {
   apiKey?: string;
   baseUrl: string;
@@ -12,6 +14,12 @@ export interface AddressRiskScore {
   categories: string[];
   labels: string[];
   description: string;
+  /**
+   * True only when the score came from a real screening provider. False when
+   * the provider is unconfigured/unavailable — callers must not present the
+   * score as a real risk signal in that case.
+   */
+  verified: boolean;
 }
 
 export interface TransactionRisk {
@@ -23,6 +31,10 @@ export interface TransactionRisk {
   mixer: boolean;
   gambling: boolean;
   scam: boolean;
+  /**
+   * True only when a real transaction-risk provider produced this result.
+   */
+  verified: boolean;
 }
 
 export interface SecurityAlert {
@@ -36,6 +48,86 @@ export interface SecurityAlert {
   source: string;
   /** Unix timestamp of when the alert was generated */
   timestamp: number;
+}
+
+/**
+ * Normalises a transaction value string into a BigInt.
+ * Handles hex strings (0x-prefixed), scientific notation, and decimal strings.
+ * Throws a typed error for unparseable values.
+ */
+function normalizeToBigInt(value: string): bigint {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new BlockchainSecurityError(
+      'Invalid value: must be a non-empty string',
+      'INVALID_VALUE'
+    );
+  }
+
+  let normalised = value.trim();
+
+  // Handle hex (0x-prefixed) — viem-style wei values
+  if (normalised.startsWith('0x') || normalised.startsWith('0X')) {
+    try {
+      return BigInt(normalised);
+    } catch {
+      throw new BlockchainSecurityError(
+        `Unable to parse hex value: "${normalised}"`,
+        'INVALID_HEX_VALUE'
+      );
+    }
+  }
+
+  // Handle scientific notation (e.g. "1e18", "1.5e-3")
+  if (/[eE]/.test(normalised)) {
+    const asNumber = Number(normalised);
+    if (!Number.isFinite(asNumber)) {
+      throw new BlockchainSecurityError(
+        `Scientific notation overflow: "${normalised}"`,
+        'VALUE_OVERFLOW'
+      );
+    }
+    // Convert to a whole-number string suitable for BigInt
+    try {
+      return BigInt(Math.round(asNumber));
+    } catch {
+      throw new BlockchainSecurityError(
+        `Unable to parse scientific notation: "${normalised}"`,
+        'INVALID_SCI_VALUE'
+      );
+    }
+  }
+
+  // Handle fractional decimal (e.g. "1.5" — treat as ether value)
+  if (normalised.includes('.')) {
+    try {
+      return parseEther(normalised as `${number}`);
+    } catch {
+      throw new BlockchainSecurityError(
+        `Unable to parse decimal ether value: "${normalised}"`,
+        'INVALID_ETHER_VALUE'
+      );
+    }
+  }
+
+  // Plain decimal string (wei)
+  try {
+    return BigInt(normalised);
+  } catch {
+    throw new BlockchainSecurityError(
+      `Unable to parse value: "${normalised}"`,
+      'INVALID_VALUE'
+    );
+  }
+}
+
+export class BlockchainSecurityError extends Error {
+  public readonly code: string;
+
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'BlockchainSecurityError';
+    this.code = code;
+  }
 }
 
 export class BlockchainSecurityService {
@@ -66,7 +158,10 @@ export class BlockchainSecurityService {
   }
 
   /**
-   * Checks address risk score using Chainalysis-like service
+   * Checks address risk score using a Chainalysis-like service.
+   *
+   * Returns an "unable to verify" result (`verified: false`) whenever the
+   * service is not configured or unavailable, instead of fabricating a score.
    */
   async checkAddressRisk(address: string): Promise<AddressRiskScore> {
     const cacheKey = `address_${address}`;
@@ -74,46 +169,53 @@ export class BlockchainSecurityService {
     if (cached) return cached;
 
     try {
-      // Try calling a remote API if available. If `fetch` returns a Promise
-      // (for example when tests mock it), await it and use the response.
-      // Otherwise, fall back to the local simulation to preserve test behavior.
-      const fetchResult = typeof fetch === 'function' ? (fetch as any)(`${this.config.baseUrl}/address/${address}`, {
-        headers: this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}
-      }) : null;
+      // Call the local API proxy route which securely holds the API key server-side.
+      // This avoids exposing the key in the client bundle.
+      const baseUrl = typeof window !== 'undefined'
+        ? window.location.origin
+        : this.config.baseUrl;
 
-      if (fetchResult && typeof fetchResult.then === 'function') {
-        const response = await fetchResult;
-        if (response && response.ok) {
-          const body = await response.json();
-          const score = typeof body.risk_score === 'number' ? body.risk_score : 50;
-          const categories = Array.isArray(body.categories) ? body.categories : [];
-          const result: AddressRiskScore = {
-            address,
-            riskScore: score,
-            riskLevel: this.getRiskLevel(score),
-            categories,
-            labels: Array.isArray(body.labels) ? body.labels : [],
-            description: body.description || ''
-          };
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+
+      let response;
+      try {
+        response = await fetch(
+          `${baseUrl}/api/security/address-check?address=${encodeURIComponent(address)}`,
+          { signal: controller.signal }
+        );
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (response && response.ok) {
+        const body = await response.json();
+        const score = typeof body.risk_score === 'number' ? body.risk_score : null;
+        const verified = score !== null && body.verified !== false;
+
+        // No trustworthy score: report honestly rather than guessing.
+        if (!verified || score === null) {
+          const result = this.getDefaultRiskScore(address);
           this.setCache(cacheKey, result);
           return result;
         }
-        // If response not ok, throw to be caught below and return default
-        throw new Error('Remote service returned non-OK response');
+
+        const categories = Array.isArray(body.categories) ? body.categories : [];
+        const result: AddressRiskScore = {
+          address,
+          riskScore: score,
+          riskLevel: this.getRiskLevel(score),
+          categories,
+          labels: Array.isArray(body.labels) ? body.labels : [],
+          description: body.description || '',
+          verified: true
+        };
+        this.setCache(cacheKey, result);
+        return result;
       }
 
-      // No remote fetch available — use the internal simulation
-      const riskScore = await this.simulateAddressRiskCheck(address);
-
-      const result: AddressRiskScore = {
-        address,
-        riskScore: riskScore.score,
-        riskLevel: this.getRiskLevel(riskScore.score),
-        categories: riskScore.categories,
-        labels: riskScore.labels,
-        description: riskScore.description
-      };
-
+      // Proxy unavailable: no verified risk data exists, so report honestly.
+      const result = this.getDefaultRiskScore(address);
       this.setCache(cacheKey, result);
       return result;
 
@@ -124,35 +226,19 @@ export class BlockchainSecurityService {
   }
 
   /**
-   * Checks transaction risk
+   * Checks transaction risk.
+   *
+   * No real transaction-risk data source is integrated yet, so this returns the
+   * honest "unable to verify" result instead of deriving a score from the hash.
    */
   async checkTransactionRisk(hash: string): Promise<TransactionRisk> {
     const cacheKey = `tx_${hash}`;
     const cached = this.getFromCache(cacheKey);
     if (cached) return cached;
 
-    try {
-      // Simulate transaction risk check
-      const riskData = await this.simulateTransactionRiskCheck(hash);
-      
-      const result: TransactionRisk = {
-        hash,
-        riskScore: riskData.score,
-        riskLevel: this.getRiskLevel(riskData.score),
-        alerts: riskData.alerts,
-        sanctions: riskData.sanctions,
-        mixer: riskData.mixer,
-        gambling: riskData.gambling,
-        scam: riskData.scam
-      };
-
-      this.setCache(cacheKey, result);
-      return result;
-
-    } catch (error) {
-      logger.error('Failed to check transaction risk:', error);
-      return this.getDefaultTransactionRisk(hash);
-    }
+    const result = this.getDefaultTransactionRisk(hash);
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   /**
@@ -218,14 +304,17 @@ export class BlockchainSecurityService {
     riskScore: number;
     warnings: string[];
     blocks: string[];
+    verified: boolean;
   }> {
     const warnings: string[] = [];
     const blocks: string[] = [];
     let totalRiskScore = 0;
+    let allVerified = true;
 
     try {
       // Check sender risk — use the highest risk score seen across all checks
       const senderRisk = await this.checkAddressRisk(from);
+      allVerified = allVerified && senderRisk.verified;
       totalRiskScore = Math.max(totalRiskScore, senderRisk.riskScore);
 
       // Critical risk blocks the transaction; high risk only warns
@@ -237,6 +326,7 @@ export class BlockchainSecurityService {
 
       // Check recipient risk independently — both parties must be evaluated
       const recipientRisk = await this.checkAddressRisk(to);
+      allVerified = allVerified && recipientRisk.verified;
       totalRiskScore = Math.max(totalRiskScore, recipientRisk.riskScore);
 
       if (recipientRisk.riskLevel === 'critical') {
@@ -259,9 +349,9 @@ export class BlockchainSecurityService {
         blocks.push('Recipient address is on sanctions list');
       }
 
-      // BigInt comparison: 1 ETH = 10^18 wei; flag high-value sends to risky recipients
-      const valueBN = BigInt(value);
-      if (valueBN >= BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // >= 1 ETH
+      // Check for high-value transaction to risky address
+      const valueBN = normalizeToBigInt(value);
+      if (valueBN > BigInt('1000000000000000000') && recipientRisk.riskScore > 50) { // > 1 ETH
         warnings.push('High-value transaction to risky address');
       }
 
@@ -278,6 +368,7 @@ export class BlockchainSecurityService {
     } catch (error) {
       logger.error('Failed to validate transaction:', error);
       // Degrade gracefully — warn rather than block on service failure
+      allVerified = false;
       warnings.push('Unable to complete security validation');
     }
 
@@ -285,95 +376,13 @@ export class BlockchainSecurityService {
       isValid: blocks.length === 0,
       riskScore: totalRiskScore,
       warnings,
-      blocks
+      blocks,
+      verified: allVerified
     };
   }
 
   /**
-   * Simulates address risk check (placeholder for real API)
-   */
-  private async simulateAddressRiskCheck(address: string): Promise<{
-    score: number;
-    categories: string[];
-    labels: string[];
-    description: string;
-  }> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Derive a deterministic score from the address hex so the same address
-    // always returns the same risk score (useful for testing/demo purposes)
-    const addressHash = address.toLowerCase().replace('0x', '');
-    // Parse first 8 hex chars as a 32-bit integer, then mod 100 for a 0–99 score
-    const score = parseInt(addressHash.slice(0, 8), 16) % 100;
-
-    const categories: string[] = [];
-    const labels: string[] = [];
-
-    // Bucket the score into risk tiers and assign matching categories/labels
-    if (score > 80) {
-      categories.push('high_risk');
-      labels.push('suspicious_activity');
-    } else if (score > 60) {
-      categories.push('medium_risk');
-      labels.push('requires_review');
-    } else if (score > 40) {
-      categories.push('low_risk');
-      labels.push('monitor');
-    }
-
-    // Heuristic: addresses starting with 0x000 are likely contract addresses
-    if (address.startsWith('0x000')) {
-      categories.push('contract');
-      labels.push('smart_contract');
-    }
-
-    // Map score quartile to a human-readable description
-    const descriptions = [
-      'Address appears to have normal activity',
-      'Address shows some unusual patterns',
-      'Address has elevated risk factors',
-      'Address requires immediate investigation'
-    ];
-
-    const description = descriptions[Math.floor(score / 25)];
-
-    return { score, categories, labels, description };
-  }
-
-  /**
-   * Simulates transaction risk check (placeholder for real API)
-   */
-  private async simulateTransactionRiskCheck(hash: string): Promise<{
-    score: number;
-    alerts: string[];
-    sanctions: boolean;
-    mixer: boolean;
-    gambling: boolean;
-    scam: boolean;
-  }> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const hashShort = hash.slice(2, 10);
-    const score = parseInt(hashShort, 16) % 100;
-
-    const alerts: string[] = [];
-    const sanctions = score > 90;
-    const mixer = score > 70 && score < 80;
-    const gambling = score > 60 && score < 70;
-    const scam = score > 85;
-
-    if (sanctions) alerts.push('Transaction involves sanctioned address');
-    if (mixer) alerts.push('Transaction involves mixer service');
-    if (gambling) alerts.push('Transaction involves gambling service');
-    if (scam) alerts.push('Transaction involves known scam address');
-
-    return { score, alerts, sanctions, mixer, gambling, scam };
-  }
-
-  /**
-   * Gets default risk score for failed checks
+   * Gets the honest default for checks that could not be performed.
    */
   private getDefaultRiskScore(address: string): AddressRiskScore {
     return {
@@ -382,12 +391,13 @@ export class BlockchainSecurityService {
       riskLevel: 'medium',
       categories: ['unknown'],
       labels: ['unable_to_verify'],
-      description: 'Unable to verify address risk due to service unavailability'
+      description: 'Unable to verify address risk due to service unavailability',
+      verified: false
     };
   }
 
   /**
-   * Gets default transaction risk for failed checks
+   * Gets the honest default for transaction checks that could not be performed.
    */
   private getDefaultTransactionRisk(hash: string): TransactionRisk {
     return {
@@ -398,7 +408,8 @@ export class BlockchainSecurityService {
       sanctions: false,
       mixer: false,
       gambling: false,
-      scam: false
+      scam: false,
+      verified: false
     };
   }
 
@@ -494,11 +505,38 @@ export class BlockchainSecurityService {
 
 // Default configuration for development
 const defaultConfig: SecurityServiceConfig = {
-  baseUrl: 'https://api.chainalysis.com/api/v2',
+  baseUrl: 'http://localhost:3000',
   timeout: 10000,
-  // In production, this would be set via environment variables
-  apiKey: typeof window !== 'undefined' ? (window as any).__CHAINALYSIS_API_KEY__ : undefined
+  // API key is now configured only on the server side via CHAINALYSIS_API_KEY env var.
+  // The browser never has access to this key.
+  apiKey: undefined
 };
 
-// Export singleton instance
+// Client-side proxy: calls our own API endpoint so the API key never reaches the browser.
+export async function checkAddressRiskViaProxy(address: string): Promise<AddressRiskScore> {
+  const res = await fetch(`/api/security/address-check?address=${encodeURIComponent(address)}`);
+  if (!res.ok) {
+    return {
+      address,
+      riskScore: 50,
+      riskLevel: 'medium',
+      categories: ['unknown'],
+      labels: ['unable_to_verify'],
+      description: 'Unable to verify address risk via proxy',
+      verified: false
+    };
+  }
+  const body = await res.json();
+  const hasScore = typeof body.risk_score === 'number';
+  return {
+    address,
+    riskScore: hasScore ? body.risk_score : 50,
+    riskLevel: body.risk_level ?? 'medium',
+    categories: Array.isArray(body.categories) ? body.categories : [],
+    labels: Array.isArray(body.labels) ? body.labels : [],
+    description: body.description ?? '',
+    verified: hasScore && body.verified !== false
+  };
+}
+
 export const blockchainSecurity = BlockchainSecurityService.getInstance(defaultConfig);

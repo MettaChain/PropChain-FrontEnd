@@ -81,8 +81,19 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
     : 0;
 
   const handleViewOnExplorer = () => {
+    // Security: validate hash format before constructing URL to prevent open-redirect
+    if (!/^0x[0-9a-fA-F]{64}$/.test(transaction.hash)) {
+      return;
+    }
+    // Security: only open URLs from known block explorers (no user-controlled input in origin)
     const explorerUrl = `${chainConfig.blockExplorer}/tx/${transaction.hash}`;
-    window.open(explorerUrl, '_blank');
+    try {
+      const url = new URL(explorerUrl);
+      if (url.protocol !== 'https:') return;
+      window.open(explorerUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      // Invalid URL — do nothing
+    }
   };
 
   return (

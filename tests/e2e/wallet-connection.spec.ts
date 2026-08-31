@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupWalletMock } from './wallet-fixture';
 
 test.describe('Wallet Connection Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -45,18 +46,17 @@ test.describe('Wallet Connection Flow', () => {
   });
 
   test('should show connecting state when wallet connection is initiated', async ({ page }) => {
-    // Mock MetaMask connection
+    // Mock MetaMask connection with simulated delay
     await page.addInitScript(() => {
       (window as any).ethereum = {
         isMetaMask: true,
         request: async ({ method }: { method: string }) => {
           if (method === 'eth_requestAccounts') {
-            // Simulate user approval delay
             await new Promise(resolve => setTimeout(resolve, 1000));
             return ['0x1234567890123456789012345678901234567890'];
           }
           if (method === 'eth_chainId') {
-            return '0x1'; // Ethereum mainnet
+            return '0x1';
           }
           return null;
         },
@@ -78,27 +78,7 @@ test.describe('Wallet Connection Flow', () => {
   });
 
   test('should display wallet info when successfully connected', async ({ page }) => {
-    // Mock successful MetaMask connection
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        isMetaMask: true,
-        request: async ({ method }: { method: string }) => {
-          if (method === 'eth_requestAccounts') {
-            return ['0x1234567890123456789012345678901234567890'];
-          }
-          if (method === 'eth_chainId') {
-            return '0x1';
-          }
-          if (method === 'eth_getBalance') {
-            return '0x152D02C7E14AF6800000'; // 100 ETH in wei
-          }
-          return null;
-        },
-        on: () => {},
-        removeListener: () => {},
-        isConnected: () => true,
-      };
-    });
+    await setupWalletMock(page, { balance: '0x152D02C7E14AF6800000' });
 
     const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
@@ -115,21 +95,7 @@ test.describe('Wallet Connection Flow', () => {
   });
 
   test('should handle connection errors gracefully', async ({ page }) => {
-    // Mock MetaMask rejection
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        isMetaMask: true,
-        request: async ({ method }: { method: string }) => {
-          if (method === 'eth_requestAccounts') {
-            throw new Error('User rejected the request');
-          }
-          return null;
-        },
-        on: () => {},
-        removeListener: () => {},
-        isConnected: () => false,
-      };
-    });
+    await setupWalletMock(page, { shouldReject: true });
 
     const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
@@ -142,27 +108,7 @@ test.describe('Wallet Connection Flow', () => {
   });
 
   test('should disconnect wallet when disconnect button is clicked', async ({ page }) => {
-    // Mock connected wallet
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        isMetaMask: true,
-        request: async ({ method }: { method: string }) => {
-          if (method === 'eth_requestAccounts') {
-            return ['0x1234567890123456789012345678901234567890'];
-          }
-          if (method === 'eth_chainId') {
-            return '0x1';
-          }
-          if (method === 'eth_getBalance') {
-            return '0x152D02C7E14AF6800000';
-          }
-          return null;
-        },
-        on: () => {},
-        removeListener: () => {},
-        isConnected: () => true,
-      };
-    });
+    await setupWalletMock(page, { balance: '0x152D02C7E14AF6800000' });
 
     // Connect first
     const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
@@ -182,30 +128,7 @@ test.describe('Wallet Connection Flow', () => {
   });
 
   test('should handle network switching', async ({ page }) => {
-    // Mock wallet with network switching
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        isMetaMask: true,
-        request: async ({ method }: { method: string }) => {
-          if (method === 'eth_requestAccounts') {
-            return ['0x1234567890123456789012345678901234567890'];
-          }
-          if (method === 'eth_chainId') {
-            return '0x1'; // Start with Ethereum
-          }
-          if (method === 'wallet_switchEthereumChain') {
-            return null; // Success
-          }
-          if (method === 'eth_getBalance') {
-            return '0x152D02C7E14AF6800000';
-          }
-          return null;
-        },
-        on: () => {},
-        removeListener: () => {},
-        isConnected: () => true,
-      };
-    });
+    await setupWalletMock(page, { balance: '0x152D02C7E14AF6800000' });
 
     // Connect wallet
     const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
