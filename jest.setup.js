@@ -65,24 +65,15 @@ Object.defineProperty(window, 'ethereum', {
   writable: true,
 })
 
-// Mock Web3Wallet
-jest.mock('@walletconnect/web3-provider', () => {
-  return jest.fn().mockImplementation(() => ({
-    enable: jest.fn(),
-    on: jest.fn(),
-    close: jest.fn(),
-  }))
-})
-
-// Mock Coinbase Wallet SDK
+// Web3Wallet, Coinbase Wallet SDK, and MetaMask SDK mocks
+// are defined per-test in walletConnectors tests to allow dynamic behavior.
+// Mocks for other suites that need generic stubs:
 jest.mock('@coinbase/wallet-sdk', () => {
   return jest.fn().mockImplementation(() => ({
     makeWeb3Provider: jest.fn(),
     disconnect: jest.fn(),
   }))
 })
-
-// Mock MetaMask SDK
 jest.mock('@metamask/sdk', () => {
   return jest.fn().mockImplementation(() => ({
     connect: jest.fn(),
