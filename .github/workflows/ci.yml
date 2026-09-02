@@ -62,7 +62,7 @@ jobs:
       - name: Wait for Redis
         run: |
           for i in $(seq 1 30); do
-            if redis-cli -h localhost -p 6379 ping | grep -q PONG; then
+            if docker exec $(docker ps -q --filter "ancestor=redis:7-alpine") redis-cli ping 2>/dev/null | grep -q PONG; then
               echo "Redis is ready!"
               exit 0
             fi
