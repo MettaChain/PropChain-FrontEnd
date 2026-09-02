@@ -151,22 +151,10 @@ function ComparePage() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // Build document via safe DOM APIs instead of document.write to avoid
-    // CSP bypass and script re-execution risks.
     const doc = printWindow.document;
 
-    // Create title
-    const title = doc.createElement('title');
-    title.textContent = 'Property Comparison';
-    doc.head.appendChild(title);
-
-    // Create styles
-    const doc = printWindow.document;
-    doc.open();
-    doc.write('<!DOCTYPE html>');
-    
     const html = doc.createElement('html');
-    
+
     const head = doc.createElement('head');
     const title = doc.createElement('title');
     title.textContent = 'Property Comparison';
@@ -180,41 +168,25 @@ function ComparePage() {
       h1 { color: #333; }
       @media print { body { padding: 0; } }
     `;
-    doc.head.appendChild(style);
-
-    // Build body
-    const h1 = doc.createElement('h1');
-    h1.textContent = 'Property Comparison Report';
-    doc.body.appendChild(h1);
-
-    const dateP = doc.createElement('p');
-    dateP.textContent = `Generated on ${new Date().toLocaleDateString()}`;
-    doc.body.appendChild(dateP);
-
-    // Build table
-    const table = doc.createElement('table');
     head.appendChild(style);
     html.appendChild(head);
-    
+
     const body = doc.createElement('body');
     const h1 = doc.createElement('h1');
     h1.textContent = 'Property Comparison Report';
     body.appendChild(h1);
-    
-    const p = doc.createElement('p');
-    p.textContent = `Generated on ${new Date().toLocaleDateString()}`;
-    body.appendChild(p);
-    
+
+    const dateP = doc.createElement('p');
+    dateP.textContent = `Generated on ${new Date().toLocaleDateString()}`;
+    body.appendChild(dateP);
+
     const table = doc.createElement('table');
-    
+
     const thead = doc.createElement('thead');
     const headerRow = doc.createElement('tr');
     const metricTh = doc.createElement('th');
     metricTh.textContent = 'Metric';
     headerRow.appendChild(metricTh);
-    properties.forEach(p => {
-      const th = doc.createElement('th');
-      th.textContent = p.name;
     properties.forEach(prop => {
       const th = doc.createElement('th');
       th.textContent = prop.name;
@@ -223,17 +195,6 @@ function ComparePage() {
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
-    const tbody = doc.createElement('tbody');
-    comparisonMetrics.forEach(metric => {
-      const row = doc.createElement('tr');
-      const labelTd = doc.createElement('td');
-      labelTd.textContent = metric.label;
-      row.appendChild(labelTd);
-      properties.forEach(p => {
-        const td = doc.createElement('td');
-        td.textContent = metric.format(getNestedValue(p, metric.key), p);
-        row.appendChild(td);
-    
     const tbody = doc.createElement('tbody');
     comparisonMetrics.forEach(metric => {
       const row = doc.createElement('tr');
@@ -248,12 +209,9 @@ function ComparePage() {
       tbody.appendChild(row);
     });
     table.appendChild(tbody);
-    doc.body.appendChild(table);
-
-    // Close the document stream so browsers finish rendering before printing
     body.appendChild(table);
     html.appendChild(body);
-    
+
     doc.documentElement.replaceWith(html);
     doc.close();
     printWindow.print();

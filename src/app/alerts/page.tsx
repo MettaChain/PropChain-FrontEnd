@@ -17,7 +17,7 @@ import {
   TrendingDown, 
   AlertCircle,
   Mail,
-  MailOff,
+  MailX,
   Settings,
   X,
   ArrowLeft
@@ -289,7 +289,7 @@ export default function AlertsPage() {
                       {settings.emailEnabled ? (
                         <Mail className="w-5 h-5 text-green-600" />
                       ) : (
-                        <MailOff className="w-5 h-5 text-gray-400" />
+                        <MailX className="w-5 h-5 text-gray-400" />
                       )}
                       <div>
                         <Label>Email Notifications</Label>

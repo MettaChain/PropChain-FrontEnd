@@ -3,7 +3,7 @@ import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Circle, Loader2, AlertCircle, XCircle, Wallet, Broadcast, Clock, Shield, X } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, AlertCircle, XCircle, Wallet, RadioTower, Clock, Shield, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,7 +55,7 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
       label: 'Broadcasting to Network',
       description: 'Transaction is being sent to the blockchain',
       status: 'pending',
-      icon: <Broadcast className="w-4 h-4" aria-hidden="true" />,
+      icon: <RadioTower className="w-4 h-4" aria-hidden="true" />,
     },
     {
       id: 'confirm',

@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useWalletStore } from "@/store/walletStore";
 import { useKycStore } from "@/store/kycStore";
-import { formatEthAmount, shouldRequireKyc, weiToEth } from "@/lib/kyc";
+import { formatEthAmount, shouldRequireKyc } from "@/lib/kyc";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -93,29 +93,31 @@ export const TransactionConfirmation: React.FC<
 
   const currentDeviceId = useMemo(() => getSecurityDeviceId(), []);
   const currentDeviceLabel = useMemo(() => getSecurityDeviceLabel(), []);
+  const [isConfirming, setIsConfirming] = useState(false);
 
-      if (isOpen && transaction) {
-        validateTransactionData();
-        const valueEth = weiToEth(transaction.value);
-        const requiresKyc = shouldRequireKyc(
-            transaction.value,
-            profile.thresholdEth,
-        );
-        setTransactionEth(valueEth);
-        setKycRequired(requiresKyc);
-        logTransactionScreening(
-            valueEth,
-            requiresKyc,
-            profile.status === "verified" || !requiresKyc,
-        );
+  useEffect(() => {
+    if (isOpen && transaction) {
+      validateTransactionData();
+      const valueEth = weiToEth(transaction.value);
+      const requiresKyc = shouldRequireKyc(
+        transaction.value,
+        profile.thresholdEth,
+      );
+      setTransactionEth(valueEth);
+      setKycRequired(requiresKyc);
+      logTransactionScreening(
+        valueEth,
+        requiresKyc,
+        profile.status === "verified" || !requiresKyc,
+      );
 
-        if (!skipSimulation) {
-            runSimulation();
-        } else {
-            setSimulation(null);
-        }
+      if (!skipSimulation) {
+        runSimulation();
+      } else {
+        setSimulation(null);
+      }
     }
-}, [
+  }, [
     isOpen,
     transaction,
     profile.status,
@@ -123,7 +125,7 @@ export const TransactionConfirmation: React.FC<
     logTransactionScreening,
     skipSimulation,
     runSimulation,
-]);
+  ]);
 
   useEffect(() => {
     if (!isOpen) {

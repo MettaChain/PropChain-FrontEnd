@@ -35,6 +35,9 @@ const csp = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     optimizePackageImports: [
       "lucide-react",

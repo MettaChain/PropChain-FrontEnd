@@ -28,9 +28,20 @@ import {
 } from './propertyCache';
 import { isNetworkOnline } from './cacheManager';
 import { generateSecureId } from '@/utils/secureId';
-import { redisCacheService } from './redisCache';
 import { genId } from '@/utils/genId';
 import { savedSearchesKey } from './storageKeys';
+
+async function getRedisCacheService(): Promise<typeof import('./redisCache').redisCacheService | null> {
+  if (typeof window !== 'undefined') {
+    return null;
+  }
+  try {
+    const mod = await import('./redisCache');
+    return mod.redisCacheService;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Property Service
@@ -55,7 +66,9 @@ class PropertyService {
     // Try Redis cache first if enabled
     if (useCache) {
       try {
-        const redisCached = await redisCacheService.getPropertyListings(filters, sortBy, page);
+        const redisCached = await (
+          await getRedisCacheService()
+        )?.getPropertyListings(filters, sortBy, page);
         if (redisCached) {
           // For cache-first, return immediately
           if (strategy === 'cache-first') {
@@ -147,7 +160,7 @@ class PropertyService {
     // Cache the result in both Redis and local cache
     try {
       // Cache in Redis first (primary cache)
-      await redisCacheService.setPropertyListings(filters, sortBy, validPage, result);
+      await (await getRedisCacheService())?.setPropertyListings(filters, sortBy, validPage, result);
       
       // Also cache in local cache as fallback
       await cacheSearchResult(filters, sortBy, result);
@@ -172,7 +185,7 @@ class PropertyService {
     // Try Redis cache first if enabled
     if (useCache) {
       try {
-        const redisCached = await redisCacheService.getProperty(id);
+        const redisCached = await (await getRedisCacheService())?.getProperty(id);
         if (redisCached) {
           // Return fresh cache immediately
           if (strategy === 'cache-first') {
@@ -231,7 +244,7 @@ class PropertyService {
     if (property) {
       try {
         // Cache in Redis first (primary cache)
-        await redisCacheService.setProperty(property);
+        await (await getRedisCacheService())?.setProperty(property);
         
         // Also cache in local cache as fallback
         await setCachedProperty(property);

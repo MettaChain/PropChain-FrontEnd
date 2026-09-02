@@ -110,18 +110,8 @@ describe('WalletModal', () => {
       
       const overlay = document.querySelector('[data-slot="dialog-overlay"]') as HTMLElement;
       expect(overlay).not.toBeNull();
-      const dispatch = () => {
-        const ev = new MouseEvent('pointerdown', {
-          bubbles: true,
-          cancelable: true,
-        }) as unknown as PointerEvent;
-        (ev as any).pointerType = 'mouse';
-        overlay.dispatchEvent(ev);
-      };
-      await act(async () => {
-        await new Promise((r) => setTimeout(r, 0));
-        dispatch();
-      });
+      await new Promise((r) => setTimeout(r, 0));
+      fireEvent.pointerDown(overlay, { pointerType: 'mouse' });
       await waitFor(() => {
         expect(mockOnClose).toHaveBeenCalledTimes(1);
       });

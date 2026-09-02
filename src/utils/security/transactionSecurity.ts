@@ -1,3 +1,5 @@
+export { buildOtpAuthUri, formatTrustedDeviceExpiry } from './totp';
+
 export interface StepUpSecurityContext {
   valueWei: string | null | undefined;
   thresholdEth: number;
