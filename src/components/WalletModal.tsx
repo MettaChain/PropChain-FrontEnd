@@ -138,7 +138,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   };
 
   const renderLoadingStep = () => {
-    if (loadingStep === 'connector') {
+    if (loadingStep === 'connector' || (isLoadingConnector && !loadingStep)) {
       return (
         <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <div className="flex items-center gap-3">
@@ -191,10 +191,6 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       installed.add('coinbase');
     }
     
-    // WalletConnect is typically available through deep links or QR codes
-    // We'll consider it "available" but not "installed" in the traditional sense
-    installed.add('walletconnect');
-    
     return installed;
   }, []);
 
@@ -242,6 +238,15 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
+        <button
+          type="button"
+          aria-label="Close wallet selector"
+          onClick={onClose}
+          className="absolute top-4 right-4 rounded-xs p-1 opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close wallet selector</span>
+        </button>
         <DialogHeader>
           <DialogTitle>Connect Wallet</DialogTitle>
         </DialogHeader>

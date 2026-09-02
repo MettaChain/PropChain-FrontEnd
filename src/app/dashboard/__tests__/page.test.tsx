@@ -2,13 +2,24 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 
 jest.mock('next/dynamic', () => {
+  const path = require('path');
   const dynamic = (factory: () => Promise<{ default: React.ComponentType }>, _options?: Record<string, unknown>) => {
-    const name = factory.toString().match(/import\("@\/components\/dashboard\/(\w+)"\)/)?.[1] || 'Widget';
-    const Stub = ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
-      <div data-testid={`dynamic-${name}`}>{children}</div>
-    );
-    Stub.displayName = `Dynamic${name}`;
-    return React.forwardRef<unknown, Record<string, unknown>>((props, ref) => <Stub {...props} ref={ref} />);
+    const source = factory.toString();
+    const pathMatch = source.match(/require\(["']([^"']+)["']\)/) || source.match(/import\(["']([^"']+)["']\)/);
+    let Resolved: React.ComponentType = () => null;
+    if (pathMatch) {
+      const modulePath = pathMatch[1];
+      const pageDir = path.resolve(__dirname, '..');
+      const absPath = path.resolve(pageDir, modulePath);
+      try {
+        const mod = require(absPath);
+        Resolved = (mod.default || Object.values(mod)[0]) as React.ComponentType;
+      } catch {}
+    }
+    const DynamicComponent = React.forwardRef<unknown, Record<string, unknown>>((props, ref) => {
+      return <Resolved {...props} ref={ref} />;
+    });
+    return DynamicComponent;
   };
   return { __esModule: true, default: dynamic };
 });
@@ -39,6 +50,10 @@ jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, fallback?: string) => fallback || key,
   }),
+}));
+
+jest.mock('@/components/WalletConnector', () => ({
+  WalletConnector: () => <div data-testid="wallet-connector" />,
 }));
 
 jest.mock('@/components/dashboard/Sidebar', () => ({

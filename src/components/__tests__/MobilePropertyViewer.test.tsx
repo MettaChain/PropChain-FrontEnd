@@ -3,19 +3,42 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MobilePropertyViewer } from "../mobile/MobilePropertyViewer";
 import type { MobileProperty } from "@/types/mobileProperty";
 
-// Provide a minimal useTranslation implementation that returns keys with
-// interpolated values so tests can assert on the rendered output.
-jest.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: Record<string, unknown>) => {
-      if (!options) return key;
-      // Replace {{placeholder}} with the corresponding option value
-      return key.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) =>
-        String(options[k] ?? `{{${k}}}`),
-      );
-    },
-  }),
-}));
+// Provide a minimal useTranslation implementation that resolves known keys to
+// their actual template strings with interpolated values so tests can assert
+// on the rendered output.
+jest.mock("react-i18next", () => {
+  const templates: Record<string, string> = {
+    "mobile.viewer.imageCounter": "{{current}} / {{total}}",
+    "mobile.viewer.bed": "{{count}} beds",
+    "mobile.viewer.bath": "{{count}} baths",
+    "mobile.viewer.sqft": "{{count}} sqft",
+    "mobile.viewer.moreAmenities": "+{{count}} more",
+    "mobile.viewer.shareText": "Check out this property: {{name}} in {{location}}",
+    "mobile.viewer.galleryLabel": "Gallery of {{name}}",
+  };
+  // Keys that don't need interpolation return the raw key.
+  const bareKeys = [
+    "mobile.viewer.close",
+    "mobile.viewer.previousImage",
+    "mobile.viewer.nextImage",
+    "mobile.viewer.valueLabel",
+    "mobile.viewer.roiLabel",
+    "mobile.viewer.contact",
+    "mobile.viewer.scheduleTour",
+  ];
+  return {
+    useTranslation: () => ({
+      t: (key: string, options?: Record<string, unknown>) => {
+        if (!options) return key;
+        if (bareKeys.includes(key)) return key;
+        const template = templates[key] ?? key;
+        return template.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) =>
+          String(options[k] ?? `{{${k}}}`),
+        );
+      },
+    }),
+  };
+});
 
 jest.mock("next/image", () => ({
   __esModule: true,
@@ -120,18 +143,14 @@ describe("MobilePropertyViewer", () => {
     });
 
     it("renders beds and baths with count interpolation", () => {
-      // t("mobile.viewer.bed", { count: 3 }) → "mobile.viewer.bed_other" with {{count}}=3
-      // Our mock returns the key with {{count}} replaced: "mobile.viewer.bed_other" → "3"
-      // Actually the mock returns: key.replace({{count}}, 3)
-      // The key will be "mobile.viewer.bed" with count=3 (i18next internally picks bed_other)
-      // Since our mock doesn't handle pluralisation we just verify the count value appears
-      expect(screen.getByText(/3/)).toBeInTheDocument();
-      expect(screen.getByText(/2/)).toBeInTheDocument();
+      // t("mobile.viewer.bed", { count: 3 }) → "3 beds", t("bath", {count: 2}) → "2 baths"
+      expect(screen.getByText("3 beds")).toBeInTheDocument();
+      expect(screen.getByText("2 baths")).toBeInTheDocument();
     });
 
     it("renders the amenities overflow with translated key", () => {
-      // 5 amenities, 3 shown, 2 overflow → +{{count}} more → mock replaces {{count}} with 2
-      expect(screen.getByText(/\+.*2/)).toBeInTheDocument();
+      // 5 amenities, 3 shown, 2 overflow → "+2 more"
+      expect(screen.getByText("+2 more")).toBeInTheDocument();
     });
   });
 

@@ -28,10 +28,11 @@ export function usePaginationParams(): PaginationParams & {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const rawPage = parseInt(searchParams.get('page') ?? '1', 10);
+  const pageParam = searchParams.get('page');
+  const rawPage = pageParam === null ? 1 : Number(pageParam);
   const rawSize = parseInt(searchParams.get('size') ?? '12', 10);
 
-  const page = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1;
+  const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
   const size: PageSize = isValidPageSize(rawSize) ? rawSize : 12;
 
   /** Build a URL string with updated pagination params, preserving other params */

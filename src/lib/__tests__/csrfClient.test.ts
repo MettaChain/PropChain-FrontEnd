@@ -15,16 +15,16 @@ function loadModule() {
   const walletMock = require('@/store/walletStore');
   walletMock.useWalletStore.subscribe.mockClear();
   jest.isolateModules(() => {
-    require('../../csrfClient');
+    require('../csrfClient');
   });
   return walletMock;
 }
 
 function getFreshModule() {
   jest.resetModules();
-  let mod: typeof import('../../csrfClient');
+  let mod: typeof import('../csrfClient');
   jest.isolateModules(() => {
-    mod = require('../../csrfClient');
+    mod = require('../csrfClient');
   });
   return mod!;
 }

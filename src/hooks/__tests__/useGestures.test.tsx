@@ -14,7 +14,7 @@ type GestureHandlers = {
 
 const Harness = ({ handlers, options }: { handlers: GestureHandlers; options?: Record<string, unknown> }) => {
   const ref = useGestures(handlers, options);
-  return <div ref={ref as React.Ref<HTMLDivElement>} data-testid="gesture-area" />;
+  return <div ref={ref} data-testid="gesture-area" />;
 };
 
 const touch = (clientX: number, clientY: number) => ({ clientX, clientY });

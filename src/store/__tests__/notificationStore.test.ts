@@ -94,7 +94,7 @@ describe('notificationStore', () => {
       result.current.markAsRead('alert-1');
     });
 
-    expect(result.current.alerts[0].isRead).toBe(true);
+    expect(result.current.alerts.find((a) => a.id === 'alert-1')?.isRead).toBe(true);
     expect(unreadCount(result.current.alerts)).toBe(1);
   });
 
@@ -199,7 +199,7 @@ describe('notificationStore', () => {
       result.current.markPriceAlertNotificationAsRead('notif-1');
     });
 
-    expect(result.current.priceAlertNotifications[0].isRead).toBe(true);
+    expect(result.current.priceAlertNotifications.find((n) => n.id === 'notif-1')?.isRead).toBe(true);
 
     act(() => {
       result.current.clearPriceAlertNotification('notif-1');

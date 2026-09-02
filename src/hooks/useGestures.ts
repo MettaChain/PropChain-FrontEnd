@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface GestureHandlers {
   onSwipeLeft?: () => void;
@@ -29,17 +29,11 @@ export const useGestures = (
   } = options;
 
   const elementRef = useRef<HTMLElement>(null);
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
-    null,
-  );
-  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(
-    null,
-  );
-  const [lastTap, setLastTap] = useState<number>(0);
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(
-    null,
-  );
-  const [initialDistance, setInitialDistance] = useState<number>(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchEndRef = useRef<{ x: number; y: number } | null>(null);
+  const lastTapRef = useRef<number>(0);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const initialDistanceRef = useRef<number>(0);
 
   const getDistance = (touch1: Touch, touch2: Touch): number => {
     const dx = touch1.clientX - touch2.clientX;
@@ -50,23 +44,19 @@ export const useGestures = (
   const handleTouchStart = (e: TouchEvent) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
-      setTouchStart({ x: touch.clientX, y: touch.clientY });
-      setTouchEnd(null);
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      touchEndRef.current = null;
 
-      // Start long press timer
-      const timer = setTimeout(() => {
+      longPressTimerRef.current = setTimeout(() => {
         handlers.onLongPress?.();
+        longPressTimerRef.current = null;
       }, longPressDelay);
-      setLongPressTimer(timer);
     } else if (e.touches.length === 2) {
-      // Pinch gesture
-      const distance = getDistance(e.touches[0], e.touches[1]);
-      setInitialDistance(distance);
+      initialDistanceRef.current = getDistance(e.touches[0], e.touches[1]);
 
-      // Clear long press timer for multi-touch
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        setLongPressTimer(null);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
       }
     }
   };
@@ -74,46 +64,41 @@ export const useGestures = (
   const handleTouchMove = (e: TouchEvent) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
-      setTouchEnd({ x: touch.clientX, y: touch.clientY });
+      touchEndRef.current = { x: touch.clientX, y: touch.clientY };
 
-      // Clear long press timer on move
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        setLongPressTimer(null);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
       }
-    } else if (e.touches.length === 2 && initialDistance > 0) {
-      // Handle pinch
+    } else if (e.touches.length === 2 && initialDistanceRef.current > 0) {
       const currentDistance = getDistance(e.touches[0], e.touches[1]);
-      const scale = currentDistance / initialDistance;
+      const scale = currentDistance / initialDistanceRef.current;
       handlers.onPinch?.(scale);
     }
   };
 
   const handleTouchEnd = (e: TouchEvent) => {
-    // Clear long press timer
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
     }
 
-    if (!touchStart || !touchEnd) return;
+    if (!touchStartRef.current) return;
 
-    const deltaX = touchEnd.x - touchStart.x;
-    const deltaY = touchEnd.y - touchStart.y;
+    const end = touchEndRef.current ?? touchStartRef.current;
+    const deltaX = end.x - touchStartRef.current.x;
+    const deltaY = end.y - touchStartRef.current.y;
     const absDeltaX = Math.abs(deltaX);
     const absDeltaY = Math.abs(deltaY);
 
-    // Check for swipe gestures
     if (Math.max(absDeltaX, absDeltaY) > threshold) {
       if (absDeltaX > absDeltaY) {
-        // Horizontal swipe
         if (deltaX > 0) {
           handlers.onSwipeRight?.();
         } else {
           handlers.onSwipeLeft?.();
         }
       } else {
-        // Vertical swipe
         if (deltaY > 0) {
           handlers.onSwipeDown?.();
         } else {
@@ -121,20 +106,18 @@ export const useGestures = (
         }
       }
     } else {
-      // Check for double tap
       const now = Date.now();
-      if (now - lastTap < doubleTapDelay) {
+      if (now - lastTapRef.current < doubleTapDelay) {
         handlers.onDoubleTap?.();
-        setLastTap(0); // Reset to prevent triple tap
+        lastTapRef.current = 0;
       } else {
-        setLastTap(now);
+        lastTapRef.current = now;
       }
     }
 
-    // Reset touch positions
-    setTouchStart(null);
-    setTouchEnd(null);
-    setInitialDistance(0);
+    touchStartRef.current = null;
+    touchEndRef.current = null;
+    initialDistanceRef.current = 0;
   };
 
   useEffect(() => {
@@ -152,11 +135,11 @@ export const useGestures = (
       element.removeEventListener("touchmove", handleTouchMove);
       element.removeEventListener("touchend", handleTouchEnd);
 
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
       }
     };
-  }, [touchStart, touchEnd, lastTap, longPressTimer, initialDistance]);
+  }, []);
 
   return elementRef;
 };

@@ -3,6 +3,43 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Web3Tooltip } from '../Web3Tooltip';
 
+jest.mock('@/components/ui/tooltip', () => {
+  const React = require('react');
+  const TooltipContext = React.createContext<{
+    open: boolean;
+    setOpen: (v: boolean) => void;
+  }>({ open: false, setOpen: () => {} });
+  return {
+    TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    Tooltip: ({ children }: { children: React.ReactNode }) => {
+      const [open, setOpen] = React.useState(false);
+      const value = React.useMemo(() => ({ open, setOpen }), [open]);
+      return <TooltipContext.Provider value={value}>{children}</TooltipContext.Provider>;
+    },
+    TooltipTrigger: ({ children }: { children: React.ReactNode }) => {
+      const { setOpen } = React.useContext(TooltipContext);
+      const child = React.Children.only(children);
+      return React.cloneElement(child as React.ReactElement<React.HTMLAttributes<HTMLElement>>, {
+        onMouseEnter: (event: React.MouseEvent<HTMLElement>) => {
+          setOpen(true);
+          (child as React.ReactElement<{ onMouseEnter?: (e: React.MouseEvent<HTMLElement>) => void }>)
+            .props?.onMouseEnter?.(event);
+        },
+        onMouseLeave: (event: React.MouseEvent<HTMLElement>) => {
+          setOpen(false);
+          (child as React.ReactElement<{ onMouseLeave?: (e: React.MouseEvent<HTMLElement>) => void }>)
+            .props?.onMouseLeave?.(event);
+        },
+      });
+    },
+    TooltipContent: ({ children }: { children: React.ReactNode }) => {
+      const { open } = React.useContext(TooltipContext);
+      if (!open) return null;
+      return <div role="tooltip">{children}</div>;
+    },
+  };
+});
+
 describe('Web3Tooltip', () => {
   it('should render children with tooltip icon', () => {
     render(<Web3Tooltip term="gas fee">Gas Fee</Web3Tooltip>);

@@ -58,6 +58,7 @@ export function PurchaseTokenForm({ propertyId, propertyName, onSubmit }: Purcha
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
+        noValidate
         data-tour="purchase-form"
         className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900"
       >
@@ -71,10 +72,10 @@ export function PurchaseTokenForm({ propertyId, propertyName, onSubmit }: Purcha
         <FormField
           control={form.control}
           name="tokenAmount"
-          render={({ field }) => {
+          render={({ field, fieldState }) => {
             const descriptionId = `${field.name}-description`
             const messageId = `${field.name}-message`
-            const errorMessage = getFieldError(field.name as keyof PurchaseTokenFormValues)
+            const errorMessage = fieldState.error?.message
 
             return (
               <FormItem>
@@ -105,10 +106,10 @@ export function PurchaseTokenForm({ propertyId, propertyName, onSubmit }: Purcha
         <FormField
           control={form.control}
           name="maxPricePerToken"
-          render={({ field }) => {
+          render={({ field, fieldState }) => {
             const descriptionId = `${field.name}-description`
             const messageId = `${field.name}-message`
-            const errorMessage = getFieldError(field.name as keyof PurchaseTokenFormValues)
+            const errorMessage = fieldState.error?.message
 
             return (
               <FormItem>
@@ -139,10 +140,10 @@ export function PurchaseTokenForm({ propertyId, propertyName, onSubmit }: Purcha
         <FormField
           control={form.control}
           name="purchaseType"
-          render={({ field }) => {
+          render={({ field, fieldState }) => {
             const descriptionId = `${field.name}-description`
             const messageId = `${field.name}-message`
-            const errorMessage = getFieldError(field.name as keyof PurchaseTokenFormValues)
+            const errorMessage = fieldState.error?.message
 
             return (
               <FormItem>

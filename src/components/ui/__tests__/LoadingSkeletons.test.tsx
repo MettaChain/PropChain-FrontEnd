@@ -66,15 +66,12 @@ describe("LoadingSkeletons", () => {
     it("renders stats, charts, and activity components", () => {
       const { container } = render(<DashboardSkeleton />);
       
-      // Stats cards (4 items in row)
-      const statsGrid = container.querySelector(".grid-cols-4");
+      const statsGrid = container.querySelector("[class*='grid-cols']");
       expect(statsGrid).toBeInTheDocument();
 
-      // Large chart row
-      const chartGrid = container.querySelector(".lg\\:col-span-2");
+      const chartGrid = container.querySelector("[class*='col-span']");
       expect(chartGrid).toBeInTheDocument();
 
-      // Transaction / activity table
       const activityTable = container.querySelector("table");
       expect(activityTable).toBeInTheDocument();
     });

@@ -36,8 +36,7 @@ export function assertValidAddress(addr: string): string {
     const checksummed = getAddress(trimmed);
     return checksummed;
   } catch {
-    logger.warn("Failed to parse balance");
-    return "0.0000";
+    throw new Error("Invalid wallet address checksum");
   }
 }
 

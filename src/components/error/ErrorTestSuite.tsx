@@ -219,7 +219,7 @@ const ScenarioCard = memo(
           </div>
           <div className="flex-1">
             <CardTitle className="text-lg">{scenario.name}</CardTitle>
-            <div className={`text-sm font-medium ${status.color}`}>{status.status.toUpperCase()}</div>
+            <div className={`text-sm font-medium ${status.color}`}>{status.toUpperCase()}</div>
           </div>
         </div>
       </CardHeader>

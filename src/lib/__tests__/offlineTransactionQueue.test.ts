@@ -86,6 +86,25 @@ beforeEach(() => {
       return request;
     }),
   };
+
+  const swListeners: Record<string, Function[]> = {};
+  const swAddEventListener = jest.fn((event: string, cb: Function) => {
+    if (!swListeners[event]) swListeners[event] = [];
+    swListeners[event].push(cb);
+  });
+  const swDispatchEvent = jest.fn((event: Event) => {
+    const type = (event as MessageEvent).type || event.type;
+    (swListeners[type] || []).forEach((cb) => cb(event));
+  });
+  Object.defineProperty(navigator, 'serviceWorker', {
+    value: {
+      addEventListener: swAddEventListener,
+      dispatchEvent: swDispatchEvent,
+      ready: Promise.resolve({ sync: { register: jest.fn().mockResolvedValue(undefined) } }),
+    },
+    configurable: true,
+    writable: true,
+  });
 });
 
 import {
@@ -184,7 +203,7 @@ describe("offlineTransactionQueue", () => {
         payload: {},
       });
 
-      expect(item.id).toMatch(/^tx-\d+-[a-z0-9]+$/i);
+      expect(item.id).toMatch(/^tx_[a-z0-9-]+$/i);
       expect(item.attempts).toBe(0);
       expect(item.status).toBe("pending");
       expect(item.maxAttempts).toBe(5);
@@ -543,7 +562,7 @@ describe("offlineTransactionQueue", () => {
         payload: {},
       });
 
-      expect(enqueueResult.id).toMatch(/^tx-/);
+      expect(enqueueResult.id).toMatch(/^tx_/);
 
       // All read/clear paths should be safe no-ops.
       expect(await getQueuedTransactions()).toEqual([]);

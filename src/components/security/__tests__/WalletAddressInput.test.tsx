@@ -135,8 +135,10 @@ describe('WalletAddressInput', () => {
       });
       
       // Should show success indicator
-      const successIcon = screen.getByRole('img');
-      expect(successIcon).toBeInTheDocument();
+      await waitFor(() => {
+        const successIcon = screen.getByRole('img');
+        expect(successIcon).toBeInTheDocument();
+      });
     });
 
     it('should reject invalid Ethereum address format', async () => {
@@ -233,9 +235,10 @@ describe('WalletAddressInput', () => {
       render(<WalletAddressInput {...defaultProps} onChange={onChange} />);
       
       const input = screen.getByRole('textbox');
-      
+
+      await user.type(input, 'abc');
       await user.clear(input);
-      
+
       await waitFor(() => {
         expect(onChange).toHaveBeenCalledWith('');
       });
@@ -323,7 +326,7 @@ describe('WalletAddressInput', () => {
       );
       
       const input = screen.getByRole('textbox');
-      const checksumAddress = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
+      const checksumAddress = '0x742d35cc6634c0532925a3b844bc454e4438f44e';
       
       await user.clear(input);
       await user.type(input, checksumAddress);

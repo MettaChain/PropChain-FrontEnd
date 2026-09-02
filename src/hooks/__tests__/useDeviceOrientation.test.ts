@@ -160,6 +160,7 @@ describe('useDeviceOrientation', () => {
   });
 
   it('updates orientation on deviceorientation event', () => {
+    const addSpy = jest.spyOn(window, 'addEventListener');
     (global as any).DeviceOrientationEvent = function () {};
 
     const { result } = renderHook(() => useDeviceOrientation());
@@ -172,13 +173,7 @@ describe('useDeviceOrientation', () => {
     } as DeviceOrientationEvent;
 
     act(() => {
-      window.dispatchEvent(
-        new CustomEvent('deviceorientation', { detail: event }),
-      );
-    });
-
-    act(() => {
-      const handler = (window.addEventListener as jest.Mock).mock.calls.find(
+      const handler = addSpy.mock.calls.find(
         (c: any[]) => c[0] === 'deviceorientation',
       )?.[1];
       if (handler) handler(event);
@@ -188,6 +183,8 @@ describe('useDeviceOrientation', () => {
     expect(result.current.orientation.beta).toBe(30);
     expect(result.current.orientation.gamma).toBe(15);
     expect(result.current.orientation.absolute).toBe(true);
+
+    addSpy.mockRestore();
   });
 
   it('removes event listener on unmount', () => {

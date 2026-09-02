@@ -1,6 +1,12 @@
 import { act, renderHook } from '@testing-library/react';
-import { useWalletStore } from '../walletStore';
-import { DEFAULT_CHAIN_ID } from '@/config/chains';
+
+jest.mock('@/config/chains', () => ({
+  DEFAULT_CHAIN_ID: 1,
+  CHAIN_IDS: { ETHEREUM: 1, POLYGON: 137, BSC: 56, FOUNDRY: 31337 },
+}));
+
+const { useWalletStore } = require('../walletStore');
+const { DEFAULT_CHAIN_ID } = require('@/config/chains');
 
 describe('walletStore', () => {
   beforeEach(() => {

@@ -197,7 +197,7 @@ describe('portfolioStore', () => {
     expect(result.current.calculateBridgeSuggestions()).toEqual([]);
   });
 
-  it('calculateBridgeSuggestions delegates to the service when loaded', () => {
+  it('calculateBridgeSuggestions delegates to the service when loaded', async () => {
     mockFetchMultiChainPortfolio.mockResolvedValue(mockPortfolio());
     mockCalculateBridgeSuggestions.mockReturnValue([mockSuggestion]);
 
@@ -207,8 +207,8 @@ describe('portfolioStore', () => {
       result.current.loadPortfolio('0x1234...5678');
     });
 
-    act(() => {
-      expect(result.current.calculateBridgeSuggestions()).toEqual([mockSuggestion]);
-    });
+    await waitFor(() => expect(result.current.portfolio).not.toBeNull());
+
+    expect(result.current.calculateBridgeSuggestions()).toEqual([mockSuggestion]);
   });
 });

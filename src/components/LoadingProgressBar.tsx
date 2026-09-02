@@ -49,16 +49,16 @@ export const LoadingProgressBar: React.FC<LoadingProgressBarProps> = ({
 
   useEffect(() => {
     // Check if user prefers reduced motion
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
     if (prefersReducedMotion) {
       return;
     }
 
-    // Start progress on route change
-    setIsVisible(true);
+    // Bar stays hidden until the first progress tick (route activity)
+    setIsVisible(false);
     setProgress(0);
 
-    // Simulate progress increase
+    // Simulate progress increase on route change
     let currentProgress = 0;
     const increment = () => {
       currentProgress += Math.random() * 15;
@@ -66,6 +66,7 @@ export const LoadingProgressBar: React.FC<LoadingProgressBarProps> = ({
         currentProgress = 90; // Cap at 90% until route change completes
       }
       setProgress(currentProgress);
+      setIsVisible(true);
     };
 
     timerRef.current = setInterval(increment, 100);
@@ -78,21 +79,18 @@ export const LoadingProgressBar: React.FC<LoadingProgressBarProps> = ({
   }, [pathname, searchParams]);
 
   useEffect(() => {
-    if (progress > 0 && progress < 100) {
-      // Complete the progress when route changes
-      setProgress(100);
-
-      const completeTimer = setTimeout(() => {
-        setIsVisible(false);
-        setProgress(0);
-      }, duration);
-
-      return () => clearTimeout(completeTimer);
+    if (!isVisible) {
+      // Return undefined explicitly when condition is not met
+      return undefined;
     }
-    
-    // Return undefined explicitly when condition is not met
-    return undefined;
-  }, [pathname, searchParams, progress, duration]);
+
+    const completeTimer = setTimeout(() => {
+      setIsVisible(false);
+      setProgress(0);
+    }, duration);
+
+    return () => clearTimeout(completeTimer);
+  }, [isVisible, duration]);
 
   if (!isVisible) return null;
 

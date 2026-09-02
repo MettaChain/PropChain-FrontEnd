@@ -121,9 +121,8 @@ describe("ARPropertyPreview", () => {
 
     expect(screen.queryByText("Property Type")).not.toBeInTheDocument();
 
-    const buttons = screen.getAllByRole("button");
-    // Info button is the last button in the header
-    fireEvent.click(buttons[buttons.length - 1]);
+    const infoButton = screen.getByRole("button", { name: /property info/i });
+    fireEvent.click(infoButton);
 
     expect(screen.getByText("Property Type")).toBeInTheDocument();
     expect(screen.getByText("Residential")).toBeInTheDocument();

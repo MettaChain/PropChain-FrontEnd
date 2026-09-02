@@ -3,7 +3,7 @@ import { assertValidAddress, fetchWalletBalance } from '@/utils/walletHelpers';
 
 describe('assertValidAddress', () => {
   // EIP-55 valid checksummed addresses
-  const validChecksummed = '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45';
+  const validChecksummed = '0x742D35cC6634C0532925a3B8d4c9dB96c4b4dB45';
   const anotherValid = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed';
 
   it('returns checksummed address for valid EIP-55 address', () => {

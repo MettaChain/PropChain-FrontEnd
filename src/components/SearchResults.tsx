@@ -110,6 +110,7 @@ const SearchResultsInner: React.FC<SearchResultsProps> = ({
           <select
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value as SortOption)}
+            aria-label="Sort properties"
             className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
           >
             {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (

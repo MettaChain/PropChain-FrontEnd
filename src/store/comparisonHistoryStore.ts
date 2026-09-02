@@ -30,7 +30,6 @@ export const useComparisonHistoryStore = create<ComparisonHistoryStore>()(
       addComparison: (propertyIds: string[]) => {
         if (propertyIds.length === 0) return;
 
-        const id = genId(`comp_${Date.now()}`);
         const id = generateSecureId('comp');
         const shareUrl = `/compare?ids=${propertyIds.join(',')}`;
         

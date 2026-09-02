@@ -4,9 +4,16 @@ import { usePaginationUrl } from '../usePaginationUrl';
 const mockSetSearchParams = jest.fn();
 let mockSearchParams: URLSearchParams = new URLSearchParams();
 
-jest.mock('react-router-dom', () => ({
-  useSearchParams: () => [mockSearchParams, (...args: unknown[]) => mockSetSearchParams(...args)],
-}));
+jest.mock(
+  'react-router-dom',
+  () => ({
+    useSearchParams: () => [
+      mockSearchParams,
+      (...args: unknown[]) => mockSetSearchParams(...args),
+    ],
+  }),
+  { virtual: true },
+);
 
 describe('usePaginationUrl', () => {
   beforeEach(() => {

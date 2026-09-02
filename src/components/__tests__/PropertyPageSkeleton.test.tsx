@@ -39,10 +39,8 @@ describe('PropertyPageSkeleton', () => {
     const cards = grid!.querySelectorAll(':scope > div');
 
     cards.forEach((card) => {
-      // Image placeholder: h-48 skeleton
-      const imageSkeleton = card.querySelector('[class*="h-48"]');
+      const imageSkeleton = card.querySelector('[class*="h-56"]');
       expect(imageSkeleton).toBeInTheDocument();
-      // Content area
       const contentArea = card.querySelector('.p-4');
       expect(contentArea).toBeInTheDocument();
     });

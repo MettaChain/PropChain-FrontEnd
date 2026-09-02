@@ -201,6 +201,7 @@ const ARPropertyPreviewInner = ({
                 variant="ghost"
                 size="sm"
                 onClick={toggleInfo}
+                aria-label="Property info"
                 className="text-white hover:bg-white/20"
               >
                 <Info className="w-5 h-5" />

@@ -130,8 +130,67 @@ const setupWalletStore = (
 
 describe('useSecurity', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     setupWalletStore();
+
+    (auditLogger.getSecurityAlerts as jest.Mock).mockReturnValue([]);
+    (transactionMonitor.getWalletMetrics as jest.Mock).mockReturnValue(null);
+    (transactionMonitor.getWalletAnomalies as jest.Mock).mockReturnValue([]);
+    (transactionMonitor.getRiskAssessment as jest.Mock).mockReturnValue({
+      riskScore: 0,
+      factors: [],
+      recommendations: [],
+    });
+    (blockchainSecurity.checkAddressRisk as jest.Mock).mockResolvedValue({
+      riskLevel: 'low',
+      riskScore: 10,
+    });
+    (blockchainSecurity.validateTransaction as jest.Mock).mockResolvedValue({
+      riskScore: 10,
+      warnings: [],
+      blocks: [],
+    });
+    (RateLimiter.getInstance as jest.Mock).mockReturnValue({
+      check: jest.fn().mockReturnValue({
+        allowed: true,
+        remainingAttempts: 5,
+        retryAfter: undefined,
+      }),
+    });
+    (WalletValidator.verifyDomain as jest.Mock).mockReturnValue({
+      isVerified: true,
+      warnings: [],
+    });
+    (WalletValidator.validateWalletConnection as jest.Mock).mockResolvedValue({
+      isValid: true,
+      warnings: [],
+      errors: [],
+    });
+    (WalletValidator.validateTransaction as jest.Mock).mockReturnValue({
+      isValid: true,
+      warnings: [],
+      errors: [],
+      riskScore: 0,
+    });
+    (PhishingProtection.detectPhishing as jest.Mock).mockReturnValue({
+      isPhishing: false,
+      warnings: [],
+    });
+    (PhishingProtection.validateTransactionData as jest.Mock).mockReturnValue({
+      isMalicious: false,
+      warnings: [],
+    });
+    (PhishingProtection.validateSignature as jest.Mock).mockResolvedValue({
+      isValid: true,
+      isMalicious: false,
+      warnings: [],
+    });
+    (PhishingProtection.createSecureSignatureRequest as jest.Mock).mockReturnValue(
+      {
+        safeMessage: 'safe message',
+        warnings: [],
+      },
+    );
   });
 
   it('returns initial security state with isSecure true', () => {

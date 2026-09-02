@@ -71,7 +71,7 @@ describe('usePaginationParams', () => {
     mockSearchParams = new URLSearchParams('size=48');
     const { result } = renderHook(() => usePaginationParams());
 
-    expect(result.current.buildHref(4)).toBe('/properties?size=48&page=4&size=48');
+    expect(result.current.buildHref(4)).toBe('/properties?size=48&page=4');
   });
 
   it('setPage pushes the updated href without scrolling', () => {

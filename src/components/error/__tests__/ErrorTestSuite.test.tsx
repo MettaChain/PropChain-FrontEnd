@@ -24,9 +24,10 @@ describe('ErrorTestSuite', () => {
 
     expect(firstTestButton).toBeDisabled()
     expect(screen.getByText(/Running.../i)).toBeInTheDocument()
-    expect(await screen.findByText(/CAUGHT/i)).toBeInTheDocument()
 
-    jest.runAllTimers()
+    jest.advanceTimersByTime(2000)
+    expect((await screen.findAllByText(/CAUGHT/i)).length).toBeGreaterThan(0)
+
     await waitFor(() => expect(firstTestButton).not.toBeDisabled())
     jest.useRealTimers()
   })
@@ -38,7 +39,8 @@ describe('ErrorTestSuite', () => {
     render(<ErrorTestSuite />)
 
     await user.click(screen.getAllByRole('button', { name: /Test Error/i })[0])
-    expect(await screen.findByText(/CAUGHT/i)).toBeInTheDocument()
+    jest.advanceTimersByTime(2000)
+    expect((await screen.findAllByText(/CAUGHT/i)).length).toBeGreaterThan(0)
     expect(screen.getByText(/Test Results/i)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Clear Results/i }))

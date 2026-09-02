@@ -50,12 +50,26 @@ describe('useDebouncedSearch', () => {
 
     act(() => {
       result.current.setQuery('h');
+    });
+    act(() => {
       jest.advanceTimersByTime(100);
+    });
+    act(() => {
       result.current.setQuery('he');
+    });
+    act(() => {
       jest.advanceTimersByTime(100);
+    });
+    act(() => {
       result.current.setQuery('hel');
+    });
+    act(() => {
       jest.advanceTimersByTime(100);
+    });
+    act(() => {
       result.current.setQuery('hello');
+    });
+    act(() => {
       jest.advanceTimersByTime(300);
     });
 

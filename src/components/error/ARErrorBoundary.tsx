@@ -184,58 +184,6 @@ export class ARErrorBoundary extends Component<Props, State> {
   };
 
   render() {
-    // Show AR support warning if AR is not supported
-    if (!this.state.isARSupported && !this.state.hasError) {
-      return (
-        <div className="min-h-100 flex items-center justify-center p-4">
-          <div className="max-w-lg w-full bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Smartphone className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-              </div>
-
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                AR Not Supported
-              </h2>
-
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
-                Your device doesn't support augmented reality features. Please
-                try accessing this page on a compatible device.
-              </p>
-
-              <div className="mb-6 text-left">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                  Device Requirements:
-                </h3>
-                <div className="space-y-2">
-                  {this.getCapabilityStatus(
-                    this.state.deviceCapabilities.hasCamera,
-                    "Camera Access",
-                  )}
-                  {this.getCapabilityStatus(
-                    this.state.deviceCapabilities.hasGyroscope,
-                    "Gyroscope",
-                  )}
-                  {this.getCapabilityStatus(
-                    this.state.deviceCapabilities.hasAccelerometer,
-                    "Accelerometer",
-                  )}
-                  {this.getCapabilityStatus("xr" in navigator, "WebXR Support")}
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={() => window.location.reload()}
-              >
-                Refresh Page
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     if (this.state.hasError && this.state.error) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -385,6 +333,58 @@ export class ARErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return (
+      <>
+        {!this.state.isARSupported && (
+          <div className="min-h-100 flex items-center justify-center p-4">
+            <div className="max-w-lg w-full bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Smartphone className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                </div>
+
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  AR Not Supported
+                </h2>
+
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Your device doesn't support augmented reality features. Please
+                  try accessing this page on a compatible device.
+                </p>
+
+                <div className="mb-6 text-left">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                    Device Requirements:
+                  </h3>
+                  <div className="space-y-2">
+                    {this.getCapabilityStatus(
+                      this.state.deviceCapabilities.hasCamera,
+                      "Camera Access",
+                    )}
+                    {this.getCapabilityStatus(
+                      this.state.deviceCapabilities.hasGyroscope,
+                      "Gyroscope",
+                    )}
+                    {this.getCapabilityStatus(
+                      this.state.deviceCapabilities.hasAccelerometer,
+                      "Accelerometer",
+                    )}
+                    {this.getCapabilityStatus("xr" in navigator, "WebXR Support")}
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh Page
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        {this.props.children}
+      </>
+    );
   }
 }

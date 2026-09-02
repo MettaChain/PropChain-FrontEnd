@@ -49,8 +49,12 @@ describe('ResponsiveContainerExample', () => {
 
     it('should display bedroom and bathroom counts', () => {
       render(<StyledContainerExample />);
-      expect(screen.getByText(/Bedrooms:\s*3/i)).toBeInTheDocument();
-      expect(screen.getByText(/Bathrooms:\s*2/i)).toBeInTheDocument();
+      expect(
+        screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Bedrooms: 3')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Bathrooms: 2')
+      ).toBeInTheDocument();
     });
   });
 
@@ -168,7 +172,10 @@ describe('ResponsiveContainerExample', () => {
   describe('Accessibility', () => {
     it('should have proper heading hierarchy', () => {
       render(<ResponsiveContainerDemo />);
-      const mainHeading = screen.getByRole('heading', { level: 1 });
+      const mainHeading = screen.getByRole('heading', {
+        level: 1,
+        name: /ResponsiveContainer Examples/i,
+      });
       expect(mainHeading).toBeInTheDocument();
     });
 

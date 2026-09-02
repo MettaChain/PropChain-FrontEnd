@@ -206,7 +206,7 @@ export function ComparisonExample() {
 /**
  * Demo page component that shows all examples
  */
-export default function ResponsiveContainerDemo() {
+export function ResponsiveContainerDemo() {
   return (
     <div className="space-y-12 py-8">
       <ResponsiveContainer>

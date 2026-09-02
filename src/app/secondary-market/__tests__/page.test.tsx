@@ -43,6 +43,21 @@ jest.mock('sonner', () => ({
   },
 }));
 
+jest.mock('@/components/WalletConnector', () => ({
+  WalletConnector: () => <div data-testid="wallet-connector" />,
+}));
+
+jest.mock('@/components/ui/button', () => ({
+  Button: ({ children, onClick, variant, className, asChild, ...props }: Record<string, unknown>) => {
+    if (asChild) return <>{children}</>;
+    return <button onClick={onClick as React.MouseEventHandler<HTMLButtonElement>} className={className as string}>{children}</button>;
+  },
+}));
+
+jest.mock('@/components/LoadingSpinner', () => ({
+  LoadingSpinner: () => <div data-testid="loading-spinner" />,
+}));
+
 jest.mock('@/components/error/withRouteErrorBoundary', () => ({
   withRouteErrorBoundary: (Component: React.ComponentType) => Component,
 }));

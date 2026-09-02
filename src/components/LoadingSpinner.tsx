@@ -111,5 +111,4 @@ export const Skeleton: React.FC<SkeletonProps> = ({ className = '', lines = 1 })
   );
 };
 
-/** @deprecated Use SkeletonBlock or the shadcn Skeleton component instead */
-export const Skeleton = SkeletonBlock;
+

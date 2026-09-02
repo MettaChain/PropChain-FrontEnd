@@ -24,6 +24,8 @@ export function usePerformanceMonitoring(callback: (metrics: PerformanceMetrics)
       }
     };
   }, []);
+
+  return callbackRef.current;
 }
 
 export function resetPerformanceMonitoring() {

@@ -6,6 +6,7 @@ import { SecondaryMarketListing } from '@/types/property';
 import { WalletConnector } from '@/components/WalletConnector';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { CardSkeleton } from '@/components/ui/LoadingSkeletons';
 import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 import Link from 'next/link';
 import Image from 'next/image';

@@ -12,7 +12,7 @@ jest.mock('@/utils/logger', () => ({
 
 const mockRun = jest.fn();
 jest.mock('axe-core', () => ({
-  default: { run: mockRun },
+  run: mockRun,
 }));
 
 describe('useAxeAudit', () => {

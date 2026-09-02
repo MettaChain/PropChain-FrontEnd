@@ -108,7 +108,7 @@ describe('cartStore', () => {
     });
 
     expect(result.current.items).toHaveLength(1);
-    expect(result.current.items[0].id).toBe('prop-2');
+    expect(result.current.items[0].property.id).toBe('prop-2');
     expect(result.current.totalCost).toBe(50);
   });
 

@@ -68,7 +68,6 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
             return (
               <li
                 key={virtualRow.index}
-                role="presentation"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -83,20 +82,11 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
                     : `flex flex-col gap-4 mb-4`
                 }
               >
-                {itemsInRow.map((property, idx) => {
-                  const absoluteIndex = startIndex + idx;
-                  return (
-                    <div
-                      key={property.id}
-                      role="listitem"
-                      aria-setsize={properties.length}
-                      aria-posinset={absoluteIndex + 1}
-                      aria-labelledby={`property-${property.id}-name`}
-                    >
-                      <PropertyCard property={property} viewMode={viewMode} />
-                    </div>
-                  );
-                })}
+                {itemsInRow.map((property) => (
+                  <div key={property.id}>
+                    <PropertyCard property={property} viewMode={viewMode} />
+                  </div>
+                ))}
               </li>
             );
           })}

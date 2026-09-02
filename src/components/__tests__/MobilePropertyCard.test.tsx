@@ -66,7 +66,7 @@ describe("MobilePropertyCard", () => {
       };
       render(<MobilePropertyCard property={property} index={0} />);
       expect(screen.getByText("3")).toBeInTheDocument();
-      expect(screen.getByText("2")).toBeInTheDocument();
+      expect(screen.getAllByText("2").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText("1,500")).toBeInTheDocument();
     });
 

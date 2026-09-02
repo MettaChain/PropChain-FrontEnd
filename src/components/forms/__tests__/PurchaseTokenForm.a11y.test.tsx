@@ -16,6 +16,7 @@ describe('PurchaseTokenForm accessibility', () => {
 
     const tokenAmountInput = screen.getByLabelText(/token amount/i);
 
+
     await waitFor(() => {
       expect(tokenAmountInput).toHaveAttribute('aria-invalid', 'true');
       expect(tokenAmountInput).toHaveAttribute('aria-describedby');

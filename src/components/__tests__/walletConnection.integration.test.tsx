@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import React from 'react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,6 +8,21 @@ import { WalletModal } from '../WalletModal';
 import { useWalletStore } from '@/store/walletStore';
 import { useSecurity } from '@/hooks/useSecurity';
 import { getWalletErrorMessage } from '@/utils/errorHandling';
+import { updateWalletBalance } from '@/utils/walletHelpers';
+
+// Break the circular dependency chain (walletStore -> chains -> env -> logger
+// -> csrfClient -> walletStore) by stubbing the chain config module.
+jest.mock('@/config/chains', () => ({
+  toChainId: (chainId: number) => {
+    const parsed = Number(chainId) || undefined;
+    // Only chain id 1 is considered supported in this test mock
+    return parsed === 1 ? 1 : undefined;
+  },
+  getChainName: () => 'Ethereum',
+  DEFAULT_CHAIN_ID: 1,
+  SUPPORTED_CHAINS: [{ id: 1 }],
+  DEFAULT_CHAIN: { id: 1, name: 'Ethereum' },
+}));
 
 // Mock wagmi hooks
 jest.mock('wagmi', () => ({
@@ -47,18 +63,42 @@ jest.mock('next/dynamic', () => (loader: any) => {
 
 // Mock security hook
 jest.mock('@/hooks/useSecurity', () => ({
-  useSecurity: () => ({
+  useSecurity: jest.fn(() => ({
     validateWalletConnection: jest.fn().mockResolvedValue({
       isValid: true,
       warnings: [],
       blocks: [],
     }),
-  }),
+  })),
 }));
 
 // Mock error handling
 jest.mock('@/utils/errorHandling', () => ({
-  getWalletErrorMessage: (error: any) => error?.message || 'Unknown error',
+  getFriendlyWeb3ErrorMessage: (error: any) => {
+    if (!error) return 'Unknown error';
+    if (typeof error === 'object' && error.code === 4001) return 'User rejected the connection request';
+    const message =
+      error?.message || (typeof error === 'object' ? String(error.code ?? '') : String(error));
+    return message || 'Unknown error';
+  },
+  getWalletErrorMessage: (error: any) => {
+    if (!error) return 'Unknown error';
+    if (typeof error === 'object' && error.code === 4001) return 'User rejected the connection request';
+    if (typeof error === 'object' && error.code === 4902) return 'Unsupported network';
+    const message =
+      error?.message || (typeof error === 'object' ? String(error.code ?? '') : String(error));
+    if (/MetaMask is not installed/i.test(message)) return 'MetaMask is not installed. Please install MetaMask to continue.';
+    if (/Unsupported network/i.test(message)) return 'Unsupported network';
+    return message || 'Unknown error';
+  },
+}));
+
+// Mock the viem public client so wallet-balance fetching does not attempt a
+// real RPC call (which is unavailable in the jsdom test environment).
+jest.mock('@/lib/viem-client', () => ({
+  publicClient: {
+    getBalance: jest.fn().mockResolvedValue(1500000000000000000n), // 1.5 ETH
+  },
 }));
 
 // Mock chain provider
@@ -90,18 +130,38 @@ const createTestProviders = (children: React.ReactNode) => {
 // Simple test connector that bypasses next/dynamic and renders WalletModal synchronously
 const TestConnector: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
-  const { isConnecting } = useWalletStore();
+  const { isConnecting, isConnected, address, balance, setDisconnected } = useWalletStore();
+
+  // Fetch wallet balance when connected (mirrors the real WalletConnector)
+  React.useEffect(() => {
+    if (isConnected && address) {
+      updateWalletBalance(window.ethereum, address, useWalletStore.getState().setBalance);
+    }
+  }, [isConnected, address]);
+
+  const displayAddress = (addr: string) =>
+    `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
   return (
     <div className="flex items-center justify-center gap-3">
-      <button
-        onClick={() => setIsOpen(true)}
-        disabled={isConnecting}
-        data-tour="wallet-connector"
-        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-      >
-        {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-      </button>
+      {isConnected && address ? (
+        <>
+          <span>{displayAddress(address)}</span>
+          {balance && <span>{balance} ETH</span>}
+          <button type="button" onClick={() => setDisconnected()}>
+            Disconnect
+          </button>
+        </>
+      ) : (
+        <button
+          onClick={() => setIsOpen(true)}
+          disabled={isConnecting}
+          data-tour="wallet-connector"
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+        >
+          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+        </button>
+      )}
 
       <WalletModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </div>
@@ -113,6 +173,25 @@ describe('Wallet Connection Integration Tests', () => {
     // Reset wallet store before each test
     useWalletStore.getState().reset();
     jest.clearAllMocks();
+    // Reset the security mock to its default (valid) return value so an
+    // override made in one test does not leak into subsequent tests.
+    (useSecurity as unknown as jest.Mock).mockReturnValue({
+      validateWalletConnection: jest.fn().mockResolvedValue({
+        isValid: true,
+        warnings: [],
+        blocks: [],
+      }),
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    // Remove any leftover Radix Dialog portal nodes and body-level styles that
+    // can leak between tests and keep a modal "open" in the next test.
+    document.body.innerHTML = '';
+    document.body.removeAttribute('data-scroll-locked');
+    document.body.style.pointerEvents = '';
+    document.body.style.overflow = '';
   });
 
   describe('Connect MetaMask successfully', () => {
@@ -193,11 +272,11 @@ describe('Wallet Connection Integration Tests', () => {
 
       // Should show error message
       await waitFor(() => {
-        expect(screen.getByText(/user rejected the connection request/i)).toBeInTheDocument();
+        expect(screen.getByText(/you rejected the connection request/i)).toBeInTheDocument();
       });
 
-      // Connect button should still be visible
-      expect(screen.getByRole('button', { name: /connect wallet/i })).toBeInTheDocument();
+      // Connect modal should still be open so the user can retry
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
 
@@ -408,15 +487,15 @@ describe('Wallet Connection Integration Tests', () => {
         expect(screen.getByText(/address is blacklisted/i)).toBeInTheDocument();
       });
 
-      // Should not connect
-      expect(screen.getByRole('button', { name: /connect wallet/i })).toBeInTheDocument();
+      // Should not connect - the connect modal stays open so the user can retry
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
 
   describe('Wallet not installed', () => {
     it('should handle MetaMask not installed', async () => {
       const user = userEvent.setup();
-      
+
       // Mock no wallet installed
       Object.defineProperty(window, 'ethereum', {
         value: undefined,
@@ -429,14 +508,12 @@ describe('Wallet Connection Integration Tests', () => {
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
       await user.click(connectButton);
 
-      // Click MetaMask option
-      const metaMaskButton = screen.getByRole('button', { name: /metamask/i });
-      await user.click(metaMaskButton);
+      // MetaMask is not presented as a connectable option when not installed
+      expect(screen.queryByRole('button', { name: /metamask/i })).not.toBeInTheDocument();
 
-      // Should show error
-      await waitFor(() => {
-        expect(screen.getByText(/metamask is not installed/i)).toBeInTheDocument();
-      });
+      // Instead the modal shows an install prompt for MetaMask
+      expect(screen.getAllByText(/MetaMask/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('link', { name: /install/i }).length).toBeGreaterThan(0);
     });
   });
 
@@ -482,7 +559,7 @@ describe('Wallet Connection Integration Tests', () => {
   describe('Modal interactions', () => {
     it('should close modal when clicking outside', async () => {
       const user = userEvent.setup();
-      
+
       render(createTestProviders(<TestConnector />));
 
       // Click connect wallet button to open modal
@@ -492,9 +569,10 @@ describe('Wallet Connection Integration Tests', () => {
       // Modal should be open
       expect(screen.getByRole('heading', { name: /connect wallet/i })).toBeInTheDocument();
 
-      // Click outside modal (backdrop)
-      const backdrop = screen.getByText(''); // The backdrop div
-      await user.click(backdrop);
+      // Click outside modal (backdrop overlay)
+      const overlay = document.querySelector('[data-slot="dialog-overlay"]');
+      expect(overlay).not.toBeNull();
+      await user.click(overlay as Element);
 
       // Modal should close
       await waitFor(() => {
@@ -504,15 +582,15 @@ describe('Wallet Connection Integration Tests', () => {
 
     it('should close modal when clicking close button', async () => {
       const user = userEvent.setup();
-      
-      render(createTestProviders(<WalletConnector />));
+
+      render(createTestProviders(<TestConnector />));
 
       // Click connect wallet button to open modal
       const connectButton = screen.getByRole('button', { name: /connect wallet/i });
       await user.click(connectButton);
 
       // Click close button
-      const closeButton = screen.getByRole('button', { name: '' }); // X button
+      const closeButton = screen.getByRole('button', { name: /close wallet selector/i });
       await user.click(closeButton);
 
       // Modal should close

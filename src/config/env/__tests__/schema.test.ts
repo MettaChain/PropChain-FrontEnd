@@ -4,6 +4,10 @@
  * Issue #935
  */
 
+jest.mock('@/utils/logger', () => ({
+  logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() },
+}));
+
 import { validateEnv, validateEnvRequirements, envSchema } from '../schema';
 
 describe('envSchema', () => {

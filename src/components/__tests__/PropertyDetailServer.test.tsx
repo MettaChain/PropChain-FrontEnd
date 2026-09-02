@@ -35,6 +35,20 @@ jest.mock('../MortgageCalculator', () => ({
   ),
 }));
 
+jest.mock('../LazyChart', () => ({
+  withLazyChart: (importFn: () => Promise<{ default: React.ComponentType<any> }>) => {
+    const React = require('react');
+    return function LazyWrapper(props: any) {
+      const [Component, setComponent] = React.useState<React.ComponentType<any> | null>(null);
+      React.useEffect(() => {
+        importFn().then((mod) => setComponent(() => mod.default));
+      }, []);
+      if (!Component) return null;
+      return <Component {...props} />;
+    };
+  },
+}));
+
 describe('PropertyDetailServer', () => {
   it('renders property name and location', () => {
     render(<PropertyDetailServer property={mockPropertyDetail} />);
@@ -60,11 +74,11 @@ describe('PropertyDetailServer', () => {
     ).toBeInTheDocument();
   });
 
-  it('passes typed calculator defaults to MortgageCalculator', () => {
+  it('passes typed calculator defaults to MortgageCalculator', async () => {
     render(<PropertyDetailServer property={mockPropertyDetail} />);
 
     const defaults = getCalculatorDefaults(mockPropertyDetail);
-    expect(screen.getByTestId('mortgage-calculator')).toHaveTextContent(
+    expect(await screen.findByTestId('mortgage-calculator')).toHaveTextContent(
       `${defaults.propertyPrice}-${defaults.defaultYield}`,
     );
   });

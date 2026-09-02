@@ -14,15 +14,21 @@ jest.mock('viem/chains', () => ({
 }));
 
 jest.mock('ethers', () => ({
-  providers: {
-    Web3Provider: jest.fn(() => ({ getSigner: () => ({}) })),
+  ethers: {
+    providers: {
+      Web3Provider: jest.fn(() => ({ getSigner: () => ({}) })),
+    },
   },
 }));
 
-jest.mock('@safe-global/protocol-kit', () => ({
-  EthersAdapter: jest.fn(() => ({})),
-  default: { create: (...args: unknown[]) => mockSafeCreate(...args) },
-}));
+jest.mock(
+  '@safe-global/protocol-kit',
+  () => ({
+    EthersAdapter: jest.fn(() => ({})),
+    create: (...args: unknown[]) => mockSafeCreate(...args),
+  }),
+  { virtual: true },
+);
 
 jest.mock('@/utils/logger', () => ({
   logger: { error: jest.fn(), info: jest.fn(), warn: jest.fn() },

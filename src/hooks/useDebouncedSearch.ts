@@ -30,6 +30,7 @@ export function useDebouncedSearch<T>({
   const abortControllerRef = useRef<AbortController | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const latestQueryRef = useRef(query);
+  const prevQueryRef = useRef(query);
 
   useEffect(() => {
     latestQueryRef.current = query;
@@ -73,12 +74,16 @@ export function useDebouncedSearch<T>({
       clearTimeout(timeoutRef.current);
     }
 
-    if (query.length >= minLength) {
+    const prevWasSearchable = prevQueryRef.current.length >= minLength;
+    const isSearchable = query.length >= minLength && query.length > 0;
+    prevQueryRef.current = query;
+
+    if (isSearchable) {
       setIsLoading(true);
       timeoutRef.current = setTimeout(() => {
         search(query);
       }, delay);
-    } else {
+    } else if (prevWasSearchable || !query) {
       setResults(initialResults);
       setIsLoading(false);
       abortControllerRef.current?.abort();

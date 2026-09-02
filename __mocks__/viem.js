@@ -1,6 +1,20 @@
+const { keccak_256 } = require('@noble/hashes/sha3');
+
 const formatUnitsValue = (value, decimals) => String(Number(value) / Math.pow(10, decimals));
 const parseUnitsValue = (value, decimals) => BigInt(Math.floor(Number(value) * Math.pow(10, decimals)));
 const isAddressValue = (addr) => /^0x[a-fA-F0-9]{40}$/.test(addr);
+
+function toChecksummedAddress(address) {
+  const addr = address.toLowerCase().replace('0x', '');
+  const hash = Buffer.from(keccak_256(new TextEncoder().encode(addr))).toString('hex');
+  let result = '0x';
+  for (let i = 0; i < 40; i++) {
+    const nibble = parseInt(hash[i], 16);
+    const char = addr[i];
+    result += nibble >= 8 ? char.toUpperCase() : char;
+  }
+  return result;
+}
 
 const mockReceipt = {
   status: 'success',
@@ -38,8 +52,11 @@ module.exports = {
     if (!isAddressValue(value)) {
       throw new Error('Invalid address');
     }
-
-    return value;
+    const checksummed = toChecksummedAddress(value);
+    if (value !== checksummed && value.toLowerCase() !== value && value.toUpperCase() !== value) {
+      throw new Error('Invalid address checksum');
+    }
+    return checksummed;
   }),
   http: jest.fn((url) => ({ type: 'http', url })),
   isAddress: jest.fn(isAddressValue),

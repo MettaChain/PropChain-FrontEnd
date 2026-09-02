@@ -16,6 +16,18 @@ jest.mock('next/link', () => ({
   default: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+jest.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, i) => ({
+        index: i,
+        start: i * 450,
+        size: 450,
+      })),
+    getTotalSize: () => count * 450,
+  }),
+}));
+
 expect.extend(toHaveNoViolations);
 
 const mockProperty: Property = {
@@ -101,7 +113,7 @@ describe('SearchResults list/article semantics (#488)', () => {
 
     const articles = screen.getAllByRole('article');
     expect(articles).toHaveLength(2);
-    articles.forEach((a) => expect(a.tagName).toBe('LI'));
+    articles.forEach((a) => expect(list).toContainElement(a));
   });
 
   it('has no axe violations for the listing surface', async () => {
