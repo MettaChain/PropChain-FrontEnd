@@ -291,7 +291,7 @@ describe('WalletValidator', () => {
       );
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('Failed to resolve ENS name: error.eth');
+      expect(result.errors).toContain('ENS name could not be resolved: error.eth');
       expect(result.riskScore).toBe(80);
     });
   });

@@ -80,14 +80,14 @@ export class WalletValidator {
     const errors: string[] = [];
     const warnings: string[] = [];
     let riskScore = 0;
-    let address = input;
+    let address = input.trim();
     let ensName: string | undefined;
     let isChecksumValid = false;
     let isBlacklisted = false;
     let isVerified = false;
 
     // Trim and sanitize input
-    const sanitizedInput = input.trim().toLowerCase();
+    const sanitizedInput = input.trim();
     
     if (!sanitizedInput) {
       errors.push('Address input cannot be empty');
@@ -302,7 +302,7 @@ export class WalletValidator {
     }
 
     // HTTPS check for production domains
-    if (currentDomain !== 'localhost' && currentDomain !== '127.0.0.1' && window.location.protocol !== 'https:') {
+    if (currentDomain !== 'localhost' && currentDomain !== '127.0.0.1' && currentDomain !== '0.0.0.0' && window.location.protocol !== 'https:') {
       warnings.push('Insecure connection - HTTPS required for production');
     }
 
