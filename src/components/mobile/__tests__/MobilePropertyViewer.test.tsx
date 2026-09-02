@@ -88,11 +88,13 @@ describe('MobilePropertyViewer', () => {
 
   it('renders property name when isOpen is true', () => {
     render(<MobilePropertyViewer property={mockProperty} isOpen={true} onClose={onClose} />);
+    fireEvent.click(screen.getByTestId('icon-info'));
     expect(screen.getByText('Luxury Penthouse')).toBeInTheDocument();
   });
 
   it('renders location', () => {
     render(<MobilePropertyViewer property={mockProperty} isOpen={true} onClose={onClose} />);
+    fireEvent.click(screen.getByTestId('icon-info'));
     expect(screen.getByText('New York, NY')).toBeInTheDocument();
   });
 

@@ -18,14 +18,6 @@ if (typeof window !== 'undefined') {
     .flatMap(w => w.patterns)
     .map(p => String(p));
   
-  if (process.env.NODE_ENV === 'development') {
-    let logged = false;
-    if (!logged) {
-      console.log('Active extension error suppression patterns:', suppressPatterns);
-      logged = true;
-    }
-  }
-  
   const shouldSuppress = (...args: unknown[]): boolean => {
     const message = stringifyArgs(args).toLowerCase();
     return suppressPatterns.some(pattern => message.includes(pattern.toLowerCase()));

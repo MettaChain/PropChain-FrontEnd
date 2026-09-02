@@ -1,6 +1,32 @@
 import { NextRequest } from 'next/server';
 import type { ErrorReportingData } from '@/types/errors';
 
+jest.mock('next/server', () => {
+  const NextRequest = class {
+    constructor(input, init = {}) {
+      this.url = typeof input === 'string' ? input : input.url;
+      this.method = init.method || 'GET';
+      this.body = init.body || null;
+      this.headers = new Headers(init.headers);
+    }
+    async json() {
+      return JSON.parse(this.body || '{}');
+    }
+  };
+  const NextResponse = {
+    json(body, init = {}) {
+      return {
+        status: init.status ?? 200,
+        headers: new Headers(init.headers),
+        async json() {
+          return body;
+        },
+      };
+    },
+  };
+  return { NextRequest, NextResponse };
+});
+
 jest.mock('@/lib/rateLimit', () => ({
   withRateLimit: <T,>(handler: T): T => handler,
 }));

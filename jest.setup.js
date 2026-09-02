@@ -1,9 +1,14 @@
 import '@testing-library/jest-dom'
 
-// Next server modules expect Fetch API constructors in the Jest environment.
-if (typeof globalThis.Request === 'undefined') globalThis.Request = class {};
-if (typeof globalThis.Response === 'undefined') globalThis.Response = class {};
-if (typeof globalThis.Headers === 'undefined') globalThis.Headers = class {};
+// Ensure TextEncoder/TextDecoder are available (jsdom may not provide them)
+// so that Next.js edge-runtime constructors and fetch-based tests work.
+const { TextEncoder: NodeTextEncoder } = globalThis
+if (typeof globalThis.TextEncoder === 'undefined' || typeof NodeTextEncoder?.encode !== 'function') {
+  globalThis.TextEncoder = require('util').TextEncoder
+}
+if (typeof globalThis.TextDecoder === 'undefined') {
+  globalThis.TextDecoder = require('util').TextDecoder
+}
 import 'jest-axe/extend-expect'
 import { configure } from '@testing-library/react'
 
@@ -87,7 +92,7 @@ jest.mock('@metamask/sdk', () => {
   }))
 })
 
-// Mock IntersectionObserver
+// Mock IntersectionObserver (no-op by default so lazy components stay unloaded)
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),

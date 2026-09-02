@@ -42,14 +42,14 @@ describe('Sidebar', () => {
   it('shows mobile drawer when isOpen is true', () => {
     render(<Sidebar {...defaultProps} isOpen={true} />);
     // The mobile overlay should be present
-    const overlay = document.querySelector('[aria-hidden="true"]');
+    const overlay = document.querySelector('[data-testid="sidebar-overlay"]');
     expect(overlay).toBeTruthy();
   });
 
   it('calls onClose when overlay is clicked', () => {
     const onClose = jest.fn();
     render(<Sidebar {...defaultProps} isOpen={true} onClose={onClose} />);
-    const overlay = document.querySelector('[aria-hidden="true"]') as HTMLElement;
+    const overlay = screen.getByTestId('sidebar-overlay') as HTMLElement;
     fireEvent.click(overlay);
     expect(onClose).toHaveBeenCalledTimes(1);
   });

@@ -9,9 +9,12 @@ jest.mock('react-leaflet', () => ({
   Popup: ({ children }: any) => <div>{children}</div>,
 }));
 
-jest.mock('react-leaflet-cluster', () => ({
-  default: ({ children }: any) => <div data-testid="marker-cluster">{children}</div>,
-}));
+jest.mock('react-leaflet-cluster', () => {
+  const React = require('react');
+  const MarkerClusterGroup = ({ children }: any) =>
+    React.createElement('div', { 'data-testid': 'marker-cluster' }, children);
+  return { __esModule: true, default: MarkerClusterGroup };
+});
 
 const mockProperties = [
   {

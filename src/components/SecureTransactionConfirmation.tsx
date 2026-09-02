@@ -31,8 +31,6 @@ import {
 } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { 
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
@@ -287,14 +285,9 @@ export const SecureTransactionConfirmation: React.FC<SecureTransactionConfirmati
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">To:</span>
                   <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <span className="font-mono text-sm">{formatAddress(transaction.to)}</span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-mono text-xs">{transaction.to}</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <TooltipTrigger tooltip={<p className="font-mono text-xs">{transaction.to}</p>}>
+                      <span className="font-mono text-sm">{formatAddress(transaction.to)}</span>
+                    </TooltipTrigger>
                   </TooltipProvider>
                 </div>
                 

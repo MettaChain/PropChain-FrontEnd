@@ -55,9 +55,7 @@ const getGasConfidence = (
   };
 };
 
-const confidence = getGasConfidence(adjustedGasPrice);
-
-const ESTIMATED_ETH_PRICE_USD = 2500; // Mock ETH price
+const ETH_PRICE_USD = 2500; // Mock ETH price
 
 export const GasEstimator: React.FC<GasEstimatorProps> = ({
   to,
@@ -98,6 +96,7 @@ export const GasEstimator: React.FC<GasEstimatorProps> = ({
   };
 
   const adjustedGasPrice = getAdjustedGasPrice();
+  const confidence = getGasConfidence(adjustedGasPrice);
   const totalCostWei = estimatedGas && adjustedGasPrice ? estimatedGas * adjustedGasPrice : null;
   const totalCostEth = totalCostWei ? formatUnits(totalCostWei, 18) : null;
   const totalCostUsd = totalCostEth ? (parseFloat(totalCostEth) * ETH_PRICE_USD).toFixed(2) : null;

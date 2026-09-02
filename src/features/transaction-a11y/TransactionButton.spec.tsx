@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TransactionButton } from './TransactionButton';
-import { describe, it, expect, vi } from 'vitest';
+
 import { useTransactionA11yStore } from './transactionA11yStore';
 
 describe('TransactionButton', () => {
@@ -10,7 +10,7 @@ describe('TransactionButton', () => {
   });
 
   it('renders with initial label', () => {
-    render(<TransactionButton onClick={vi.fn()} label="Sign Transaction" />);
+    render(<TransactionButton onClick={jest.fn()} label="Sign Transaction" />);
     expect(screen.getByText('Sign Transaction')).toBeInTheDocument();
   });
 

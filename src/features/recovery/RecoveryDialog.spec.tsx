@@ -1,15 +1,15 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { RecoveryDialog } from './RecoveryDialog';
-import { describe, it, expect, vi } from 'vitest';
+
 
 describe('RecoveryDialog', () => {
   it('does not render when isOpen is false', () => {
     render(
       <RecoveryDialog 
         isOpen={false} 
-        onConfirm={vi.fn()} 
-        onCancel={vi.fn()} 
+        onConfirm={jest.fn()} 
+        onCancel={jest.fn()} 
         context={null} 
       />
     );
@@ -20,8 +20,8 @@ describe('RecoveryDialog', () => {
     render(
       <RecoveryDialog 
         isOpen={true} 
-        onConfirm={vi.fn()} 
-        onCancel={vi.fn()} 
+        onConfirm={jest.fn()} 
+        onCancel={jest.fn()} 
         context={{ errorId: '123', timestamp: 0, reason: 'Memory leak detected' }} 
       />
     );
@@ -30,12 +30,12 @@ describe('RecoveryDialog', () => {
   });
 
   it('calls onConfirm when reload button is clicked', () => {
-    const onConfirm = vi.fn();
+    const onConfirm = jest.fn();
     render(
       <RecoveryDialog 
         isOpen={true} 
         onConfirm={onConfirm} 
-        onCancel={vi.fn()} 
+        onCancel={jest.fn()} 
         context={null} 
       />
     );
@@ -44,11 +44,11 @@ describe('RecoveryDialog', () => {
   });
 
   it('calls onCancel when cancel button is clicked', () => {
-    const onCancel = vi.fn();
+    const onCancel = jest.fn();
     render(
       <RecoveryDialog 
         isOpen={true} 
-        onConfirm={vi.fn()} 
+        onConfirm={jest.fn()} 
         onCancel={onCancel} 
         context={null} 
       />

@@ -3,6 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DraggablePropertiesList } from '../DraggablePropertiesList';
 
+jest.mock('next/image', () => ({
+  __esModule: true,
+  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
+    const { fill, ...rest } = props;
+    return React.createElement('img', rest);
+  },
+}));
+
 // Mock localStorage
 const localStorageMock = {
   getItem: jest.fn(),
@@ -13,6 +21,8 @@ const localStorageMock = {
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 });
+
+const PORTFOLIO_ORDER_KEY = 'propchain:portfolioOrder';
 
 describe('DraggablePropertiesList', () => {
   beforeEach(() => {
@@ -36,16 +46,23 @@ describe('DraggablePropertiesList', () => {
   it('should save order to localStorage when reordered', async () => {
     render(<DraggablePropertiesList />);
     
-    const firstCard = screen.getAllByTestId('property-card')[0];
-    const secondCard = screen.getAllByTestId('property-card')[1];
+    const cards = screen.getAllByTestId('draggable-property');
+    expect(cards.length).toBeGreaterThan(1);
+    const firstCard = cards[0];
+    const secondCard = cards[1];
     
-    // Simulate drag and drop
-    fireEvent.dragStart(firstCard);
-    fireEvent.dragOver(secondCard);
-    fireEvent.drop(secondCard);
+    const dataTransfer = {
+      effectAllowed: undefined as string | undefined,
+      dropEffect: undefined as string | undefined,
+      setData: jest.fn(),
+    };
+    
+    fireEvent.dragStart(firstCard, { dataTransfer });
+    fireEvent.dragOver(secondCard, { dataTransfer });
+    fireEvent.drop(secondCard, { dataTransfer });
     
     expect(localStorageMock.setItem).toHaveBeenCalledWith(
-      'portfolioOrder',
+      PORTFOLIO_ORDER_KEY,
       expect.any(String)
     );
   });
@@ -56,7 +73,7 @@ describe('DraggablePropertiesList', () => {
     
     render(<DraggablePropertiesList />);
     
-    expect(localStorageMock.getItem).toHaveBeenCalledWith('portfolioOrder');
+    expect(localStorageMock.getItem).toHaveBeenCalledWith(PORTFOLIO_ORDER_KEY);
   });
 
   it('should reset to default order when reset button clicked', async () => {
@@ -65,6 +82,6 @@ describe('DraggablePropertiesList', () => {
     const resetButton = screen.getByText('Reset Order');
     await userEvent.click(resetButton);
     
-    expect(localStorageMock.removeItem).toHaveBeenCalledWith('portfolioOrder');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith(PORTFOLIO_ORDER_KEY);
   });
 });

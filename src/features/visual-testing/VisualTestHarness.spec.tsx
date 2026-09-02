@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { VisualTestHarness } from './VisualTestHarness';
-import { describe, it, expect } from 'vitest';
+
 
 describe('VisualTestHarness', () => {
   it('renders children correctly', () => {

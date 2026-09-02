@@ -122,7 +122,7 @@ describe('<DomainWarningBanner />', () => {
     render(<DomainWarningBanner />);
 
     await waitFor(() =>
-      expect(screen.getByText(/Unofficial Domain/i)).toBeInTheDocument(),
+      expect(screen.getByText(/Security Warning: Unofficial Domain/i)).toBeInTheDocument(),
     );
 
     expect(
@@ -140,6 +140,7 @@ describe('<DomainWarningBanner />', () => {
   });
 
   it('renders a verified banner for official domains', async () => {
+    setLocation('https://propchain.io/');
     mockDetectSpy.mockReturnValue(buildDetectResult(false, 0, []));
 
     render(<DomainWarningBanner />);
@@ -160,6 +161,7 @@ describe('<DomainWarningBanner />', () => {
   });
 
   it('dismisses the banner when the ignore/got-it button is clicked', async () => {
+    setLocation('https://propchain.io/');
     mockDetectSpy.mockReturnValue(buildDetectResult(false, 0, []));
 
     render(<DomainWarningBanner />);
@@ -181,7 +183,7 @@ describe('<DomainWarningBanner />', () => {
 
     render(<DomainWarningBanner />);
 
-    await screen.findByText(/Unofficial Domain/i);
+    await screen.findByText(/Security Warning: Unofficial Domain/i);
 
     // The X button is rendered with a sr-only text label "Close".
     const closeBtn = screen.getByRole('button', { name: /close/i });
@@ -190,7 +192,7 @@ describe('<DomainWarningBanner />', () => {
     });
 
     await waitFor(() =>
-      expect(screen.queryByText(/Unofficial Domain/i)).not.toBeInTheDocument(),
+      expect(screen.queryByText(/Security Warning: Unofficial Domain/i)).not.toBeInTheDocument(),
     );
   });
 
@@ -269,17 +271,23 @@ describe('<DomainWarningBanner />', () => {
 
     render(<DomainWarningBanner />);
 
-    await screen.findByText(/Unofficial Domain/i);
+    await screen.findByText(/Security Warning: Unofficial Domain/i);
 
     expect(
       screen.queryByRole('button', { name: /Go to Official Site/i }),
     ).not.toBeInTheDocument();
   });
 
-  it('falls back to the initial state when window is undefined', async () => {
-    // Drop window entirely to simulate SSR; useEffect should bail out.
-    const originalWindow = (global as unknown as { window?: unknown }).window;
-    (global as unknown as { window?: unknown }).window = undefined;
+  it('falls back to the initial state when the browser location API is unavailable', async () => {
+    // The component's SSR guard bails out of the detection run when the
+    // global `window`/location API is not available. The jsdom environment
+    // can't make the `window` global itself undefined (React's renderer reads
+    // it), so we exercise the same bail-out path by removing `window.location`.
+    mockDetectSpy.mockReturnValue(buildDetectResult(false, 0, []));
+    const originalLocation = (window as unknown as {
+      location?: unknown;
+    }).location;
+    delete (window as unknown as { location?: unknown }).location;
 
     const { container } = render(<DomainWarningBanner />);
 
@@ -287,7 +295,11 @@ describe('<DomainWarningBanner />', () => {
     expect(container.firstChild).toBeNull();
     expect(mockDetectSpy).not.toHaveBeenCalled();
 
-    (global as unknown as { window?: unknown }).window = originalWindow;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: originalLocation,
+    });
   });
 
   it('renders nothing for an empty warning warnings list on a non-official host', async () => {
@@ -326,12 +338,12 @@ describe('<DomainWarningBanner />', () => {
 
     const { rerender } = render(<DomainWarningBanner />);
 
-    await screen.findByText(/Unofficial Domain/i);
+    await screen.findByText(/Security Warning: Unofficial Domain/i);
 
     // Re-rendering (e.g. parent re-render) must not double up.
     rerender(<DomainWarningBanner />);
 
-    expect(screen.getAllByText(/Unofficial Domain/i)).toHaveLength(1);
+    expect(screen.getAllByText(/Security Warning: Unofficial Domain/i)).toHaveLength(1);
   });
 
   it('does not call the reporter when window lacks the location API', async () => {

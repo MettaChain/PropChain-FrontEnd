@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, Shield, TrendingUp, PieChart, Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RiskMetric {
   label: string;
@@ -28,16 +28,11 @@ const RiskMeter = ({ metric }: { metric: RiskMetric }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{metric.label}</span>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="w-3.5 h-3.5 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs text-xs">{metric.description}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <TooltipTrigger
+            tooltip={<p className="max-w-xs text-xs">{metric.description}</p>}
+          >
+            <Info className="w-3.5 h-3.5 text-muted-foreground" />
+          </TooltipTrigger>
         </div>
         <span className={`text-sm font-semibold ${statusTextColors[metric.status]}`}>
           {metric.value.toFixed(1)}%

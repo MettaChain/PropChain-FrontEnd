@@ -130,6 +130,7 @@ export const MobilePropertyViewer = ({
               variant="ghost"
               size="sm"
               onClick={onClose}
+              aria-label={t("mobile.viewer.close")}
               className="text-white hover:bg-white/20"
             >
               <X className="w-5 h-5" />

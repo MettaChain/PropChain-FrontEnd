@@ -123,7 +123,10 @@ export const MobilePropertyCard = ({
 
           {/* Image Counter */}
           {property.images.length > 1 && (
-            <div className="absolute bottom-3 right-3 bg-black/50 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+            <div
+              data-testid="image-counter"
+              className="absolute bottom-3 right-3 bg-black/50 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1"
+            >
               <Eye className="w-3 h-3" />
               {property.images.length}
             </div>
@@ -164,11 +167,11 @@ export const MobilePropertyCard = ({
             <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center gap-1">
                 <Bed className="w-4 h-4" />
-                <span>{property.bedrooms}</span>
+                <span data-testid="bedrooms">{property.bedrooms}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Bath className="w-4 h-4" />
-                <span>{property.bathrooms}</span>
+                <span data-testid="bathrooms">{property.bathrooms}</span>
               </div>
               {property.sqft && (
                 <div className="flex items-center gap-1">

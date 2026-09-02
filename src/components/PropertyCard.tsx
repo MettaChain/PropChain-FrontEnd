@@ -44,19 +44,19 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     addItem(property, 1);
-  }, [addItem, property]);
+  };
 
   const handleComparisonToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleProperty(property);
-  }, [toggleProperty, property]);
+  };
 
   const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
     e.stopPropagation();
     if (!compareLimitReached) {
       togglePropertyId(property.id);
     }
-  }, [compareLimitReached, togglePropertyId, property.id]);
+  };
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -65,7 +65,7 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
     } else {
       addFavorite(property);
     }
-  }, [isFavorite, removeFavorite, addFavorite, property]);
+  };
 
   return (
     <article

@@ -175,6 +175,7 @@ export function Sidebar({ isOpen, isCollapsed, onClose, onToggleCollapse }: Side
       {/* Mobile overlay */}
       {isOpen && (
         <div
+          data-testid="sidebar-overlay"
           className="lg:hidden fixed inset-0 bg-black/50 z-40"
           onClick={onClose}
           aria-hidden="true"

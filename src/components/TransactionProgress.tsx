@@ -209,14 +209,21 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-md" showCloseButton={false}>
+      <DialogContent
+        className="sm:max-w-md"
+        showCloseButton={false}
+        aria-modal="true"
+        aria-labelledby="transaction-progress-title"
+        aria-describedby="transaction-progress-description"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>Transaction in Progress</span>
+            <span id="transaction-progress-title">Transaction in Progress</span>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
+              aria-label="Close transaction progress"
               className="text-gray-400 hover:text-gray-600 -mr-2"
             >
               ×
@@ -227,6 +234,9 @@ export const TransactionProgress: React.FC<TransactionProgressProps> = memo(({
               {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
             </p>
           )}
+          <p id="transaction-progress-description" className="sr-only">
+            A real estate transaction is being processed. Track its progress below.
+          </p>
         </DialogHeader>
 
         <Card className="border-0 shadow-none">

@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ErrorFallback } from './ErrorFallback';
-import { describe, it, expect, vi } from 'vitest';
+
 
 describe('ErrorFallback', () => {
-  const mockReset = vi.fn();
+  const mockReset = jest.fn();
 
   beforeEach(() => {
     mockReset.mockClear();

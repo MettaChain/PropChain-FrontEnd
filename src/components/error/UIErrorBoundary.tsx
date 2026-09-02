@@ -94,7 +94,7 @@ export class UIErrorBoundary extends Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    if (this.state.hasError && !prevState.hasError) {
+    if (this.state.hasError && this.state.errorId !== prevState.errorId) {
       this.titleRef.current?.focus();
     }
   }
@@ -226,7 +226,7 @@ export class UIErrorBoundary extends Component<Props, State> {
                   <h2 
                     id="error-boundary-title"
                     ref={this.titleRef}
-                    tabIndex={-1}
+                    tabIndex={0}
                     className="text-lg font-semibold text-gray-900 dark:text-white focus:outline-none"
                   >
                     {this.getErrorTitle()}

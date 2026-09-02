@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Web3ErrorBoundary } from './Web3ErrorBoundary';
-import { describe, it, expect, vi } from 'vitest';
+
 
 // A component that intentionally throws an error
 const ThrowError = ({ message }: { message: string }) => {
@@ -13,7 +13,7 @@ describe('Web3ErrorBoundary', () => {
   
   beforeAll(() => {
     // Suppress console.error in tests to keep output clean
-    console.error = vi.fn();
+    console.error = jest.fn();
   });
   
   afterAll(() => {

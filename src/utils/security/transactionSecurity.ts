@@ -75,7 +75,6 @@ export function createTrustedDeviceId(): string {
   return `trusted_${crypto.randomUUID()}`;
 }
 
-const sessionDeviceId = typeof crypto !== 'undefined' ? crypto.randomUUID() : 'server-device';
 function simpleHash(input: string): string {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
@@ -87,6 +86,7 @@ function simpleHash(input: string): string {
 }
 
 const SESSION_SALT_KEY = 'propchain-session-salt';
+const DEVICE_ID_HASH_KEY = 'propchain-security-device-id-hash';
 
 function getSessionSalt(): string {
   let salt = window.sessionStorage.getItem(SESSION_SALT_KEY);
@@ -101,7 +101,17 @@ export function getSecurityDeviceId(): string {
   if (typeof window === 'undefined') {
     return 'server-device';
   }
-  return sessionDeviceId;
+
+  const existingHash = window.localStorage.getItem(DEVICE_ID_HASH_KEY);
+  if (existingHash) {
+    return existingHash;
+  }
+
+  const salt = getSessionSalt();
+  const deviceId = crypto.randomUUID();
+  const hash = simpleHash(salt + deviceId);
+  window.localStorage.setItem(DEVICE_ID_HASH_KEY, hash);
+  return deviceId;
 }
 
 export async function hashDeviceId(deviceId: string): Promise<string> {

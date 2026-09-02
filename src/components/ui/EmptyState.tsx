@@ -33,7 +33,12 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   const IconComponent = defaultIcons[variant];
-  const IconElement = icon || <IconComponent className="h-12 w-12 text-gray-400 dark:text-gray-500" />;
+  const isForwardRefComponent =
+    !!icon && typeof icon === 'object' && (icon as any).$$typeof === Symbol.for('react.forward_ref');
+  const iconIsComponent = typeof icon === 'function' || isForwardRefComponent;
+  const IconElement = iconIsComponent
+    ? React.createElement(icon as React.ComponentType, { className: "h-12 w-12 text-gray-400 dark:text-gray-500" })
+    : icon || <IconComponent className="h-12 w-12 text-gray-400 dark:text-gray-500" />;
 
   return (
     <div

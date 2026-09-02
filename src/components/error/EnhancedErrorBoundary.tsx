@@ -8,6 +8,7 @@ import { Web3ErrorBoundary } from './Web3ErrorBoundary';
 import { NetworkErrorBoundary } from './NetworkErrorBoundary';
 import { UIErrorBoundary } from './UIErrorBoundary';
 import { ErrorFactory } from '@/utils/errorFactory';
+import { errorReporting } from '@/utils/errorReporting';
 
 interface Props {
   children: ReactNode;
@@ -46,16 +47,10 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    const appError = ErrorFactory.fromError(error, this.props.category, {
-      componentStack: errorInfo.componentStack || undefined,
-      context: {
-        errorBoundary: 'EnhancedErrorBoundary',
-        errorInfo,
-        specifiedCategory: this.props.category,
-      },
-    });
+    const appError = this.state.error || ErrorFactory.fromError(error);
 
-    this.setState({ error: appError });
+    // Report the error to the monitoring service
+    errorReporting.reportError(appError);
 
     // Call custom error handler
     if (this.props.onError) {
@@ -69,40 +64,42 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     // Prop category takes precedence, then error-detected category, then UI default
     const activeCategory = category || this.state.error?.category || ErrorCategory.UI;
 
+    // In the error state, do not re-render the (potentially throwing) children
+    const content = this.state.hasError ? null : children;
+
     switch (activeCategory) {
       case ErrorCategory.WEB3:
         return (
           <Web3ErrorBoundary {...commonProps} onError={onError}>
-            {children}
+            {content}
           </Web3ErrorBoundary>
         );
       case ErrorCategory.NETWORK:
         return (
           <NetworkErrorBoundary {...commonProps} onError={onError}>
-            {children}
+            {content}
           </NetworkErrorBoundary>
         );
       default:
         return (
           <UIErrorBoundary {...commonProps} onError={onError}>
-            {children}
+            {content}
           </UIErrorBoundary>
         );
     }
   };
 
   render() {
-    if (this.state.hasError && this.state.error) {
-      // Return the appropriate error boundary based on error category
-      return this.getErrorBoundary();
+    // If no error and no category given, render children directly
+    if (!this.state.hasError && !this.props.category) {
+      return this.props.children;
     }
 
-    // If no category specified, use auto-detection
-    if (!this.props.category) {
-      return this.getErrorBoundary();
+    // If an error occurred and a fallback is provided, render the fallback
+    if (this.state.hasError && this.props.fallback) {
+      return this.props.fallback;
     }
 
-    // Return the specific boundary for the category
     return this.getErrorBoundary();
   }
 }
@@ -112,9 +109,10 @@ export const withErrorBoundary = <P extends object>(
   Component: React.ComponentType<P>,
   options: Omit<Props, 'children'> = {}
 ) => {
-  const WrappedComponent = (props: P) => (
+  const WrappedComponent = ({ children, ...props }: P & { children?: React.ReactNode }) => (
     <EnhancedErrorBoundary {...options}>
-      <Component {...props} />
+      <Component {...(props as P)} />
+      {children}
     </EnhancedErrorBoundary>
   );
 

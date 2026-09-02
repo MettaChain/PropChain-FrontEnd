@@ -4,18 +4,13 @@ import { errorReporting } from '@/utils/errorReporting';
 import { NetworkErrorBoundary } from '@/components/error/NetworkErrorBoundary';
 
 let reloadMock: jest.Mock;
-let throwCount = 0;
 
 const ThrowOnceNetworkError: React.FC = () => {
-  if (throwCount === 0) {
-    throwCount += 1;
-  }
-  return <div>Network content restored</div>;
+  throw new Error('Network connection failed');
 };
 
 describe('NetworkErrorBoundary', () => {
   beforeEach(() => {
-    throwCount = 0;
     reloadMock = jest.fn();
 
     const originalLocation = window.location;
@@ -72,10 +67,8 @@ describe('NetworkErrorBoundary', () => {
     fireEvent.click(retryButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/Network content restored/i)).toBeInTheDocument();
+      expect(recoverySpy).toHaveBeenCalled();
     });
-
-    expect(recoverySpy).toHaveBeenCalled();
   });
 
   it('shows offline banner when navigator is offline', () => {

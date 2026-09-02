@@ -32,6 +32,9 @@ describe('<CurrencyToggle />', () => {
     // individual test bodies can override return values and assert calls.
     jest.spyOn(Storage.prototype, 'getItem');
     jest.spyOn(Storage.prototype, 'setItem');
+    // Reset the persisted (mock) return value so earlier tests that set
+    // 'USD' don't leak into later ones.
+    (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
   });
 
   it('renders a loading state while the exchange rate is being fetched', () => {
@@ -67,7 +70,7 @@ describe('<CurrencyToggle />', () => {
     fireEvent.click(screen.getByTitle(/Switch to USD/i));
 
     expect(window.localStorage.setItem).toHaveBeenCalledWith(
-      'currencyPreference',
+      'propchain:currencyPreference',
       'USD',
     );
   });
@@ -96,7 +99,7 @@ describe('<CurrencyToggle />', () => {
 
     fireEvent.click(screen.getByTitle(/Switch to ETH/i));
     expect(window.localStorage.setItem).toHaveBeenCalledWith(
-      'currencyPreference',
+      'propchain:currencyPreference',
       'ETH',
     );
   });

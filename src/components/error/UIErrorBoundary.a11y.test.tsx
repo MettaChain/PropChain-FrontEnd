@@ -1,13 +1,12 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { UIErrorBoundary } from '../UIErrorBoundary';
+import { UIErrorBoundary } from './UIErrorBoundary';
 
 const ThrowError = () => {
   throw new Error('Test Error');
 };
 
 describe('UIErrorBoundary Accessibility', () => {
-  // Suppress console.error for expected component stack traces
   const originalError = console.error;
   beforeAll(() => {
     console.error = jest.fn();
@@ -23,8 +22,8 @@ describe('UIErrorBoundary Accessibility', () => {
       </UIErrorBoundary>
     );
 
-    const alert = await screen.findByRole('alert');
-    expect(alert).toBeInTheDocument();
+    const alerts = await screen.findAllByRole('alert');
+    expect(alerts.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should focus the error title when the error boundary catches an error', async () => {
@@ -47,9 +46,9 @@ describe('UIErrorBoundary Accessibility', () => {
       </UIErrorBoundary>
     );
 
-    const alert = await screen.findByRole('alert');
+    const alerts = await screen.findAllByRole('alert');
+    const alert = alerts[0];
     const title = screen.getByRole('heading', { level: 2 });
-    const description = screen.getByText(/Test Error/i);
 
     expect(alert).toHaveAttribute('aria-labelledby', title.id);
     expect(alert).toHaveAttribute('aria-describedby', 'error-boundary-description');

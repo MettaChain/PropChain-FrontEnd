@@ -182,13 +182,52 @@ export class ErrorFactory {
   ): AppError {
     const message = error?.message || 'Unknown error occurred';
     const userMessage = this.generateUserFriendlyMessage(error, category);
-    
+
+    const categoryDefaults: Partial<AppError> = {};
+    if (!options.recoveryAction) {
+      switch (category) {
+        case ErrorCategory.WEB3:
+          categoryDefaults.recoveryAction = ErrorRecoveryAction.RECONNECT;
+          categoryDefaults.recoveryOptions = [ErrorRecoveryAction.RECONNECT, ErrorRecoveryAction.RELOAD];
+          break;
+        case ErrorCategory.NETWORK:
+          categoryDefaults.recoveryAction = ErrorRecoveryAction.RETRY;
+          categoryDefaults.recoveryOptions = [ErrorRecoveryAction.RETRY, ErrorRecoveryAction.REFRESH];
+          break;
+        case ErrorCategory.AUTHENTICATION:
+          categoryDefaults.recoveryAction = ErrorRecoveryAction.RECONNECT;
+          categoryDefaults.recoveryOptions = [ErrorRecoveryAction.RECONNECT, ErrorRecoveryAction.RELOAD];
+          break;
+        case ErrorCategory.PERMISSION:
+          categoryDefaults.recoveryAction = ErrorRecoveryAction.GRANT_PERMISSION;
+          categoryDefaults.recoveryOptions = [ErrorRecoveryAction.GRANT_PERMISSION, ErrorRecoveryAction.IGNORE];
+          break;
+        case ErrorCategory.VALIDATION:
+          categoryDefaults.recoveryAction = ErrorRecoveryAction.RETRY;
+          categoryDefaults.recoveryOptions = [ErrorRecoveryAction.RETRY];
+          break;
+        case ErrorCategory.RESOURCE:
+          categoryDefaults.recoveryAction = ErrorRecoveryAction.REFRESH;
+          categoryDefaults.recoveryOptions = [ErrorRecoveryAction.REFRESH, ErrorRecoveryAction.RETRY];
+          break;
+        case ErrorCategory.UI:
+          categoryDefaults.recoveryAction = ErrorRecoveryAction.REFRESH;
+          categoryDefaults.recoveryOptions = [ErrorRecoveryAction.REFRESH, ErrorRecoveryAction.RELOAD];
+          break;
+        default:
+          categoryDefaults.recoveryAction = ErrorRecoveryAction.RELOAD;
+          categoryDefaults.recoveryOptions = [ErrorRecoveryAction.RELOAD];
+          break;
+      }
+    }
+
     return this.createError(
       category,
       ErrorSeverity.MEDIUM,
       message,
       userMessage,
       {
+        ...categoryDefaults,
         ...options,
         stack: error?.stack,
         technicalDetails: (error as Error & { technicalDetails?: string })?.technicalDetails || error?.toString(),

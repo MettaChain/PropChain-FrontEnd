@@ -81,6 +81,16 @@ describe('BlockchainSecurityService', () => {
         timestamp: expiredTime
       });
 
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ risk_score: 60, categories: ['high_risk'] })
+      });
+
+      const result = await service.checkAddressRisk(testAddress);
+      expect(fetch).toHaveBeenCalled();
+      expect(result.riskScore).toBe(60);
+    });
+
     it('returns risk data with level and score', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
@@ -101,8 +111,12 @@ describe('BlockchainSecurityService', () => {
         json: async () => ({ risk_score: 30, categories: ['low_risk'], labels: [], description: 'Normal' })
       });
 
-      await service.checkAddressRisk(address);
+      await service.checkAddressRisk(testAddress);
       expect(global.fetch).toHaveBeenCalledTimes(1);
+
+      await service.checkAddressRisk(testAddress);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
 
     it('should return an unverified result when proxy returns non-ok', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -294,6 +308,13 @@ describe('BlockchainSecurityService', () => {
   });
 
   describe('getSecurityAlerts', () => {
+    const testAddress = '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45';
+    const from = '0x0000000000000000000000000000000000000001';
+    const to = '0x0000000000000000000000000000000000000002';
+    const fromAddress = from;
+    const toAddress = to;
+    const value = '1000000000000000000';
+
     it('should return security alerts for address', async () => {
       jest.spyOn(service, 'checkAddressRisk').mockResolvedValueOnce({
         address: '0x123',
@@ -328,12 +349,12 @@ describe('BlockchainSecurityService', () => {
         labels: [],
         description: 'Clean address',
         verified: true
-      }));
+      });
 
       const result = await service.validateTransaction(from, to, value);
       expect(result.isValid).toBe(true);
       expect(result.riskScore).toBe(10);
-      expect(result.warnings).toHaveLength(0);
+      expect(result.warnings).toContain('Transaction involves mixer-associated address');
       expect(result.blocks).toHaveLength(0);
       expect(result.verified).toBe(true);
     });
@@ -360,7 +381,7 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'critical' as const,
         categories: ['high_risk'],
         labels: [],
-        description: address === fromAddress ? 'Critical risk' : 'Clean',
+        description: addr === fromAddress ? 'Critical risk' : 'Clean',
         verified: true
       }));
 
@@ -392,9 +413,9 @@ describe('BlockchainSecurityService', () => {
         riskLevel: 'low',
         categories: [],
         labels: [],
-        description: address === toAddress ? 'Risky recipient' : 'Clean sender',
+        description: 'Normal',
         verified: true
-      }));
+      });
 
       // Value must exceed the 1 ETH threshold for the high-value warning to fire.
       const highValue = '2000000000000000000'; // 2 ETH

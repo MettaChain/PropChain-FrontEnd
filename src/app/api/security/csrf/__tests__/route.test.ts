@@ -6,6 +6,42 @@ jest.mock('@/lib/csrf', () => ({
   generateTokenForSession: jest.fn(),
 }));
 
+jest.mock('next/server', () => {
+  const BaseResponse = class {
+    constructor(body, init = {}) {
+      this._body = body;
+      this.status = init.status ?? 200;
+      this.headers = new Headers();
+      this.cookies = {
+        set: (name, value, opts = {}) => {
+          const parts = [`${name}=${value}`];
+          if (opts.httpOnly) parts.push('HttpOnly');
+          if (opts.sameSite) parts.push(`SameSite=${opts.sameSite[0].toUpperCase()}${opts.sameSite.slice(1)}`);
+          if (opts.path) parts.push(`Path=${opts.path}`);
+          if (opts.secure) parts.push('Secure');
+          this.headers.set('set-cookie', parts.join('; '));
+        },
+        get: jest.fn(),
+      };
+    }
+    async json() {
+      return JSON.parse(this._body);
+    }
+  };
+  return {
+    NextRequest: class {
+      constructor(input) {
+        this.url = typeof input === 'string' ? input : input.url;
+      }
+    },
+    NextResponse: {
+      json(body, init) {
+        return new BaseResponse(JSON.stringify(body), init);
+      },
+    },
+  };
+});
+
 import { getCsrfSessionId, getAuthStatePart, generateTokenForSession } from '@/lib/csrf';
 
 function makeRequest(cookieValues: Record<string, string> = {}) {

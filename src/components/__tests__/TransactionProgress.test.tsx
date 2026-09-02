@@ -38,7 +38,7 @@ describe('TransactionProgress', () => {
       />
     );
     
-    expect(screen.getByText(/0x1234...cdef/)).toBeInTheDocument();
+    expect(screen.getByText(/0x12345678\.\.\.90abcdef/)).toBeInTheDocument();
   });
 
   it('should call onClose when close button clicked', async () => {
@@ -50,7 +50,7 @@ describe('TransactionProgress', () => {
       />
     );
     
-    const closeButton = screen.getByText('Close');
+    const closeButton = screen.getByLabelText('Close transaction progress');
     await userEvent.click(closeButton);
     
     expect(onClose).toHaveBeenCalled();
@@ -144,7 +144,8 @@ describe('TransactionProgress', () => {
         />
       );
       
-      const icons = screen.getAllByRole('img', { hidden: true });
+      const icons = document.querySelectorAll('svg[aria-hidden="true"]');
+      expect(icons.length).toBeGreaterThan(0);
       icons.forEach(icon => {
         expect(icon).toHaveAttribute('aria-hidden', 'true');
       });

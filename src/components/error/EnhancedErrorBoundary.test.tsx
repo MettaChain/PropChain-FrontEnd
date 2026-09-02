@@ -1,58 +1,47 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { EnhancedErrorBoundary, withErrorBoundary, ErrorBoundaryPresets } from '../EnhancedErrorBoundary';
+import { EnhancedErrorBoundary, withErrorBoundary, ErrorBoundaryPresets } from './EnhancedErrorBoundary';
 import { ErrorCategory } from '@/types/errors';
 import type { AppError } from '@/types/errors';
 
 // Mock child error boundaries
-jest.mock('../Web3ErrorBoundary', () => ({
+jest.mock('./Web3ErrorBoundary', () => ({
   Web3ErrorBoundary: jest.fn(({ children }) => (
     <div data-testid="Web3ErrorBoundary">{children}</div>
   )),
 }));
-jest.mock('../NetworkErrorBoundary', () => ({
+jest.mock('./NetworkErrorBoundary', () => ({
   NetworkErrorBoundary: jest.fn(({ children }) => (
     <div data-testid="NetworkErrorBoundary">{children}</div>
   )),
 }));
-jest.mock('../ARErrorBoundary', () => ({
+jest.mock('./ARErrorBoundary', () => ({
   ARErrorBoundary: jest.fn(({ children }) => (
     <div data-testid="ARErrorBoundary">{children}</div>
   )),
 }));
-jest.mock('../UIErrorBoundary', () => ({
+jest.mock('./UIErrorBoundary', () => ({
   UIErrorBoundary: jest.fn(({ children }) => (
     <div data-testid="UIErrorBoundary">{children}</div>
   )),
 }));
 
 // Mock ErrorFactory
-const mockAppError: AppError = {
-  id: 'mock-error-id',
-  message: 'Mock Error Message',
-  userMessage: 'A user-friendly mock error.',
-  category: ErrorCategory.UI,
-  severity: 'critical',
-  isRecoverable: false,
-  technicalDetails: 'Mock technical details',
-  stack: 'Mock stack trace',
-  context: {},
-  timestamp: new Date(),
-};
-const mockErrorFactory = {
-  fromError: jest.fn(() => mockAppError),
-};
+var mockFromError: jest.Mock = jest.fn();
 jest.mock('@/utils/errorFactory', () => ({
-  ErrorFactory: mockErrorFactory,
+  ErrorFactory: {
+    fromError: (...args: unknown[]) => mockFromError(...args),
+  },
 }));
 
 // Mock errorReporting
-const mockErrorReporting = {
-  reportError: jest.fn(),
-  attemptRecovery: jest.fn(),
-};
+var mockReportError: jest.Mock = jest.fn();
+var mockAttemptRecovery: jest.Mock = jest.fn();
 jest.mock('@/utils/errorReporting', () => ({
-  errorReporting: mockErrorReporting,
+  errorReporting: {
+    reportError: (...args: unknown[]) => mockReportError(...args),
+    attemptRecovery: (...args: unknown[]) => mockAttemptRecovery(...args),
+  },
 }));
 
 const ThrowError = () => {
@@ -72,7 +61,18 @@ describe('EnhancedErrorBoundary', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockErrorFactory.fromError.mockReturnValue({ ...mockAppError, category: ErrorCategory.UI });
+    mockFromError.mockReturnValue({
+      id: 'mock-error-id',
+      message: 'Mock Error Message',
+      userMessage: 'A user-friendly mock error.',
+      category: ErrorCategory.UI,
+      severity: 'critical',
+      isRecoverable: false,
+      technicalDetails: 'Mock technical details',
+      stack: 'Mock stack trace',
+      context: {},
+      timestamp: new Date(),
+    });
   });
 
   it('should render children when no error occurs', () => {
@@ -92,7 +92,7 @@ describe('EnhancedErrorBoundary', () => {
       </EnhancedErrorBoundary>
     );
     expect(screen.getByTestId('UIErrorBoundary')).toBeInTheDocument();
-    expect(mockErrorFactory.fromError).toHaveBeenCalledTimes(2);
+    expect(mockFromError).toHaveBeenCalledTimes(2);
   });
 
   it('should call errorReporting.reportError when an error is caught', () => {
@@ -101,8 +101,8 @@ describe('EnhancedErrorBoundary', () => {
         <ThrowError />
       </EnhancedErrorBoundary>
     );
-    expect(mockErrorReporting.reportError).toHaveBeenCalledTimes(1);
-    expect(mockErrorReporting.reportError).toHaveBeenCalledWith(mockAppError);
+    expect(mockReportError).toHaveBeenCalledTimes(1);
+    expect(mockReportError).toHaveBeenCalledWith(mockFromError.mock.results[0].value);
   });
 
   it('should call props.onError if provided when an error is caught', () => {
@@ -113,7 +113,7 @@ describe('EnhancedErrorBoundary', () => {
       </EnhancedErrorBoundary>
     );
     expect(mockOnError).toHaveBeenCalledTimes(1);
-    expect(mockOnError).toHaveBeenCalledWith(mockAppError);
+    expect(mockOnError).toHaveBeenCalledWith(mockFromError.mock.results[0].value);
   });
 
   it('should delegate to Web3ErrorBoundary when category is WEB3', () => {
@@ -151,12 +151,12 @@ describe('EnhancedErrorBoundary', () => {
           <ThrowError />
         </EnhancedErrorBoundary>
       );
-      expect(screen.getByTestId('UIErrorBoundary')).toBeInTheDocument();
+      expect(screen.getAllByTestId('UIErrorBoundary').length).toBeGreaterThan(0);
     });
   });
 
   it('should default to UIErrorBoundary if no category prop is provided and category is unknown', () => {
-    mockErrorFactory.fromError.mockReturnValue({ ...mockAppError, category: ErrorCategory.UNKNOWN });
+    mockFromError.mockReturnValue({ ...mockFromError.mock.results[0]?.value, category: ErrorCategory.UNKNOWN });
     render(
       <EnhancedErrorBoundary>
         <ThrowError />

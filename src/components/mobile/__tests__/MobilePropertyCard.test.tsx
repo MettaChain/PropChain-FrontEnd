@@ -112,8 +112,8 @@ describe('MobilePropertyCard', () => {
 
   it('renders bedroom and bathroom info', () => {
     render(<MobilePropertyCard property={mockProperty} index={0} />);
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByTestId('bedrooms')).toHaveTextContent('3');
+    expect(screen.getByTestId('bathrooms')).toHaveTextContent('2');
   });
 
   it('renders year built', () => {
@@ -130,7 +130,7 @@ describe('MobilePropertyCard', () => {
 
   it('renders image counter when multiple images', () => {
     render(<MobilePropertyCard property={mockProperty} index={0} />);
-    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByTestId('image-counter')).toHaveTextContent('2');
   });
 
   it('toggles save state on heart button click', () => {

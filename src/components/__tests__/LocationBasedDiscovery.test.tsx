@@ -2,6 +2,14 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { LocationBasedDiscovery } from "../mobile/LocationBasedDiscovery";
 
+jest.mock("next/image", () => ({
+  __esModule: true,
+  default: (props: React.ImgHTMLAttributes<HTMLImageElement> & {
+    fill?: boolean;
+    sizes?: string;
+  }) => <img {...props} src={props.src} alt={props.alt} />,
+}));
+
 // Helpers exported for direct unit testing
 // We test them via the component here; pure-function tests are in utils tests
 
@@ -147,7 +155,7 @@ describe("LocationBasedDiscovery", () => {
       );
 
       // Click the Residential filter badge
-      const residentialBadge = screen.getByText("Residential");
+      const residentialBadge = screen.getAllByText("Residential")[0];
       fireEvent.click(residentialBadge);
 
       expect(screen.getByText("Sunset Beach Villa")).toBeInTheDocument();

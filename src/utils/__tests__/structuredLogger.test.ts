@@ -30,12 +30,12 @@ describe('structuredLogger', () => {
   });
 
   describe('sessionId generation', () => {
-    it('should use crypto.randomUUID instead of Math.random', () => {
-      const spy = jest.spyOn(globalThis.crypto, 'randomUUID');
+    it('should use crypto.getRandomValues instead of Math.random', () => {
+      const spy = jest.spyOn(globalThis.crypto, 'getRandomValues');
       const customLogger = createStructuredLogger({ enableErrorTracking: false, enableRemote: false });
 
       expect(spy).toHaveBeenCalled();
-      expect(customLogger['sessionId']).toMatch(/^sess_\d+_[a-f0-9]+$/);
+      expect(customLogger['sessionId']).toMatch(/^sess_[a-z0-9]+_[a-f0-9]+$/);
 
       spy.mockRestore();
       customLogger.destroy();
@@ -43,7 +43,7 @@ describe('structuredLogger', () => {
 
     it('should generate session IDs from crypto.randomUUID output', () => {
       const customLogger = createStructuredLogger({ enableErrorTracking: false, enableRemote: false });
-      expect(customLogger['sessionId']).toMatch(/^sess_\d+_[a-f0-9]{7}$/);
+      expect(customLogger['sessionId']).toMatch(/^sess_[a-z0-9]+_[a-f0-9]+$/);
       customLogger.destroy();
     });
   });
@@ -58,7 +58,7 @@ describe('structuredLogger', () => {
 
       expect(errorReporting.reportError).toHaveBeenCalled();
       const reportedError = (errorReporting.reportError as jest.Mock).mock.calls[0][0];
-      expect(reportedError.id).toMatch(/^error_\d+_[a-f0-9]+$/);
+      expect(reportedError.id).toMatch(/^error_[a-z0-9]+_[a-f0-9]+$/);
 
       spy.mockRestore();
     });
@@ -69,7 +69,7 @@ describe('structuredLogger', () => {
       const customLogger = createStructuredLogger({ enableErrorTracking: false, enableRemote: false });
 
       expect(customLogger['sessionId']).not.toContain('Math');
-      expect(customLogger['sessionId']).toMatch(/^sess_\d+_[a-f0-9]+$/);
+      expect(customLogger['sessionId']).toMatch(/^sess_[a-z0-9]+_[a-f0-9]+$/);
 
       customLogger.destroy();
     });

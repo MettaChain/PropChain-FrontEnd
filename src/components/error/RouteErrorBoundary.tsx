@@ -45,7 +45,7 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
           </h1>
 
           <p className="text-gray-600 dark:text-gray-300 mb-6">
-            {getWalletErrorMessage(error)}
+            {error.userMessage || getWalletErrorMessage(error)}
           </p>
 
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">

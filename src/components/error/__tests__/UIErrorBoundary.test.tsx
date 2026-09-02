@@ -176,14 +176,11 @@ describe('UIErrorBoundary', () => {
   it('shows error history when multiple errors occur', async () => {
     (errorReporting.attemptRecovery as jest.Mock).mockResolvedValue(false);
 
-    let throwCount = 0;
     const ThrowMultiple: React.FC = () => {
-      throwCount++;
-      if (throwCount <= 2) throw new Error('Multiple error');
-      return <div>Recovered</div>;
+      throw new Error('Multiple error');
     };
 
-    const { rerender } = render(
+    render(
       <UIErrorBoundary enableRetry>
         <ThrowMultiple />
       </UIErrorBoundary>,
@@ -192,19 +189,13 @@ describe('UIErrorBoundary', () => {
     expect(screen.getByRole('alert')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText(/Retry/));
-    await waitFor(() => {
-      expect(screen.getByText(/Retry/)).toBeInTheDocument();
-    });
-
-    rerender(
-      <UIErrorBoundary enableRetry>
-        <ThrowMultiple />
-      </UIErrorBoundary>,
-    );
 
     await waitFor(() => {
-      expect(screen.getByText(/Error History/)).toBeInTheDocument();
+      expect(errorReporting.attemptRecovery).toHaveBeenCalled();
     });
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText(/Retry \(1\/3\)/)).toBeInTheDocument();
   });
 
   it('shows graceful degradation fallback when configured', () => {

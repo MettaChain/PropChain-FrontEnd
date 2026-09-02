@@ -54,8 +54,8 @@ describe('RecentTransactions', () => {
     render(<RecentTransactions />);
 
     // Four completed rows and one pending row in the static list
-    expect(screen.getAllByText('✓ Completed')).toHaveLength(4);
-    expect(screen.getByText('⏳ Pending')).toBeInTheDocument();
+    expect(screen.getAllByText('Completed')).toHaveLength(4);
+    expect(screen.getByText('Pending')).toBeInTheDocument();
   });
 
   it('should render a formatted date for each transaction row', () => {

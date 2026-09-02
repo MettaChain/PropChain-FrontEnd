@@ -260,6 +260,7 @@ export const DraggablePropertiesList = memo(() => {
 
               {/* Draggable Property Card */}
               <div
+                data-testid="draggable-property"
                 draggable
                 onDragStart={(e) => handleDragStart(e, property)}
                 onDragOver={(e) => handleDragOver(e, index)}

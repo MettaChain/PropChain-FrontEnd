@@ -153,7 +153,7 @@ export class SecurityAuditLogger {
       userId,
       walletAddress: address,
       details: {
-        message: message.slice(0, 100) + '...', // Log only first 100 chars
+        message: message.length > 100 ? message.slice(0, 100) + '...' : message,
         validationResults,
         messageLength: message.length
       },

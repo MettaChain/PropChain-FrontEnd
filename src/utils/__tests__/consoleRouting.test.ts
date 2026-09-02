@@ -16,10 +16,11 @@ const SRC = path.resolve(__dirname, '..');
 const readSource = (relPath: string): string =>
   fs.readFileSync(path.join(SRC, relPath), 'utf8');
 
-// Production-direct console calls must be zero; only structured logger + the
-// canonical logger sink may use console.*.
+// Production-direct console CALLS must be zero; only structured logger + the
+// canonical logger sink may use console.*. Assignments that monkey-patch
+// console (e.g. console.error = ...) to suppress extension errors are allowed.
 const consoleCallRe =
-  /(^|[^.\w])console\.(warn|error|log|info|debug)\b/g;
+  /(^|[^.\w])console\.(warn|error|log|info|debug)\(/g;
 
 const productionFiles = [
   'earlyErrorSuppression.ts',
