@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withRateLimit } from '@/lib/rateLimit';
 
-export async function GET(request: NextRequest) {
+async function handleAddressCheck(request: NextRequest) {
+  // Require a wallet-identified caller, same signal rateLimitByWallet()
+  // already reads, so an anonymous client can't script this endpoint
+  // against paid upstream quota.
+  const walletAddress =
+    request.headers.get('x-wallet-address') ||
+    request.headers.get('authorization')?.replace('Bearer ', '');
+
+  if (!walletAddress) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const address = searchParams.get('address')?.trim();
 
@@ -52,3 +64,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withRateLimit(handleAddressCheck);
