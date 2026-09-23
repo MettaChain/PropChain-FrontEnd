@@ -32,7 +32,13 @@ export async function POST(request: NextRequest) {
       .update(body)
       .digest('hex');
 
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+    // Hash both sides to equal-length digests first so a malformed/truncated
+    // signature can't make timingSafeEqual throw a RangeError (which would
+    // otherwise surface as an unhandled 500 instead of a clean 401).
+    const providedDigest = crypto.createHash('sha256').update(signature).digest();
+    const expectedDigest = crypto.createHash('sha256').update(expectedSignature).digest();
+
+    if (!crypto.timingSafeEqual(providedDigest, expectedDigest)) {
       return NextResponse.json(
         { error: 'Invalid webhook signature' },
         { status: 401 }

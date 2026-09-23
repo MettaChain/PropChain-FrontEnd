@@ -5,22 +5,37 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { withCsrf } from '@/lib/csrf';
+import { withRateLimit } from '@/lib/rateLimit';
 import { propertyService } from '@/lib/propertyService';
 import { redisCacheService } from '@/lib/redisCache';
 import { logger } from '@/utils/logger';
 import type { SearchFilters, SortOption } from '@/types/property';
+import { paginationSchema } from './paginationSchema';
 
 // GET handler for property listings
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    
-    // Parse query parameters
-    const page = parseInt(searchParams.get('page') || '1');
-    const resultsPerPage = parseInt(searchParams.get('size') || searchParams.get('limit') || '12');
+
+    const paginationResult = paginationSchema.safeParse({
+      page: searchParams.get('page') ?? undefined,
+      size: searchParams.get('size') ?? searchParams.get('limit') ?? undefined,
+    });
+
+    if (!paginationResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid pagination parameters',
+          details: paginationResult.error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { page, size: resultsPerPage } = paginationResult.data;
     const sortBy = (searchParams.get('sortBy') || 'newest') as SortOption;
     const useCache = searchParams.get('cache') !== 'false'; // Default to true
-    
+
     // Parse filters
     const filters: SearchFilters = {
       query: searchParams.get('query') || '',
@@ -91,6 +106,8 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withRateLimit(handleGet);
 
 // POST handler for creating/updating properties (invalidates cache)
 export const POST = withCsrf(async function (request: NextRequest) {
