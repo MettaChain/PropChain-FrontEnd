@@ -92,29 +92,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST handler for creating/updating properties (invalidates cache)
-export const POST = withCsrf(async function (request: NextRequest) {
-  try {
-    const propertyData = await request.json();
-    
-    // Here you would normally save the property to your database/blockchain
-    // For now, we'll just invalidate the cache
-    
-    // Invalidate relevant cache entries
-    await redisCacheService.invalidateAllProperties();
-    
-    logger.info('Property cache invalidated due to property creation/update');
-    
-    return NextResponse.json({ 
-      message: 'Property created/updated successfully',
-      cacheInvalidated: true 
-    });
-  } catch (error) {
-    logger.error('Error in POST properties API route:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+// POST handler for creating properties.
+// There is no persistence layer (database/blockchain write) wired up yet,
+// so this previously returned a fake "success" response without saving
+// anything. Report 501 instead of lying to clients until real
+// persistence, auth, and validation are implemented (see #1016).
+export const POST = withCsrf(async function (_request: NextRequest) {
+  return NextResponse.json(
+    {
+      error: 'Not Implemented',
+      message: 'Creating properties via this API is not yet supported.',
+    },
+    { status: 501 }
+  );
 });
 
