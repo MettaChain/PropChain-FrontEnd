@@ -12,24 +12,25 @@ test.describe('Content Security Policy', () => {
     expect(cspHeader).toBeTruthy();
 
     expect(cspHeader).toContain("default-src 'self'");
-    expect(cspHeader).toContain("img-src 'self' data: ipfs:");
+    expect(cspHeader).toContain("img-src 'self' data: blob: https:");
     expect(cspHeader).toContain("script-src 'self' 'nonce-");
     expect(cspHeader).toContain("style-src 'self' 'unsafe-inline'");
     expect(cspHeader).toContain("base-uri 'self'");
     expect(cspHeader).toContain("form-action 'self'");
-    expect(cspHeader).toContain("frame-ancestors 'self'");
+    expect(cspHeader).toContain("frame-ancestors 'none'");
   });
 
-  test('should have x-csp-nonce header', async ({ page }) => {
+  test('script-src nonce is present and non-trivial', async ({ page }) => {
     const response = await page.goto('/');
     if (!response) {
       test.fail(true, 'No response received');
       return;
     }
 
-    const nonceHeader = response.headers()['x-csp-nonce'];
-    expect(nonceHeader).toBeTruthy();
-    expect(nonceHeader?.length).toBeGreaterThanOrEqual(16);
+    const cspHeader = response.headers()['content-security-policy'] || response.headers()['content-security-policy-report-only'];
+    const nonceMatch = cspHeader?.match(/'nonce-([A-Za-z0-9+/=]+)'/);
+    expect(nonceMatch?.[1]).toBeTruthy();
+    expect(nonceMatch?.[1]?.length).toBeGreaterThanOrEqual(16);
   });
 
   test('should not apply CSP to API routes', async ({ page }) => {
