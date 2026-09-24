@@ -176,4 +176,8 @@ fs.writeFileSync(
   htmlContent
 );
 
+
+
+
+
 console.log('Accessibility report generated');
