@@ -1,5 +1,9 @@
 import '@testing-library/jest-dom'
 
+// This is the single canonical Jest setup file, wired via
+// jest.config.cjs -> setupFilesAfterEach. Do not reintroduce
+// tests/setup.ts or src/test-setup.ts as a second, competing setup.
+
 // Ensure TextEncoder/TextDecoder are available (jsdom may not provide them)
 // so that Next.js edge-runtime constructors and fetch-based tests work.
 const { TextEncoder: NodeTextEncoder } = globalThis
