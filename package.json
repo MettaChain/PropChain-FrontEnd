@@ -2,6 +2,7 @@
   "name": "propchain",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.0",
   "scripts": {
     "build": "npm run typecheck && next build",
     "build-storybook": "storybook build",
@@ -108,6 +109,8 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.2",
     "@chromatic-com/storybook": "^5.1.1",
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
     "@cypress/react": "^9.0.2",
     "@playwright/test": "^1.48.0",
     "@storybook/addon-a11y": "^10.3.3",

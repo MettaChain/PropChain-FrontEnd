@@ -44,7 +44,7 @@ This frontend is designed for:
 Ensure you have the following installed:
 
 - **Node.js** v18+ (LTS recommended)
-- **npm**, **yarn**, or **pnpm** package manager
+- **npm** package manager (this repo pins `npm` via the `packageManager` field and only commits `package-lock.json` — CI runs `npm ci`)
 - **Git** version control
 - **Web3 Wallet** (MetaMask, Trust Wallet, etc.)
 
@@ -57,10 +57,6 @@ cd PropChain-FrontEnd
 
 # 2. Install dependencies
 npm install
-# or
-yarn install
-# or
-pnpm install
 
 # 3. Set up environment variables
 cp .env.example .env
@@ -68,10 +64,6 @@ cp .env.example .env
 
 # 4. Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
 The application will be available at `http://localhost:3000`.
