@@ -5,23 +5,37 @@ import { useTranslation } from 'react-i18next';
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
 import { SUPPORTED_CHAINS, toChainId } from '@/config/chains';
+import { logger } from '@/utils/logger';
 
 export const NetworkSwitcher: React.FC = () => {
   const { t } = useTranslation();
   const { isSwitchingNetwork } = useWalletStore();
   const { currentChain, chainConfig, switchChain, getChainName, getChainColor } = useChain();
   const [isOpen, setIsOpen] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   const handleNetworkSwitch = async (chainId: number) => {
     setIsOpen(false);
     const parsedChainId = toChainId(chainId);
-    if (parsedChainId) {
+    if (!parsedChainId) {
+      return;
+    }
+    try {
+      setSwitchError(null);
       await switchChain(parsedChainId);
+    } catch (error) {
+      logger.error('Network switch failed:', error);
+      setSwitchError('Failed to switch network. Please try again.');
     }
   };
 
   return (
     <div className="relative">
+      {switchError && (
+        <div role="alert" className="absolute -top-6 left-0 text-xs text-red-600 dark:text-red-400">
+          {switchError}
+        </div>
+      )}
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isSwitchingNetwork}

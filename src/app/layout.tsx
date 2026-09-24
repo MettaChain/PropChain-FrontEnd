@@ -4,7 +4,6 @@ import "./globals.css";
 import "@/utils/earlyErrorSuppression";
 import { ClientProviders } from "@/components/ClientProviders";
 import { GasPriceBanner } from "@/components/GasPriceBanner";
-import { useGasPrice } from "@/hooks/useGasPrice";
 import { headers } from "next/headers";
 
 /**
@@ -48,8 +47,6 @@ export default async function RootLayout({
   // Extract preferred language from Accept-Language header
   const preferredLang = acceptLanguage.split(",")[0].split("-")[0] || "en";
   const isRTL = ["ar", "he"].includes(preferredLang);
-
-  useGasPrice();
 
   return (
     <html
