@@ -44,7 +44,7 @@ This frontend is designed for:
 Ensure you have the following installed:
 
 - **Node.js** v18+ (LTS recommended)
-- **npm**, **yarn**, or **pnpm** package manager
+- **npm** package manager (this repo pins `npm` via the `packageManager` field and only commits `package-lock.json` — CI runs `npm ci`)
 - **Git** version control
 - **Web3 Wallet** (MetaMask, Trust Wallet, etc.)
 
@@ -57,10 +57,6 @@ cd PropChain-FrontEnd
 
 # 2. Install dependencies
 npm install
-# or
-yarn install
-# or
-pnpm install
 
 # 3. Set up environment variables
 cp .env.example .env
@@ -68,10 +64,6 @@ cp .env.example .env
 
 # 4. Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
 The application will be available at `http://localhost:3000`.
@@ -101,10 +93,11 @@ npm run analyze      # Analyze bundle size with webpack-bundle-analyzer
 ### Testing Suite
 
 ```bash
-npm test             # Run unit tests
-npm run test:watch   # Run tests in watch mode
-npm run test:coverage # Generate coverage report
-npm run test:e2e     # Run end-to-end tests
+npm test               # Run unit tests (Jest)
+npm run test:watch     # Run tests in watch mode
+npm run test:coverage  # Generate coverage report
+npm run test:e2e       # Run end-to-end tests (Playwright)
+npm run test:cy:component # Run component tests (Cypress) — also runs in CI
 ```
 
 ## 🌐 Network Configuration
@@ -293,6 +286,23 @@ disabled by the `NODE_ENV === 'production'` guard.
 
 ---
 
+## 📦 Bundle size budgets
+
+Budgets for key `.next/static/chunks` output are defined in
+`.size-limit.json` (main bundle, framework bundle, total JS) and enforced
+by [size-limit](https://github.com/ai/size-limit). Run after a production
+build:
+
+```bash
+npm run build
+npm run size
+```
+
+CI runs this as part of the `build` job, so a bundle that grows past a
+budget fails the build.
+
+---
+
 ## 📄 License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for complete details.
@@ -342,4 +352,10 @@ If you must explicitly push an intermediate draft up to a private backup branch 
 
 ```bash
 git push origin feature/my-branch --no-verify
+```
+
+Alternatively, the pre-push hook itself honors a `SKIP_PREPUSH=1` env var:
+
+```bash
+SKIP_PREPUSH=1 git push origin feature/my-branch
 ```

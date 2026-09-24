@@ -2,7 +2,11 @@ module.exports = {
   ci: {
     collect: {
       numberOfRuns: 3,
-      staticDistDir: './frontend/dist', // Points directly to the built bundle output
+      // This is a Next.js app with no static export (no `frontend/dist`
+      // directory), so Lighthouse CI needs to hit a running server instead
+      // of a static dist dir.
+      startServerCommand: 'npm run start',
+      url: ['http://localhost:3000'],
     },
     assert: {
       assertions: {

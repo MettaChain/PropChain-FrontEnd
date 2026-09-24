@@ -1,6 +1,6 @@
 /**
- * Next.js Middleware for Redis Cache Initialization and CSP enforcement
- * Initializes Redis caching system and applies nonce-based CSP when enabled
+ * Next.js Middleware: auth-gated protected routes, Redis cache
+ * initialization, and nonce-based CSP enforcement.
  */
 
 import { NextResponse } from 'next/server';
@@ -17,6 +17,8 @@ const isCspEnforced = process.env.CSP_ENFORCE === 'true';
 // surface" hole by requiring auth; enforcing a specific admin role is a
 // follow-up once such a system exists.
 const ADMIN_ROUTES = ['/admin'];
+// Paths that require authentication
+const PROTECTED_ROUTES = ['/dashboard', '/portfolio', '/settings', '/invest'];
 
 const createNonce = () => {
   const bytes = new Uint8Array(16);
@@ -81,6 +83,17 @@ async function checkAdminAuth(request: NextRequest): Promise<NextResponse | null
   const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
 
   if (!isAdminRoute) {
+ * Redirects to "/" with a callbackUrl if the request is for a protected
+ * route and doesn't carry a valid auth token. Returns null when the
+ * request may continue.
+ */
+async function checkAuth(request: NextRequest): Promise<NextResponse | null> {
+  const { pathname } = request.nextUrl;
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
+    pathname.startsWith(route),
+  );
+
+  if (!isProtectedRoute) {
     return null;
   }
 

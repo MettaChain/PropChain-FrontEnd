@@ -32,12 +32,17 @@ const customJestConfig = {
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/**/index.{js,jsx,ts,tsx}',
   ],
+  // Conservative non-zero floor so coverage collapsing to (near) 0% fails
+  // CI. This is intentionally NOT the codebase's real current baseline —
+  // that needs to be measured (`npm run test:coverage`) and these numbers
+  // ratcheted up to it; setting an unverified higher number here risked
+  // breaking CI immediately if actual coverage is lower.
   coverageThreshold: {
     global: {
-      branches: 0,
-      functions: 0,
-      lines: 0,
-      statements: 0,
+      branches: 1,
+      functions: 1,
+      lines: 1,
+      statements: 1,
     },
   },
   testMatch: [
