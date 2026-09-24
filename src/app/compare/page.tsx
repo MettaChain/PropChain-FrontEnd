@@ -10,6 +10,7 @@ import { useComparisonStore } from '@/store/comparisonStore';
 import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 import type { Property } from '@/types/property';
 import { formatPrice, formatROI } from '@/utils/searchUtils';
+import { getNestedValue } from './getNestedValue';
 
 interface ComparisonMetric {
   label: string;
@@ -78,10 +79,6 @@ const comparisonMetrics: ComparisonMetric[] = [
     higherIsBetter: true,
   },
 ];
-
-function getNestedValue(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
-}
 
 function getBestValue(properties: Property[], metric: ComparisonMetric): number | null {
   if (!metric.higherIsBetter) return null;
