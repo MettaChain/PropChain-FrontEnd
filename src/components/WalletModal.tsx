@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useWalletStore } from '@/store/walletStore';
 import { getWalletErrorMessage } from '@/utils/errorHandling';
 import { toChainId } from '@/config/chains';
@@ -30,8 +30,30 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   } | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [loadingStep, setLoadingStep] = useState<'connector' | 'security' | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   type SupportedWalletId = 'metamask' | 'walletconnect' | 'coinbase';
+
+  // #1032: clear stale error/security state whenever the modal is (re)opened
+  // #1034: move focus to the first control when the dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setError(null);
+      setSecurityValidation(null);
+      const id = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
+      return () => window.clearTimeout(id);
+    }
+  }, [isOpen, setError]);
+
+  const liveStatusText = error
+    ? error
+    : loadingStep === 'connector'
+    ? 'Loading wallet connector…'
+    : loadingStep === 'security'
+    ? 'Validating security…'
+    : securityValidation && !securityValidation.isValid
+    ? 'Connection blocked by security check'
+    : '';
 
   const connectWallet = async (walletType: SupportedWalletId) => {
     try {
@@ -239,6 +261,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <button
+          ref={closeButtonRef}
           type="button"
           aria-label="Close wallet selector"
           onClick={onClose}
@@ -252,6 +275,12 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
         </DialogHeader>
 
         <div className="p-0">
+          <div
+            aria-live={error ? 'assertive' : 'polite'}
+            className="sr-only"
+          >
+            {liveStatusText}
+          </div>
           {renderLoadingStep()}
           {renderSecurityStatus()}
           
