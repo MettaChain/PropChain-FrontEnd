@@ -44,6 +44,7 @@ export default async function RootLayout({
 }>) {
   const headersList = await headers();
   const acceptLanguage = headersList.get("accept-language") || "";
+  const nonce = headersList.get("x-nonce") || undefined;
 
   // Extract preferred language from Accept-Language header
   const preferredLang = acceptLanguage.split(",")[0].split("-")[0] || "en";
@@ -66,6 +67,7 @@ export default async function RootLayout({
         */}
         <script
           // eslint-disable-next-line react/no-danger
+          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: themeBootstrapScript }}
         />
       </head>
