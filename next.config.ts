@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const isAnalyzeEnabled = process.env.ANALYZE === "true";
-const isDev = process.env.NODE_ENV === "development";
 const isProd = process.env.NODE_ENV === "production";
 
 // `BuildStatsPlugin` writes a JSON payload into `.next/` for on-demand
@@ -12,26 +11,6 @@ const isProd = process.env.NODE_ENV === "production";
 //     (e.g. misconfigured CI).
 //   - Skip on server builds (this plugin is client-side only).
 // See README § "Build stats plugin" for details.
-
-const csp = [
-  "default-src 'self'",
-  `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self'",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data: https:",
-  isDev
-    ? "connect-src 'self' https: wss: ws: http:"
-    : "connect-src 'self' https: wss:",
-  "media-src 'self' data: blob: https:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "worker-src 'self' blob:",
-  "manifest-src 'self'",
-  "report-uri /api/csp-report",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
-].join("; ");
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -109,15 +88,10 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        source: "/:path*",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: csp,
-          },
-        ],
-      },
+      // Content-Security-Policy is intentionally NOT set here. It used to
+      // be a static policy that could diverge from the nonce-based policy
+      // src/middleware.ts builds per-request (guarded by CSP_ENFORCE).
+      // middleware.ts is now the single authoritative source for CSP.
     ];
   },
   webpack: (config, { isServer, webpack }) => {
