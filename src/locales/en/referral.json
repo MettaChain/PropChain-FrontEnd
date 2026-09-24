@@ -1,0 +1,23 @@
+{
+  "referral": {
+    "title": "Referral Program",
+    "subtitle": "Invite friends and earn rewards",
+    "yourCode": "Your referral code",
+    "copyCode": "Copy code",
+    "codeCopied": "Code copied to clipboard",
+    "shareLink": "Share your link",
+    "totalReferrals": "Total referrals",
+    "totalEarned": "Total earned",
+    "leaderboard": "Leaderboard",
+    "leaderboardRank": "Rank",
+    "leaderboardUser": "User",
+    "leaderboardReferrals": "Referrals",
+    "leaderboardEarnings": "Earnings",
+    "howItWorks": "How it works",
+    "step1": "Share your unique referral link",
+    "step2": "Friends sign up using your link",
+    "step3": "Earn rewards when they complete their first transaction",
+    "terms": "Referral terms & conditions",
+    "noReferralsYet": "No referrals yet. Start sharing your code!"
+  }
+}

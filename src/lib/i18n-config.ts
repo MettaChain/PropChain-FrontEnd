@@ -74,12 +74,4 @@ export const loadLocaleNamespaces = async (locale: Locale) => {
   await preloadNamespaces(locale, [...namespaces]);
 };
 
-// Get static paths for SSG
-export const getStaticPaths = () => {
-  return {
-    paths: locales.map((locale) => ({ params: { locale } })),
-    fallback: false,
-  };
-};
-
 export default i18n;

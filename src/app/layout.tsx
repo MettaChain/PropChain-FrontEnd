@@ -6,6 +6,7 @@ import { ClientProviders } from "@/components/ClientProviders";
 import { GasPriceBanner } from "@/components/GasPriceBanner";
 import { useGasPrice } from "@/hooks/useGasPrice";
 import { headers } from "next/headers";
+import { readLocaleCookie, rtlLocales } from "@/lib/i18n-persistence";
 
 /**
  * Synchronous blocking script that runs before React hydrates.
@@ -45,9 +46,12 @@ export default async function RootLayout({
   const headersList = await headers();
   const acceptLanguage = headersList.get("accept-language") || "";
 
-  // Extract preferred language from Accept-Language header
-  const preferredLang = acceptLanguage.split(",")[0].split("-")[0] || "en";
-  const isRTL = ["ar", "he"].includes(preferredLang);
+  // Prefer the user's explicitly-persisted locale (set by LanguageSwitcher)
+  // over Accept-Language detection so SSR matches their last choice.
+  const persistedLocale = readLocaleCookie(headersList.get("cookie"));
+  const preferredLang =
+    persistedLocale || acceptLanguage.split(",")[0].split("-")[0] || "en";
+  const isRTL = rtlLocales.includes(preferredLang as (typeof rtlLocales)[number]);
 
   useGasPrice();
 
