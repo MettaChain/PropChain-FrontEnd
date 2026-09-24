@@ -224,17 +224,25 @@ describe('middleware CSP enforcement, Redis init', () => {
     expect(cspHeader).toContain("'unsafe-eval'");
   });
 
-  it('sets x-nonce header on the request', async () => {
+  it('sets a unique, non-empty x-nonce header on the request each invocation', async () => {
     process.env.CSP_ENFORCE = 'true';
-    jest.resetModules();
-    resetState();
+    const seen = new Set<string>();
 
-    const { middleware } = await import('./middleware');
-    await middleware(createMockRequest('/'));
+    for (let i = 0; i < 2; i++) {
+      jest.resetModules();
+      resetState();
 
-    expect(nextCalls.length).toBeGreaterThan(0);
-    const callArgs = nextCalls[0];
-    expect(callArgs[0]).toHaveProperty('request');
+      const { middleware } = await import('./middleware');
+      await middleware(createMockRequest('/'));
+
+      expect(nextCalls.length).toBeGreaterThan(0);
+      const callArgs = nextCalls[0] as [{ request: { headers: Headers } }];
+      const nonce = callArgs[0].request.headers.get('x-nonce');
+      expect(nonce).toBeTruthy();
+      seen.add(nonce as string);
+    }
+
+    expect(seen.size).toBe(2);
   });
 });
 
