@@ -111,7 +111,7 @@ export const handlers = [
       );
     }
 
-    return HttpResponse.json(getMockApiTransactions());
+    return HttpResponse.json(getMockApiTransactions(walletAddress));
   }),
 
   // Get user balance

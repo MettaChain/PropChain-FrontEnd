@@ -244,6 +244,19 @@ its batching/remote-send semantics.
 
 ---
 
+## 🔗 Contract ABI codegen
+
+`wagmi.config.ts` generates typed contract hooks from the ABIs in
+`src/config/abis` into `src/generated.ts`. That file is not committed, so
+run codegen after installing dependencies (and again whenever an ABI
+changes):
+
+```bash
+npm run contracts:generate
+```
+
+---
+
 ## 📊 Build stats plugin
 
 `next.config.ts` includes a small `BuildStatsPlugin` that writes a JSON

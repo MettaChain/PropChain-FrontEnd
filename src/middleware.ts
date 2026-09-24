@@ -12,6 +12,11 @@ import { logger } from '@/utils/logger';
 const isDev = process.env.NODE_ENV === 'development';
 const isCspEnforced = process.env.CSP_ENFORCE === 'true';
 
+// Admin routes require an authenticated session. This project has no
+// roles/permissions system yet, so this closes the "fully public admin
+// surface" hole by requiring auth; enforcing a specific admin role is a
+// follow-up once such a system exists.
+const ADMIN_ROUTES = ['/admin'];
 // Paths that require authentication
 const PROTECTED_ROUTES = ['/dashboard', '/portfolio', '/settings', '/invest'];
 
@@ -70,6 +75,14 @@ const shouldApplyCsp = (request: NextRequest) => {
 };
 
 /**
+ * Redirects unauthenticated requests to admin routes back to "/". Returns
+ * null when the request may continue.
+ */
+async function checkAdminAuth(request: NextRequest): Promise<NextResponse | null> {
+  const { pathname } = request.nextUrl;
+  const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
+
+  if (!isAdminRoute) {
  * Redirects to "/" with a callbackUrl if the request is for a protected
  * route and doesn't carry a valid auth token. Returns null when the
  * request may continue.
@@ -99,15 +112,10 @@ async function checkAuth(request: NextRequest): Promise<NextResponse | null> {
     }
 
     const secret = new TextEncoder().encode(secretKey);
-
-    // Verify signature and expiry with 15s clock tolerance
-    await jwtVerify(token, secret, {
-      clockTolerance: 15,
-    });
+    await jwtVerify(token, secret, { clockTolerance: 15 });
 
     return null;
   } catch {
-    // Token is invalid, expired, or tampered with
     const loginUrl = new URL('/', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     const response = NextResponse.redirect(loginUrl);
@@ -123,9 +131,9 @@ let redisInitialized = false;
  * Middleware function
  */
 export async function middleware(request: NextRequest) {
-  const authRedirect = await checkAuth(request);
-  if (authRedirect) {
-    return authRedirect;
+  const adminAuthRedirect = await checkAdminAuth(request);
+  if (adminAuthRedirect) {
+    return adminAuthRedirect;
   }
 
   // Initialize Redis cache system on first request
