@@ -4,7 +4,6 @@ import "./globals.css";
 import "@/utils/earlyErrorSuppression";
 import { ClientProviders } from "@/components/ClientProviders";
 import { GasPriceBanner } from "@/components/GasPriceBanner";
-import { useGasPrice } from "@/hooks/useGasPrice";
 import { headers } from "next/headers";
 import { readLocaleCookie, rtlLocales } from "@/lib/i18n-persistence";
 
@@ -52,8 +51,6 @@ export default async function RootLayout({
   const preferredLang =
     persistedLocale || acceptLanguage.split(",")[0].split("-")[0] || "en";
   const isRTL = rtlLocales.includes(preferredLang as (typeof rtlLocales)[number]);
-
-  useGasPrice();
 
   return (
     <html
