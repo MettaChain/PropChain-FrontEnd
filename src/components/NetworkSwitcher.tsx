@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWalletStore } from '@/store/walletStore';
 import { useChain } from '@/providers/ChainAwareProvider';
@@ -29,6 +29,18 @@ export const NetworkSwitcher: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen]);
+
   return (
     <div className="relative">
       {switchError && (
@@ -37,10 +49,13 @@ export const NetworkSwitcher: React.FC = () => {
         </div>
       )}
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         disabled={isSwitchingNetwork}
         data-testid="network-switcher"
         aria-label={isSwitchingNetwork ? t('networkSwitcher.switchingNetwork') : chainConfig.name}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
         className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
       >
         <div
@@ -70,7 +85,7 @@ export const NetworkSwitcher: React.FC = () => {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20">
+          <div role="menu" className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20">
             <div className="p-2">
               <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t('networkSwitcher.selectNetwork')}
@@ -78,6 +93,7 @@ export const NetworkSwitcher: React.FC = () => {
               {SUPPORTED_CHAINS.map((chain) => (
                 <button
                   key={chain.id}
+                  role="menuitem"
                   onClick={() => handleNetworkSwitch(chain.id)}
                   disabled={chain.id === currentChain || isSwitchingNetwork}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
