@@ -36,7 +36,7 @@ const csp = [
 const nextConfig: NextConfig = {
   output: "standalone",
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   experimental: {
     optimizePackageImports: [

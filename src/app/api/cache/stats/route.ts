@@ -4,14 +4,44 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { withCsrf } from '@/lib/csrf';
+import { withRateLimit } from '@/lib/rateLimit';
 import { redisCacheService } from '@/lib/redisCache';
 import { getRedisInfo, testRedisConnection } from '@/lib/redis';
 import { logger } from '@/utils/logger';
 
+const ADMIN_API_KEY = process.env.CACHE_STATS_ADMIN_KEY;
+
+// Constant-time comparison against a required admin key, same pattern used
+// by the revalidate webhook (src/app/api/revalidate/route.ts).
+function isAuthorized(request: NextRequest): boolean {
+  if (!ADMIN_API_KEY) {
+    return false;
+  }
+
+  const provided = request.headers.get('x-admin-api-key');
+  if (!provided) {
+    return false;
+  }
+
+  const providedBuf = Buffer.from(provided);
+  const expectedBuf = Buffer.from(ADMIN_API_KEY);
+
+  if (providedBuf.length !== expectedBuf.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(providedBuf, expectedBuf);
+}
+
 // GET handler for cache statistics
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   try {
+    if (!isAuthorized(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const detailed = searchParams.get('detailed') === 'true';
 
@@ -71,14 +101,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export const GET = withRateLimit(handleGet);
+
 // DELETE handler to clear cache statistics
 export const DELETE = withCsrf(async function (request: NextRequest) {
   try {
+    if (!isAuthorized(request)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     await redisCacheService.clearStats();
-    
+
     logger.info('Cache statistics cleared via API');
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       message: 'Cache statistics cleared successfully',
       timestamp: Date.now(),
     });
