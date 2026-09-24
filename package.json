@@ -20,7 +20,7 @@
     "test": "jest",
     "test:ci": "jest --coverage --watchAll=false --ci",
     "test:coverage": "jest --coverage",
-    "test:cy": "cypress run",
+    "test:cy": "cypress run --component",
     "test:cy:component": "cypress run --component",
     "test:cy:component:ui": "cypress open --component",
     "test:cy:ui": "cypress open",
