@@ -306,6 +306,20 @@ npm run test:coverage
 npm run test:e2e
 ```
 
+### Test runners: Jest vs. Vitest
+
+**Jest** (`jest.config.cjs`) is the authoritative runner for unit and
+integration tests (`npm test`), matching CI. **Vitest**
+(`vitest.config.ts`) is scoped to a single, separate purpose: running
+Storybook's story tests via `@storybook/addon-vitest`, via:
+
+```bash
+npm run test:storybook
+```
+
+Don't add general unit tests to `vitest.config.ts` — those belong in the
+Jest suite.
+
 ### Running Tests Locally
 
 Before opening a PR, run the full test suite locally to catch issues early:

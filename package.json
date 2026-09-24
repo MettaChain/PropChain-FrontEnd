@@ -25,6 +25,7 @@
     "test:cy:component:ui": "cypress open --component",
     "test:cy:ui": "cypress open",
     "test:e2e": "playwright test",
+    "test:storybook": "vitest run",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:install": "playwright install",
     "test:e2e:mock": "SKIP_WEBSERVER=true playwright test tests/e2e/property-purchase-flow.spec.ts",

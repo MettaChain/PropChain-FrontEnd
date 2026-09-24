@@ -192,3 +192,8 @@ temp/
 
 # Agents
 AGENTS.md
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
