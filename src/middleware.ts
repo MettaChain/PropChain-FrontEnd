@@ -53,7 +53,10 @@ const buildCspHeader = (nonce: string) => {
     "frame-ancestors 'none'",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
+    // report-uri is deprecated but kept alongside report-to for browsers
+    // (e.g. older Safari) that don't yet support the Reporting API.
     "report-uri /api/csp-report",
+    "report-to csp-endpoint",
   ];
 
   if (!isDev) {
@@ -62,6 +65,8 @@ const buildCspHeader = (nonce: string) => {
 
   return directives.join('; ');
 };
+
+const REPORTING_ENDPOINTS_HEADER = 'csp-endpoint="/api/csp-report"';
 
 const shouldApplyCsp = (request: NextRequest) => {
   const pathname = request.nextUrl.pathname;
@@ -164,6 +169,7 @@ export async function middleware(request: NextRequest) {
   });
 
   response.headers.set('Content-Security-Policy', cspHeader);
+  response.headers.set('Reporting-Endpoints', REPORTING_ENDPOINTS_HEADER);
 
   return response;
 }
