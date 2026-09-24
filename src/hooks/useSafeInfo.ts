@@ -5,6 +5,13 @@ import { ethers } from "ethers";
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import { logger } from "@/utils/logger";
 
+interface SafeInfo {
+  owners: string[];
+  threshold: bigint | number;
+  queuedTxs: unknown;
+  version: string;
+}
+
 const publicClient = createPublicClient({
   chain: mainnet,
   transport: http(),
@@ -14,12 +21,18 @@ const SAFE_MASTER_COPY_ADDRESS = "0x6851D6f8ADC5e91A94AAb91F358A4f3d4293504A"; /
 
 export function useSafeInfo(address: string | undefined) {
   const [isSafe, setIsSafe] = useState(false);
-  const [safeInfo, setSafeInfo] = useState<any>(null);
+  const [safeInfo, setSafeInfo] = useState<SafeInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   const provider = useMemo(
-    () => new ethers.providers.Web3Provider(window.ethereum as any),
-    [],
+    () => {
+      if (typeof window === "undefined" || !window.ethereum) {
+        return null;
+      }
+
+      return new ethers.BrowserProvider(window.ethereum as ethers.Eip1193Provider);
+    },
+    []
   );
 
   useEffect(() => {
@@ -42,7 +55,7 @@ export function useSafeInfo(address: string | undefined) {
           setIsSafe(true);
           const ethAdapter = new EthersAdapter({
             ethers,
-            signerOrProvider: provider.getSigner(),
+            signerOrProvider: await provider.getSigner(),
           });
 
           const safeSdk = await Safe.create({

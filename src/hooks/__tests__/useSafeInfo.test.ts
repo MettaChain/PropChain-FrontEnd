@@ -15,9 +15,7 @@ jest.mock('viem/chains', () => ({
 
 jest.mock('ethers', () => ({
   ethers: {
-    providers: {
-      Web3Provider: jest.fn(() => ({ getSigner: () => ({}) })),
-    },
+    BrowserProvider: jest.fn(() => ({ getSigner: jest.fn().mockResolvedValue({}) })),
   },
 }));
 
@@ -48,6 +46,10 @@ describe('useSafeInfo', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSafeCreate.mockResolvedValue(mockSafeSdk);
+    Object.defineProperty(window, 'ethereum', {
+      configurable: true,
+      value: {},
+    });
   });
 
   it('starts in the loading state while checking', () => {
