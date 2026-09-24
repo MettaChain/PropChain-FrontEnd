@@ -13,7 +13,6 @@ concurrency:
 jobs:
   lint-and-typecheck:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,11 +26,9 @@ jobs:
         run: npm ci
 
       - name: Lint
-        continue-on-error: true
         run: npm run lint
 
       - name: Typecheck
-        continue-on-error: true
         run: npm run typecheck
 
   test:
@@ -77,6 +74,23 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
         run: npm run test:ci
+
+  cypress-component:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Cypress component tests
+        run: npm run test:cy:component
 
   build:
     runs-on: ubuntu-latest

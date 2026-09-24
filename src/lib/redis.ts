@@ -5,6 +5,7 @@
 
 import Redis from 'ioredis';
 import { logger } from '@/utils/logger';
+import { validateEnv } from '@/config/env/schema';
 
 // Redis configuration
 interface RedisConfig {
@@ -198,6 +199,52 @@ export const getRedisInfo = async (): Promise<Record<string, any> | null> => {
     return infoObj;
   } catch (error) {
     logger.error('Failed to get Redis info:', error);
+    return null;
+  }
+};
+
+/**
+ * Upstash REST Redis client (HTTP-based, not a TCP connection).
+ *
+ * This is a *different* deployment target from the `ioredis` client above:
+ * it's used by edge/serverless code paths (e.g. rate limiting) that can't
+ * hold a long-lived TCP connection. It is still created and memoized here
+ * so this module remains the single place that owns Redis client creation.
+ */
+interface UpstashRateLimitClient {
+  zadd: (key: string, scoreMember: { score: number; member: string }) => Promise<number>;
+  zremrangebyscore: (key: string, min: string, max: string) => Promise<number>;
+  zcount: (key: string, min: string, max: string) => Promise<number>;
+  expire: (key: string, seconds: number) => Promise<number>;
+}
+
+let upstashClient: UpstashRateLimitClient | null = null;
+let upstashUnavailable = false;
+
+export const getUpstashClient = async (): Promise<UpstashRateLimitClient | null> => {
+  if (upstashClient) {
+    return upstashClient;
+  }
+  if (upstashUnavailable) {
+    return null;
+  }
+
+  const env = validateEnv();
+  const url = env.UPSTASH_REDIS_REST_URL;
+  const token = env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    upstashUnavailable = true;
+    return null;
+  }
+
+  try {
+    const { Redis } = await import('@upstash/redis');
+    upstashClient = new Redis({ url, token }) as unknown as UpstashRateLimitClient;
+    return upstashClient;
+  } catch (error) {
+    logger.error('Failed to initialize Upstash Redis client:', error);
+    upstashUnavailable = true;
     return null;
   }
 };

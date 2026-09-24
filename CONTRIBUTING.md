@@ -9,7 +9,7 @@ Thank you for your interest in contributing to PropChain Frontend! This guide wi
 Before you start contributing, make sure you have:
 
 - **Node.js** v18+ (LTS recommended)
-- **npm**, **yarn**, or **pnpm** package manager
+- **npm** package manager (this repo pins `npm` via `packageManager` in `package.json` and only commits `package-lock.json`)
 - **Git** version control
 - **Web3 Wallet** (MetaMask, Trust Wallet, etc.) for testing
 - **GitHub account** for collaboration
@@ -34,10 +34,6 @@ Before you start contributing, make sure you have:
 
    ```bash
    npm install
-   # or
-   yarn install
-   # or
-   pnpm install
    ```
 
 4. **Set Up Environment Variables**
@@ -65,10 +61,6 @@ Before you start contributing, make sure you have:
 5. **Start Development Server**
    ```bash
    npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
    ```
 
 ## 📋 How to Contribute
@@ -259,6 +251,11 @@ fix: resolve wallet connection issue
 docs: update API documentation
 test: add unit tests for property service
 ```
+
+This format is enforced locally by a Husky `commit-msg` hook running `commitlint`
+(configured in `commitlint.config.js`) — a commit that doesn't match the
+Conventional Commits format will be rejected before it's created. This is
+also what powers the automated Release Please changelog described below.
 
 ## 🧪 Testing
 

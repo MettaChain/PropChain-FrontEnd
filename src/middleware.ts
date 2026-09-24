@@ -1,15 +1,24 @@
 /**
- * Next.js Middleware for Redis Cache Initialization and CSP enforcement
- * Initializes Redis caching system and applies nonce-based CSP when enabled
+ * Next.js Middleware: auth-gated protected routes, Redis cache
+ * initialization, and nonce-based CSP enforcement.
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 import { initRedisCacheSystem } from '@/lib/initRedisCache';
 import { logger } from '@/utils/logger';
 
 const isDev = process.env.NODE_ENV === 'development';
 const isCspEnforced = process.env.CSP_ENFORCE === 'true';
+
+// Admin routes require an authenticated session. This project has no
+// roles/permissions system yet, so this closes the "fully public admin
+// surface" hole by requiring auth; enforcing a specific admin role is a
+// follow-up once such a system exists.
+const ADMIN_ROUTES = ['/admin'];
+// Paths that require authentication
+const PROTECTED_ROUTES = ['/dashboard', '/portfolio', '/settings', '/invest'];
 
 const createNonce = () => {
   const bytes = new Uint8Array(16);
@@ -65,6 +74,56 @@ const shouldApplyCsp = (request: NextRequest) => {
   return acceptHeader.includes('text/html');
 };
 
+/**
+ * Redirects unauthenticated requests to admin routes back to "/". Returns
+ * null when the request may continue.
+ */
+async function checkAdminAuth(request: NextRequest): Promise<NextResponse | null> {
+  const { pathname } = request.nextUrl;
+  const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
+
+  if (!isAdminRoute) {
+ * Redirects to "/" with a callbackUrl if the request is for a protected
+ * route and doesn't carry a valid auth token. Returns null when the
+ * request may continue.
+ */
+async function checkAuth(request: NextRequest): Promise<NextResponse | null> {
+  const { pathname } = request.nextUrl;
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
+    pathname.startsWith(route),
+  );
+
+  if (!isProtectedRoute) {
+    return null;
+  }
+
+  const token = request.cookies.get('auth-token')?.value;
+
+  if (!token) {
+    const loginUrl = new URL('/', request.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  try {
+    const secretKey = process.env.AUTH_SECRET?.trim();
+    if (!secretKey) {
+      throw new Error('AUTH_SECRET is not configured');
+    }
+
+    const secret = new TextEncoder().encode(secretKey);
+    await jwtVerify(token, secret, { clockTolerance: 15 });
+
+    return null;
+  } catch {
+    const loginUrl = new URL('/', request.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete('auth-token');
+    return response;
+  }
+}
+
 // Flag to track if Redis has been initialized
 let redisInitialized = false;
 
@@ -72,6 +131,11 @@ let redisInitialized = false;
  * Middleware function
  */
 export async function middleware(request: NextRequest) {
+  const adminAuthRedirect = await checkAdminAuth(request);
+  if (adminAuthRedirect) {
+    return adminAuthRedirect;
+  }
+
   // Initialize Redis cache system on first request
   if (!redisInitialized && process.env.NODE_ENV !== 'development') {
     try {

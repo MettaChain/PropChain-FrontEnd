@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateEnv } from '@/config/env/schema';
+import { getUpstashClient } from '@/lib/redis';
 
 interface RateLimitStore {
   [key: string]: {
@@ -77,37 +78,6 @@ function updateRateLimitStore(store: RateLimitStore, key: string, data: {
   store[key] = data;
 }
 
-let redisClient: {
-  zadd: (key: string, scoreMember: { score: number; member: string }) => Promise<number>;
-  zremrangebyscore: (key: string, min: string, max: string) => Promise<number>;
-  zcount: (key: string, min: string, max: string) => Promise<number>;
-  expire: (key: string, seconds: number) => Promise<number>;
-} | null = null;
-
-let redisAvailable = false;
-
-async function initRedis(): Promise<void> {
-  if (redisClient !== null || redisAvailable) {
-    return;
-  }
-
-  const env = validateEnv();
-  const url = env.UPSTASH_REDIS_REST_URL;
-  const token = env.UPSTASH_REDIS_REST_TOKEN;
-
-  if (!url || !token) {
-    return;
-  }
-
-  try {
-    const { Redis } = await import('@upstash/redis');
-    redisClient = new Redis({ url, token });
-    redisAvailable = true;
-  } catch {
-    redisAvailable = false;
-  }
-}
-
 async function slidingWindowLimit(
   key: string,
   windowMs: number,
@@ -117,9 +87,9 @@ async function slidingWindowLimit(
   const windowStart = now - windowMs;
   const resetTime = now + windowMs;
 
-  await initRedis();
+  const redisClient = await getUpstashClient();
 
-  if (redisAvailable && redisClient) {
+  if (redisClient) {
     try {
       await redisClient.zremrangebyscore(key, '-inf', windowStart.toString());
       const count = await redisClient.zcount(key, windowStart.toString(), now.toString());
@@ -131,8 +101,8 @@ async function slidingWindowLimit(
 
       return { count: count + (count < maxRequests ? 1 : 0), resetTime };
     } catch {
-      redisAvailable = false;
-      redisClient = null;
+      // Fall through to the in-memory store for this request; getUpstashClient()
+      // keeps its own memoized client for subsequent calls.
     }
   }
 

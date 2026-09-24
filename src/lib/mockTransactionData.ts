@@ -3,9 +3,14 @@ import type { ApiTransaction } from '@/lib/transactionService';
 /**
  * Mock transaction history returned by GET /api/transactions.
  * Shared by the API route and MSW test handlers.
+ *
+ * When a walletAddress is supplied, the returned ledger is deterministically
+ * scoped to that address (rather than always returning the same fixed list
+ * for every wallet) so two different addresses can be observed to behave
+ * differently.
  */
-export function getMockApiTransactions(): ApiTransaction[] {
-  return [
+export function getMockApiTransactions(walletAddress?: string): ApiTransaction[] {
+  const allTransactions: ApiTransaction[] = [
     {
       id: 'tx-1',
       type: 'purchase',
@@ -40,4 +45,16 @@ export function getMockApiTransactions(): ApiTransaction[] {
       status: 'completed',
     },
   ];
+
+  if (!walletAddress) {
+    return allTransactions;
+  }
+
+  const seed = Array.from(walletAddress).reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0,
+  );
+  const count = (seed % allTransactions.length) + 1;
+
+  return allTransactions.slice(0, count);
 }

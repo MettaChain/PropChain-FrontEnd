@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+if [ "$SKIP_PREPUSH" = "1" ]; then
+  echo "SKIP_PREPUSH=1 set, skipping typecheck/test gate."
+  exit 0
+fi
+
+npm run typecheck && npm test -- --runInBand
