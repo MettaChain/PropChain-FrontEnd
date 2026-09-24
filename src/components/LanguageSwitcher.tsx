@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Globe } from 'lucide-react';
 import { logger } from '@/utils/logger';
+import { persistLocale } from '@/lib/i18n-persistence';
+import type { Locale } from '@/lib/i18n-config';
 
 const languages = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -28,7 +30,8 @@ export function LanguageSwitcher() {
 
   const handleLanguageChange = (languageCode: string) => {
     i18n.changeLanguage(languageCode);
-    
+    persistLocale(languageCode as Locale);
+
     // Update HTML lang attribute and dir for RTL languages
     const html = document.documentElement;
     html.lang = languageCode;
