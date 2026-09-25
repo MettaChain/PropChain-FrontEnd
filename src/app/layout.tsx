@@ -37,6 +37,35 @@ export const metadata: Metadata = {
     "Seamless multi-chain wallet connectivity for real estate tokenization on Ethereum, Polygon, and BSC",
 };
 
+/**
+ * Issue #1071 — resource origins worth warming up with <link rel="preconnect">.
+ * Wallet RPC calls (Ethereum/Polygon/BSC) and IPFS property assets pay a
+ * DNS+TLS round-trip on first use; preconnecting removes that penalty. Only
+ * origins that are actually configured are emitted, so unused origins are
+ * never preconnected. Google Fonts is self-hosted via next/font and needs no
+ * hint.
+ */
+const ORIGIN_HINTS: string[] = [
+  process.env.ETHEREUM_MAINNET_RPC_URL,
+  process.env.POLYGON_MAINNET_RPC_URL,
+  process.env.BSC_MAINNET_RPC_URL,
+  process.env.NEXT_PUBLIC_IPFS_GATEWAY,
+]
+  .map((url) => {
+    if (!url) return null;
+    try {
+      return new URL(url).origin;
+    } catch {
+      return null;
+    }
+  })
+  .filter(
+    (origin): origin is string =>
+      origin !== null && origin.startsWith("https://"),
+  );
+
+const preconnectOrigins = Array.from(new Set(ORIGIN_HINTS));
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -71,6 +100,12 @@ export default async function RootLayout({
           nonce={nonce}
           dangerouslySetInnerHTML={{ __html: themeBootstrapScript }}
         />
+        {/* Issue #1071 — preconnect to the configured wallet RPC and IPFS
+            origins so the first wallet interaction and first on-chain image
+            skip the DNS/TLS handshake latency. */}
+        {preconnectOrigins.map((origin) => (
+          <link key={origin} rel="preconnect" href={origin} crossOrigin="anonymous" />
+        ))}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-background font-sans text-foreground antialiased`}

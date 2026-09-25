@@ -61,6 +61,9 @@ const envSchema = z.object({
   // External Services (Optional)
   NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
+  // Public IPFS gateway used for on-chain property assets. Emitted as a
+  // preconnect hint in the root layout (issue #1071) when set.
+  NEXT_PUBLIC_IPFS_GATEWAY: z.string().url().optional(),
 
   // Development/Testing Only
   NEXT_PUBLIC_USE_MOCK_DATA: z
@@ -201,6 +204,8 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
   NEXT_PUBLIC_SUPPORTED_LOCALES: "Supported locales (comma-separated)",
   NEXT_PUBLIC_GA_MEASUREMENT_ID: "Google Analytics Measurement ID",
   NEXT_PUBLIC_SENTRY_DSN: "Sentry DSN for error tracking",
+  NEXT_PUBLIC_IPFS_GATEWAY:
+    "Public IPFS gateway URL for on-chain property assets (preconnected in the root layout)",
   NEXT_PUBLIC_USE_MOCK_DATA: "Use mock data mode (bypasses real API calls)",
   NEXT_PUBLIC_SKIP_AUTH: "Skip authentication for development",
   RATE_LIMIT_WINDOW_MS: "Rate limit time window in milliseconds",
