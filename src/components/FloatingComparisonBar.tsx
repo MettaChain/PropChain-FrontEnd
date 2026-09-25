@@ -3,7 +3,7 @@
 import React, { memo, useMemo } from 'react';
 import Link from 'next/link';
 import { X, BarChart3 } from 'lucide-react';
-import { useComparisonStore } from '@/store/comparisonStore';
+import { useCompareStore } from '@/store/compareStore';
 import { formatPrice } from '@/utils/searchUtils';
 
 // ============================================================================
@@ -41,7 +41,12 @@ const PropertyChip = memo(function PropertyChip({ name, price, onRemove }: Prope
 // ============================================================================
 
 const FloatingComparisonBar = () => {
-  const { selectedProperties, removeProperty, clearProperties } = useComparisonStore();
+  // Resolved from the selection cache (#1090). Ids whose object is not cached
+  // - a selection restored from storage or a share link - are omitted rather
+  // than rendered as placeholders.
+  const selectedProperties = useCompareStore((state) => state.getSelectedProperties());
+  const removeProperty = useCompareStore((state) => state.removeProperty);
+  const clearProperties = useCompareStore((state) => state.clearCompare);
 
   const propertyCount = selectedProperties.length;
 

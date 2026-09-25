@@ -70,16 +70,20 @@ jest.mock('@/store/cartStore', () => ({
   useCartStore: () => ({ addItem: jest.fn() }),
 }));
 
-jest.mock('@/store/comparisonStore', () => ({
-  useComparisonStore: () => ({
-    isPropertySelected: jest.fn().mockReturnValue(false),
-    toggleProperty: jest.fn(),
-  }),
-}));
-
 jest.mock('@/store/compareStore', () => ({
-  useCompareStore: (selector: (state: { selectedIds: string[]; toggleProperty: jest.Mock }) => unknown) =>
-    selector({ selectedIds: [], toggleProperty: jest.fn() }),
+  useCompareStore: (
+    selector: (state: {
+      selectedIds: string[];
+      toggleProperty: jest.Mock;
+      isPropertySelected: () => boolean;
+    }) => unknown,
+  ) =>
+    selector({
+      selectedIds: [],
+      toggleProperty: jest.fn(),
+      isPropertySelected: () => false,
+    }),
+  MAX_COMPARE: 3,
 }));
 
 jest.mock('@/store/favoritesStore', () => ({
