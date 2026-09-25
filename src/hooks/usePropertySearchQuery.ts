@@ -106,7 +106,8 @@ export function usePropertyQuery(id: string, enabled: boolean = true) {
  * - **Window refocus**: Does NOT refetch on window focus (refetchOnWindowFocus: false).
  * - **4xx errors**: Not retried; network/5xx errors retried up to 3 times.
  * - **Pagination**: `setPage` scrolls to top by default; `loadMore` appends without scrolling.
- * - **URL sync**: The parent component is responsible for URL synchronization (see `usePropertySearch.ts`).
+ * - **URL sync**: Not handled here. A page that owns a URL calls
+ *   `usePropertySearchUrlSync()` alongside this hook (#1091).
  */
 export function usePropertySearch() {
   const searchStore = useSearchStore();

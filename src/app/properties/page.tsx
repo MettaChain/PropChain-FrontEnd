@@ -7,6 +7,7 @@ import { WalletConnector } from "@/components/WalletConnector";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { Button } from "@/components/ui/button";
 import { usePropertySearch } from "@/hooks/usePropertySearchQuery";
+import { usePropertySearchUrlSync } from "@/hooks/usePropertySearchUrlSync";
 import { useSearchStore } from "@/store/searchStore";
 import { useNotificationStore } from "@/store/notificationStore";
 import { useWalletStore } from "@/store/walletStore";
@@ -53,6 +54,11 @@ function PropertiesContent() {
     setPage: setStorePage,
     setResultsPerPage,
   } = usePropertySearch();
+
+  // Filters and sort are mirrored into the query string so a filtered search can
+  // be linked, bookmarked and restored on reload (#1091). Pagination params are
+  // owned separately by usePaginationParams and are preserved, not overwritten.
+  usePropertySearchUrlSync();
 
   // Keep Zustand store in sync with URL params on mount and when URL changes
   useEffect(() => {
