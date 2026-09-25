@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
@@ -213,6 +214,11 @@ const properties: MobileProperty[] = [
 ];
 
 function MobilePropertiesPage() {
+  // Issue #1082 — demo/QA route. 404 unless explicitly enabled.
+  if (process.env.NEXT_PUBLIC_ENABLE_DEMOS !== "true") {
+    notFound();
+  }
+
   const [activeTab, setActiveTab] = useState("browse");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");

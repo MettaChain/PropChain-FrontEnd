@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { notFound } from "next/navigation";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Web3Tooltip } from '@/components/ui/Web3Tooltip';
@@ -9,6 +10,11 @@ import { TransactionProgress, useTransactionProgress } from '@/components/Transa
 import { DraggablePropertiesList } from '@/components/dashboard/DraggablePropertiesList';
 
 export default function UXImprovementsDemo() {
+  // Issue #1082 — demo/QA route. 404 unless explicitly enabled.
+  if (process.env.NEXT_PUBLIC_ENABLE_DEMOS !== "true") {
+    notFound();
+  }
+
   const { isOpen, transactionHash, startTransaction, closeTransaction } = useTransactionProgress();
   const [showDemo, setShowDemo] = useState(false);
 

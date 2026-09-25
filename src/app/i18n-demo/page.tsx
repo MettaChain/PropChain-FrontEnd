@@ -1,10 +1,16 @@
 "use client";
 
+import { notFound } from "next/navigation";
 import { I18nDemo } from "@/components/I18nDemo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { WalletConnector } from "@/components/WalletConnector";
 
 export default function I18nDemoPage() {
+  // Issue #1082 — demo/QA route. 404 unless explicitly enabled.
+  if (process.env.NEXT_PUBLIC_ENABLE_DEMOS !== "true") {
+    notFound();
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
