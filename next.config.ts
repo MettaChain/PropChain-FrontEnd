@@ -27,10 +27,27 @@ const nextConfig: NextConfig = {
     ],
   },
   images: {
+    // Documented allowed image sources (issue #1068). Unsplash hosts the
+    // property photography used by mock/test data; the IPFS gateways below
+    // serve on-chain property assets once they are minted. Only these hosts
+    // are whitelisted — every other host keeps hitting Next/Image's 400
+    // so the allow-list stays locked down.
     remotePatterns: [
       {
         protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "ipfs.io",
+      },
+      {
+        protocol: "https",
+        hostname: "gateway.ipfs.io",
+      },
+      {
+        protocol: "https",
+        hostname: "cloudflare-ipfs.com",
       },
     ],
     formats: ["image/avif", "image/webp"],
