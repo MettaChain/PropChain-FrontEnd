@@ -40,6 +40,9 @@ export const clients = {
 };
 
 // Helper function to get client for a specific chain
+/**
+ * Returns the viem client configured for `chainId`.
+ */
 export function getClientForChain(chainId: number) {
   switch (chainId) {
     case 1:

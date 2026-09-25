@@ -71,6 +71,9 @@ const MOCK_GAS_BALANCES: Record<ChainId, { balance: string; balanceUSD: number }
   56: { balance: '3.2', balanceUSD: 1920 }
 };
 
+/**
+ * Aggregates a wallet holdings into portfolio totals and per-property positions.
+ */
 export class PortfolioService {
   /**
    * Fetch portfolio data for a given wallet address across all chains

@@ -10,6 +10,12 @@ import { useEffect, useState } from 'react';
 
 let activeNotificationOwner: string | null = null;
 
+/**
+ * Guarantees only one notification host is mounted at a time.
+ *
+ * Returns true for the first caller to claim `ownerId` and false for any other,
+ * so duplicate providers render nothing rather than stacking toasts.
+ */
 export function useSingleNotificationMount(ownerId: string): boolean {
   const [isOwner, setIsOwner] = useState(false);
 

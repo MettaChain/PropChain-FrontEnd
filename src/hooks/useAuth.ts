@@ -12,6 +12,12 @@ interface AuthState {
   sessionExpiresAt: number | null;
 }
 
+/**
+ * Wallet-derived authentication state.
+ *
+ * Treats a connected wallet with an address as authenticated, and only after
+ * hydration so server and client markup agree on the first paint.
+ */
 export function useAuth() {
   const { address, isConnected } = useWalletStore();
   const [isHydrated, setIsHydrated] = useState(false);

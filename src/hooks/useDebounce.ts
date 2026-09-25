@@ -5,6 +5,9 @@ import { useEffect, useState } from 'react';
  * Useful for search inputs to reduce API calls
  */
 
+/**
+ * Returns `value` after it has stopped changing for `delay` milliseconds.
+ */
 export function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 

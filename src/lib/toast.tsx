@@ -9,6 +9,9 @@ interface ErrorToastOptions {
   docsUrl?: string;
 }
 
+/**
+ * Shows an error toast with a consistent title, description and styling.
+ */
 export function showErrorToast({
   message,
   onRetry,

@@ -9,10 +9,16 @@ import type { Property } from '@/types/property';
 const API_URL = process.env.NEXT_PUBLIC_PROPERTY_API_URL;
 const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === 'true';
 
+/**
+ * Whether the mock property dataset should be used instead of the live API.
+ */
 export function shouldUseMocks(): boolean {
   return USE_MOCKS || !API_URL;
 }
 
+/**
+ * Fetches the property list from the configured property API.
+ */
 export async function fetchPropertiesFromApi(): Promise<Property[]> {
   if (!API_URL) {
     throw new Error(

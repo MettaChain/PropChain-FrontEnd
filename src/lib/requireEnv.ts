@@ -1,3 +1,9 @@
+/**
+ * Reads an environment variable, falling back to `defaultValue`.
+ *
+ * Throws when neither is present, so a missing value fails at the read rather
+ * than surfacing as undefined later.
+ */
 export function requireEnv(name: string, defaultValue?: string): string {
   const value = process.env[name] ?? defaultValue;
   if (value === undefined || value === '') {
@@ -11,6 +17,9 @@ export function requireEnv(name: string, defaultValue?: string): string {
   return value;
 }
 
+/**
+ * Reads an environment variable, throwing when it is unset. No fallback.
+ */
 export function requireEnvStrict(name: string): string {
   const value = process.env[name];
   if (!value) {
