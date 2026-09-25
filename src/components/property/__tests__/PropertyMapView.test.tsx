@@ -34,30 +34,38 @@ const mockProperties = [
 ];
 
 describe('PropertyMapView', () => {
-  it('renders the map container and tile layer', () => {
+  // PropertyMapView lazy-loads the map via next/dynamic (issue #1069), so the
+  // leaflet chunk resolves asynchronously — assertions must await its render.
+  it('renders the map container and tile layer', async () => {
     render(<PropertyMapView properties={mockProperties} />);
-    expect(screen.getByTestId('map-container')).toBeInTheDocument();
+    expect(await screen.findByTestId('map-container')).toBeInTheDocument();
     expect(screen.getByTestId('tile-layer')).toBeInTheDocument();
   });
 
-  it('renders a marker for every property fixture', () => {
+  it('renders a marker for every property fixture', async () => {
     render(<PropertyMapView properties={mockProperties} />);
-    expect(screen.getAllByTestId('map-marker')).toHaveLength(2);
+    expect(await screen.findAllByTestId('map-marker')).toHaveLength(2);
   });
 
-  it('shows the price and address in the marker popup', () => {
+  it('shows the price and address in the marker popup', async () => {
     render(<PropertyMapView properties={mockProperties} />);
-    expect(screen.getByText('$500,000')).toBeInTheDocument();
+    expect(await screen.findByText('$500,000')).toBeInTheDocument();
     expect(screen.getByText('1 Wall St, New York')).toBeInTheDocument();
     expect(screen.getByText('$750,000')).toBeInTheDocument();
     expect(screen.getByText('5 Times Sq, New York')).toBeInTheDocument();
   });
 
-  it('renders no markers when there are no properties', () => {
+  it('shows a loading state before the map chunk resolves', async () => {
+    render(<PropertyMapView properties={mockProperties} />);
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(await screen.findByTestId('map-container')).toBeInTheDocument();
+  });
+
+  it('renders no markers when there are no properties', async () => {
     render(<PropertyMapView properties={[]} />);
-    expect(screen.queryAllByTestId('map-marker')).toHaveLength(0);
+    expect(await screen.findByTestId('map-container')).toBeInTheDocument();
     // The map container itself still renders.
-    expect(screen.getByTestId('map-container')).toBeInTheDocument();
+    expect(screen.queryAllByTestId('map-marker')).toHaveLength(0);
     expect(screen.getByTestId('marker-cluster')).toBeInTheDocument();
   });
 });

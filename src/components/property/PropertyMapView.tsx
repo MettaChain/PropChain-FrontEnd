@@ -1,60 +1,35 @@
+"use client";
 
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-} from "react-leaflet";
-import MarkerClusterGroup from "react-leaflet-cluster";
-import type { LatLngTuple } from "leaflet";
+import dynamic from "next/dynamic";
+import type { MapProperty } from "./MapCanvas";
 
-type Property = {
-  id: string;
-  lat: number;
-  lng: number;
-  price: number;
-  address: string;
-};
+/**
+ * Issue #1069 — the react-leaflet/leaflet bundle is split into its own async
+ * chunk (MapCanvas) and only fetched when a map view is actually requested.
+ * The static import of leaflet is gone from this module, shrinking the routes
+ * that render it; a loading skeleton covers the chunk fetch.
+ */
+const MapCanvas = dynamic(() => import("./MapCanvas"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div
+        className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
+        role="status"
+        aria-label="Loading map"
+      />
+    </div>
+  ),
+});
 
 type Props = {
-  properties: Property[];
+  properties: MapProperty[];
 };
 
-export default function PropertyMapView({
-  properties,
-}: Props) {
-  const center: LatLngTuple = [40.7, -74];
-
+export default function PropertyMapView({ properties }: Props) {
   return (
-    <div className="h-screen w-full">
-      <MapContainer
-        center={center}
-        zoom={12}
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        <MarkerClusterGroup>
-          {properties.map((p) => (
-            <Marker
-              key={p.id}
-              position={[p.lat, p.lng]}
-            >
-              <Popup>
-                <div>
-                  <p className="font-semibold">
-                    ${p.price.toLocaleString()}
-                  </p>
-                  <p>{p.address}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MarkerClusterGroup>
-      </MapContainer>
-    </div>
+    <MapCanvas
+      properties={properties}
+    />
   );
 }
