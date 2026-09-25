@@ -169,15 +169,43 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
                 : 'border-white bg-white/90 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-200'
             } ${compareLimitReached ? 'cursor-not-allowed opacity-70' : ''}`}
             onClick={(e) => e.stopPropagation()}
+            title={compareLimitReached ? 'Compare limit reached (maximum 3 properties)' : undefined}
           >
+            {/*
+             * Issue #1061 — announce and describe the disabled state. The
+             * control stays focusable (aria-disabled instead of the native
+             * `disabled` attribute, which removes it from the tab order) so
+             * screen-reader and keyboard users can discover *why* nothing
+             * happens, and a polite live region reports the limit when it is
+             * reached.
+             */}
+            <span
+              id={`compare-limit-${property.id}`}
+              role="status"
+              aria-live="polite"
+              className="sr-only"
+            >
+              {compareLimitReached
+                ? 'Compare limit reached. Only 3 properties can be compared at once.'
+                : ''}
+            </span>
             <input
               type="checkbox"
               checked={isCompared}
               onChange={handleCompareToggle}
               onClick={(e) => e.stopPropagation()}
-              disabled={compareLimitReached}
+              aria-disabled={compareLimitReached || undefined}
+              aria-describedby={
+                compareLimitReached ? `compare-limit-${property.id}` : undefined
+              }
+              aria-label={
+                compareLimitReached
+                  ? 'Add to comparison list, compare limit reached (maximum 3)'
+                  : isCompared
+                    ? 'Remove from comparison list'
+                    : 'Add to comparison list'
+              }
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              aria-label={isCompared ? 'Remove from comparison list' : 'Add to comparison list'}
             />
             <span>{isCompared ? 'Selected' : 'Compare'}</span>
           </label>
