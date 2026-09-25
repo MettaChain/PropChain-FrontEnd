@@ -11,6 +11,7 @@ import {
   History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface NavItem {
   id: string;
@@ -54,6 +55,15 @@ const navItems: NavItem[] = [
 
 export const MobileBottomNavigation: React.FC = () => {
   const pathname = usePathname();
+  const isMobile = useIsMobile();
+
+  // Issue #1075 — do not render the mobile bottom nav on desktop. The old
+  // `md:hidden` class hid it visually while still shipping the DOM/bundle and
+  // risking a duplicate landmark for assistive tech; skipping the render
+  // entirely keeps the desktop a11y tree and JS footprint clean.
+  if (!isMobile) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">

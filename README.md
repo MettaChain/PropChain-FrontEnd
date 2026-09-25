@@ -134,11 +134,13 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 
 ### Project Documentation
 
-- **[📖 Component Library](./docs/components.md)** - Reusable UI components and usage examples
-- **[🔗 Web3 Integration](./docs/web3.md)** - Wallet connection and blockchain interaction guides
-- **[🚀 Deployment Guide](./docs/deployment.md)** - Production deployment best practices
-- **[🏗️ Architecture](./docs/architecture.md)** - Frontend architecture and state management
 - **[🔧 Mocking](./docs/mocking.md)** - Local mocking and development overrides
+- **[🗄️ Cache API](./docs/cache-api.md)** - Caching model and invalidation rules
+- **[🎣 Hooks Guide](./docs/hooks.md)** - Custom hooks reference
+- **[🔌 Smart Contract Integration](./docs/smart-contract-integration.md)** - Contract wiring and ABIs
+- **[⚡ Lazy Loading](./docs/lazy-loading-system.md)** - Bundle-splitting and lazy-loading patterns
+- **[🔒 CSP & Security Headers](./docs/csp.md)** - Content Security Policy configuration
+- **[🛡️ Phishing Denylist](./docs/phishing-denylist.md)** - Suspicious-domain protections
 
 ### Repository Structure
 
@@ -162,16 +164,14 @@ PropChain-FrontEnd/
 ### Contributing
 
 - **[🤝 Contributing Guide](./CONTRIBUTING.md)** - How to contribute effectively
-- **[📋 Code of Conduct](./CODE_OF_CONDUCT.md)** - Community guidelines and standards
-- **[🐛 Issue Templates](./.github/ISSUE_TEMPLATE/)** - Standardized issue reporting
-- **[💡 Feature Requests](./.github/ISSUE_TEMPLATE/feature_request.md)** - Feature proposal template
+- **Report Issues**: https://github.com/MettaChain/PropChain-FrontEnd/issues
+
+> The repository does not currently ship a `CODE_OF_CONDUCT.md` or
+> `.github/ISSUE_TEMPLATE/` — these are tracked as follow-up work.
 
 ### Additional Resources
 
 - **[🔌 Backend API](https://github.com/MettaChain/PropChain-BackEnd)** - Server-side NestJS application
-- **[🎨 Design System](./docs/design-system.md)** - UI/UX guidelines and design tokens
-- **[📊 Performance Metrics](./docs/performance.md)** - Optimization guides and benchmarks
-- **[🎓 Tutorials](./docs/tutorials/)** - Step-by-step development tutorials
 
 ## 🛠️ Technology Stack
 
@@ -305,7 +305,9 @@ budget fails the build.
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for complete details.
+This repository does not currently ship a `LICENSE` file. The license decision
+is tracked by the maintainers; until then the project's default copyright
+reserves apply (see the [Contributing Guide](./CONTRIBUTING.md)).
 
 ## 🤝 Support & Community
 
