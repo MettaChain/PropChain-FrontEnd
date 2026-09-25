@@ -42,6 +42,7 @@ export function ThemeSwitcher({
       className={cn("gap-2", className)}
       data-testid="theme-switcher"
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-pressed={isDark}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
