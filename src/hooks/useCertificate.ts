@@ -12,6 +12,9 @@ interface PurchaseDetails {
   transactionHash: string;
 }
 
+/**
+ * Read and write NFT purchase certificates for the connected wallet.
+ */
 export function useCertificate() {
   const { addCertificate, getCertificate, certificates } = useCertificateStore();
   const { address, chainId } = useWalletStore();

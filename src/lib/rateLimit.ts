@@ -44,6 +44,12 @@ function startCleanupTimer(): void {
 
 startCleanupTimer();
 
+/**
+ * Stops the periodic sweep of expired rate-limit entries.
+ *
+ * Needed in tests and on shutdown: the interval would otherwise keep the
+ * process alive.
+ */
 export function stopRateLimitCleanup(): void {
   if (cleanupIntervalHandle !== null) {
     clearInterval(cleanupIntervalHandle);
@@ -114,6 +120,9 @@ async function slidingWindowLimit(
   return data;
 }
 
+/**
+ * Applies the per-IP rate limit to a request.
+ */
 export async function rateLimitByIP(request: NextRequest): Promise<RateLimitResult> {
   const env = validateEnv();
   const windowMs = env.RATE_LIMIT_WINDOW_MS;
@@ -138,6 +147,9 @@ export async function rateLimitByIP(request: NextRequest): Promise<RateLimitResu
   };
 }
 
+/**
+ * Applies the per-wallet rate limit to a request.
+ */
 export async function rateLimitByWallet(request: NextRequest): Promise<RateLimitResult> {
   const env = validateEnv();
   const windowMs = env.RATE_LIMIT_WINDOW_MS;
@@ -170,6 +182,9 @@ export async function rateLimitByWallet(request: NextRequest): Promise<RateLimit
   };
 }
 
+/**
+ * Builds the 429 response for a rejected request, including retry headers.
+ */
 export function createRateLimitResponse(rateLimitResult: RateLimitResult): NextResponse {
   const headers: Record<string, string> = {
     'X-RateLimit-Limit': rateLimitResult.limit.toString(),
@@ -202,6 +217,9 @@ export function createRateLimitResponse(rateLimitResult: RateLimitResult): NextR
   );
 }
 
+/**
+ * Wraps a route handler so requests are rate limited before it runs.
+ */
 export function withRateLimit(handler: (request: NextRequest) => Promise<NextResponse>) {
   return async (request: NextRequest): Promise<NextResponse> => {
     const ipRateLimit = await rateLimitByIP(request);

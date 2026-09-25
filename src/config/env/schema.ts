@@ -1,4 +1,3 @@
-import { logger } from '@/utils/logger';
 import {z} from "zod";
 
 /**
@@ -9,6 +8,15 @@ import {z} from "zod";
 
 // Define the environment schema
 const envSchema = z.object({
+  // Authentication / CSRF
+  //
+  // Both were previously validated only by scripts/validate-env.js, never at
+  // runtime, so a deployment could boot with an unset or too-short secret and
+  // fail closed later (#1089). Optional at the base so local development and
+  // tests are unaffected; required per environment below.
+  AUTH_SECRET: z.string().min(32).optional(),
+  CSRF_SECRET: z.string().min(1).optional(),
+
   // Application General Settings
   NEXT_PUBLIC_APP_NAME: z.string().min(1).default("PropChain"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000/"),
@@ -99,6 +107,44 @@ const envSchema = z.object({
   // Upstash Redis Configuration
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+  // Self-hosted Redis (src/lib/redis.ts)
+  //
+  // Defaults mirror the fallbacks already hardcoded at the call site, so the
+  // schema describes what the code actually does rather than introducing a
+  // second, different default (#1088).
+  REDIS_HOST: z.string().default("localhost"),
+  REDIS_PORT: z
+    .string()
+    .transform((val: string) => parseInt(val, 10))
+    .default(6379),
+  REDIS_DB: z
+    .string()
+    .transform((val: string) => parseInt(val, 10))
+    .default(0),
+  REDIS_PASSWORD: z.string().optional(),
+
+  // On-chain cache invalidation (src/lib/blockchainCacheInvalidator.ts,
+  // src/lib/initRedisCache.ts). Both are read together and the call site guards
+  // on both being present, so both stay optional.
+  BLOCKCHAIN_RPC_URL: z.string().url().optional(),
+  PROPERTY_CONTRACT_ADDRESS: z.string().optional(),
+
+  // Batch purchase contract (src/config/batchPurchase.ts)
+  NEXT_PUBLIC_BATCH_PURCHASE_ADDRESS: z.string().optional(),
+
+  // Wallet mocking for local development (src/config/wagmi.ts)
+  NEXT_PUBLIC_MOCK_WALLET: z
+    .string()
+    .transform((val) => val === "true")
+    .default(false),
+
+  // Phishing protection (src/utils/security/phishingProtection.ts)
+  NEXT_PUBLIC_MANIFEST_SIGNING_KEY: z.string().optional(),
+  NEXT_PUBLIC_PHISHING_MANIFEST_URL: z.string().url().optional(),
+
+  // Address screening (src/app/api/security/address-check/route.ts)
+  CHAINALYSIS_API_KEY: z.string().optional(),
 });
 
 /**
@@ -114,6 +160,8 @@ const envRequirementsSchema = z.object({
     // Staging requires valid RPC URLs
     ETHEREUM_MAINNET_RPC_URL: z.string().url(),
     NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string(),
+    AUTH_SECRET: z.string().min(32),
+    CSRF_SECRET: z.string().min(1),
   }),
   production: z.object({
     // Production environment can be run without all live configuration during build/test,
@@ -122,6 +170,10 @@ const envRequirementsSchema = z.object({
     POLYGON_MAINNET_RPC_URL: z.string().url().optional(),
     BSC_MAINNET_RPC_URL: z.string().url().optional(),
     NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
+    // Mandatory in production: auth cookies cannot be signed and CSRF tokens
+    // cannot be minted without them.
+    AUTH_SECRET: z.string().min(32),
+    CSRF_SECRET: z.string().min(1),
   }),
 });
 
@@ -158,7 +210,10 @@ export function validateEnv(): EnvConfig {
  * @param config - The validated environment configuration
  * @throws Error if environment-specific requirements are not met
  */
-export function validateEnvRequirements(config: EnvConfig): void {
+export function validateEnvRequirements(
+  config: EnvConfig,
+  onWarn: (message: string) => void = () => {},
+): void {
   const env = config.NODE_ENV;
   const requirements = envRequirementsSchema.shape[env];
 
@@ -170,7 +225,7 @@ export function validateEnvRequirements(config: EnvConfig): void {
       .join("\n");
 
     if (env === 'production') {
-      logger.warn(
+      onWarn(
         `Environment-specific requirements for 'production' are not fully met:\n${errors}`
       );
       return;
@@ -186,6 +241,9 @@ export function validateEnvRequirements(config: EnvConfig): void {
  * Gets a description of each environment variable for documentation
  */
 export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
+  AUTH_SECRET:
+    "Secret used to sign and verify auth-token cookies (>= 32 chars, server-side only)",
+  CSRF_SECRET: "HMAC signing secret for CSRF tokens (fails closed when unset)",
   NEXT_PUBLIC_APP_NAME: "Application name displayed in UI",
   NEXT_PUBLIC_APP_URL:
     "Base URL for the application (include protocol and trailing slash)",
@@ -222,12 +280,31 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
   RATE_LIMIT_MAX_REQUESTS_PER_WALLET: "Maximum requests per wallet per window",
   UPSTASH_REDIS_REST_URL: "Upstash Redis REST URL for distributed rate limiting",
   UPSTASH_REDIS_REST_TOKEN: "Upstash Redis REST token for distributed rate limiting",
+  REDIS_HOST: "Self-hosted Redis hostname or IP",
+  REDIS_PORT: "Self-hosted Redis port",
+  REDIS_DB: "Self-hosted Redis database index",
+  REDIS_PASSWORD: "Self-hosted Redis password (omit for an unauthenticated instance)",
+  BLOCKCHAIN_RPC_URL:
+    "RPC endpoint used by the on-chain cache invalidator (paired with PROPERTY_CONTRACT_ADDRESS)",
+  PROPERTY_CONTRACT_ADDRESS:
+    "Property contract address watched for cache invalidation events",
+  NEXT_PUBLIC_BATCH_PURCHASE_ADDRESS: "Deployed BatchPurchase contract address",
+  NEXT_PUBLIC_MOCK_WALLET:
+    "Use the wagmi mock connector instead of a real wallet (local development only)",
+  NEXT_PUBLIC_MANIFEST_SIGNING_KEY: "Public key used to verify the phishing manifest signature",
+  NEXT_PUBLIC_PHISHING_MANIFEST_URL: "URL of the signed phishing-protection manifest",
+  CHAINALYSIS_API_KEY: "API key for Chainalysis address screening",
 };
 
 /**
  * Variables that should be marked as sensitive
  */
 export const sensitiveVariables: (keyof EnvConfig)[] = [
+  "AUTH_SECRET",
+  "CSRF_SECRET",
+  "REDIS_PASSWORD",
+  "CHAINALYSIS_API_KEY",
+  "BLOCKCHAIN_RPC_URL",
   "ETHEREUM_MAINNET_RPC_URL",
   "POLYGON_MAINNET_RPC_URL",
   "BSC_MAINNET_RPC_URL",

@@ -390,22 +390,34 @@ export const MOCK_PROPERTIES: Property[] = [
 ];
 
 // Helper function to get properties by blockchain
+/**
+ * Mock properties filtered to a single blockchain network.
+ */
 export function getPropertiesByBlockchain(blockchain: BlockchainNetwork): Property[] {
   return MOCK_PROPERTIES.filter(p => p.blockchain === blockchain);
 }
 
 // Helper function to get featured properties
+/**
+ * Mock properties flagged as featured.
+ */
 export function getFeaturedProperties(): Property[] {
   return MOCK_PROPERTIES.filter(p => p.featured);
 }
 
 // Helper function to get unique locations
+/**
+ * Distinct locations across the mock property set.
+ */
 export function getUniqueLocations(): string[] {
   const locations = MOCK_PROPERTIES.map(p => `${p.location.city}, ${p.location.state}`);
   return [...new Set(locations)].sort();
 }
 
 // Helper function to get unique cities
+/**
+ * Distinct cities across the mock property set.
+ */
 export function getUniqueCities(): string[] {
   const cities = MOCK_PROPERTIES.map(p => p.location.city);
   return [...new Set(cities)].sort();

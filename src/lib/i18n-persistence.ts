@@ -11,11 +11,18 @@ const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 export const rtlLocales: Locale[] = ['ar', 'he'];
 
+/**
+ * Stores the chosen locale so it survives navigation and reload.
+ */
 export function persistLocale(locale: Locale) {
   if (typeof document === 'undefined') return;
   document.cookie = `${COOKIE_NAME}=${locale}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
 }
 
+/**
+ * Extracts the persisted locale from a Cookie header, or null when absent or
+ * unrecognised.
+ */
 export function readLocaleCookie(cookieHeader: string | null | undefined): Locale | null {
   if (!cookieHeader) return null;
   const match = cookieHeader.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));

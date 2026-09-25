@@ -16,6 +16,9 @@ declare global {
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
+/**
+ * Initialises the analytics client once, honouring the analytics feature flag.
+ */
 export function initAnalytics(): void {
   if (typeof window === 'undefined') return;
 

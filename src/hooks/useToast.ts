@@ -8,6 +8,9 @@ export type ToastOptions = {
   id?: string | number;
 };
 
+/**
+ * Access the toast queue for raising and dismissing notifications.
+ */
 export function useToast() {
   return {
     success: (message: string, options?: ToastOptions) =>

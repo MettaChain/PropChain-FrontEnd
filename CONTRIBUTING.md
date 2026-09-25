@@ -178,6 +178,34 @@ We use the following tools to maintain code quality:
 npm run lint -- --fix   # auto-fix ESLint issues
 ```
 
+#### JSDoc on exported APIs
+
+`jsdoc/require-jsdoc` is active, but deliberately scoped — it is not a
+document-everything rule:
+
+| Scope | Rule |
+|---|---|
+| `src/lib/**`, `src/hooks/**` | **Required** on exported functions and classes |
+| Everything else under `src/` | Off |
+| Tests, stories, `*.d.ts` | Off |
+
+Two things narrow it. `publicOnly: true` means only declarations other modules
+can reach are covered, so internal helpers, inline callbacks and arrow functions
+are exempt. The file patterns then limit it to the shared infrastructure in
+`src/lib` and `src/hooks`, where an undocumented export is what actually costs a
+reader time.
+
+It is **not** yet applied to `src/components`, `src/app`, `src/utils`,
+`src/types`, `src/features`, `src/store` or `src/providers`. Component contracts
+are largely expressed by their props types, and Next route files export
+framework-required symbols such as `default` and `metadata`, where prose adds
+little. If you want to widen the rule, do it one directory at a time and document
+that directory in the same change — turning it on everywhere at once produces
+hundreds of errors and teaches people to suppress it rather than write docs.
+
+So: add a JSDoc block when you export a function or class from `src/lib` or
+`src/hooks`. Elsewhere it is welcome but not enforced.
+
 **Secret Detection**:
 We use `gitleaks` to prevent committing secrets to the repository. The pre-commit hook will automatically scan staged files for sensitive information like API keys and private keys. If a secret is detected, the commit will be blocked.
 

@@ -19,6 +19,12 @@ const publicClient = createPublicClient({
 
 const SAFE_MASTER_COPY_ADDRESS = "0x6851D6f8ADC5e91A94AAb91F358A4f3d4293504A"; // Example for Gnosis Safe v1.3.0
 
+/**
+ * Detects whether `address` is a Safe (multisig) account and loads its details.
+ *
+ * Returns `isSafe: false` with `loading: false` when no injected provider is
+ * available, so callers do not wait on a check that cannot run.
+ */
 export function useSafeInfo(address: string | undefined) {
   const [isSafe, setIsSafe] = useState(false);
   const [safeInfo, setSafeInfo] = useState<SafeInfo | null>(null);
