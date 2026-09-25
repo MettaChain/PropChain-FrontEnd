@@ -75,7 +75,7 @@ The application will be available at `http://localhost:3000`.
 ```bash
 npm run dev          # Start development server with hot reload
 npm run lint         # Run ESLint for code quality checks
-npm run type-check   # Run TypeScript type checking
+npm run typecheck    # Run TypeScript type checking
 ```
 
 ### Mocking
@@ -85,9 +85,9 @@ For details on local mocking, see the [mocking documentation](./docs/mocking.md)
 ### Production Build
 
 ```bash
-npm run build        # Build optimized production bundle
-npm run start        # Start production server
-npm run analyze      # Analyze bundle size with webpack-bundle-analyzer
+npm run build         # Build optimized production bundle (runs typecheck first)
+npx next start        # Serve the built production bundle
+npm run build:analyze # Analyze bundle size (webpack-bundle-analyzer)
 ```
 
 ### Testing Suite

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { notFound } from "next/navigation";
 import { usePerformanceStore } from "@/store/performanceStore";
 
 const target = {
@@ -10,6 +11,11 @@ const target = {
 };
 
 export default function PerformancePage() {
+  // Issue #1082 — demo/QA route. 404 unless explicitly enabled.
+  if (process.env.NEXT_PUBLIC_ENABLE_DEMOS !== "true") {
+    notFound();
+  }
+
   const metrics = usePerformanceStore((state) => state.metrics);
 
   const latest = useMemo(() => {

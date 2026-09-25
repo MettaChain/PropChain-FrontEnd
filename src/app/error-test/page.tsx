@@ -1,5 +1,6 @@
 'use client';
 
+import { notFound } from "next/navigation";
 import { ErrorTestSuite } from '@/components/error/ErrorTestSuite';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EnhancedErrorBoundary, ErrorBoundaryPresets } from '@/components/error/EnhancedErrorBoundary';
@@ -9,6 +10,12 @@ import { WalletConnector } from '@/components/WalletConnector';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 function ErrorDemo() {
+  // Issue #1082 — demo/QA route. 404 unless explicitly enabled so production
+  // users can never stumble into a page that throws on purpose.
+  if (process.env.NEXT_PUBLIC_ENABLE_DEMOS !== "true") {
+    notFound();
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">

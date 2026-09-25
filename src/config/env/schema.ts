@@ -53,6 +53,13 @@ const envSchema = z.object({
     .string()
     .transform((val) => val === "true")
     .default(false),
+  // Gates demo/QA-only routes (/error-test, /i18n-demo, /performance,
+  // /ux-improvements-demo, /mobile-properties). Off by default so they 404 in
+  // production; flip on for local development (issue #1082).
+  NEXT_PUBLIC_ENABLE_DEMOS: z
+    .string()
+    .transform((val) => val === "true")
+    .default(false),
 
   // Internationalization (i18n)
   NEXT_PUBLIC_DEFAULT_LOCALE: z.string().default("en"),
@@ -197,6 +204,8 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
   NEXT_PUBLIC_ERROR_REPORTING_ENABLED: "Enable/disable error reporting",
   NEXT_PUBLIC_DEBUG_MODE: "Enable/disable debug mode",
   NEXT_PUBLIC_MAINTENANCE_MODE: "Enable/disable maintenance mode",
+  NEXT_PUBLIC_ENABLE_DEMOS:
+    "Enable demo/QA routes (/error-test, /i18n-demo, /performance, /ux-improvements-demo, /mobile-properties)",
   NEXT_PUBLIC_DEFAULT_LOCALE: "Default language",
   NEXT_PUBLIC_SUPPORTED_LOCALES: "Supported locales (comma-separated)",
   NEXT_PUBLIC_GA_MEASUREMENT_ID: "Google Analytics Measurement ID",
