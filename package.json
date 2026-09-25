@@ -15,7 +15,7 @@
     "perf:ci": "npm run build && npm run perf:budgets",
     "security:check-globals": "node scripts/check-exposed-globals.mjs",
     "size": "size-limit",
-    "validate:env": "node scripts/validate-env.js",
+    "validate:env": "node scripts/validate-env.cjs",
     "storybook": "storybook dev -p 6006",
     "test": "jest",
     "test:ci": "jest --coverage --watchAll=false --ci",

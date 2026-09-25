@@ -37,8 +37,10 @@ export function initEnv(): EnvConfig {
     // Validate base schema
     validatedEnvConfig = validateEnv();
 
-    // Validate environment-specific requirements
-    validateEnvRequirements(validatedEnvConfig);
+    // Validate environment-specific requirements. The logger is injected so
+    // schema.ts stays free of app imports and can be loaded by
+    // scripts/validate-env.js under plain Node (#1089).
+    validateEnvRequirements(validatedEnvConfig, (message) => logger.warn(message));
 
     // Log initialization in development
     if (validatedEnvConfig.NEXT_PUBLIC_DEBUG_MODE) {
