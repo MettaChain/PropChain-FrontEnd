@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useAxeAudit } from '@/hooks/useAxeAudit';
 import { WalletConnector } from '@/components/WalletConnector';
+import { AppHeader } from '@/components/layout/AppHeader';
 
 /**
  * Accessibility audit page — Issue #85
@@ -134,19 +134,7 @@ export default function AccessibilityPage() {
         {announcement}
       </div>
 
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-3" aria-label="PropChain home">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center" aria-hidden="true">
-                <span className="text-white font-bold text-sm">PC</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white">PropChain</span>
-            </Link>
-            <WalletConnector />
-          </div>
-        </div>
-      </header>
+      <AppHeader sticky actions={<WalletConnector />} />
 
       <main id="main-content" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Accessibility</h1>

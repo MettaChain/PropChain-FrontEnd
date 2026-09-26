@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 const StakingPanel = dynamic(
   () => import("@/components/dashboard/StakingPanel").then((m) => m.StakingPanel),
@@ -95,31 +96,20 @@ const Index = () => {
       />
       <div className="flex-1 flex flex-col min-w-0">
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-          <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center h-16">
-                <div className="flex items-center gap-3">
-                  {/* Mobile menu toggle */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="lg:hidden"
-                    onClick={() => setSidebarOpen(true)}
-                    aria-label="Open sidebar"
-                  >
-                    <Menu className="w-5 h-5" />
-                  </Button>
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">PC</span>
-                  </div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    PropChain
-                  </h1>
-                </div>
-                <WalletConnector />
-              </div>
-            </div>
-          </header>
+          <AppHeader
+            leading={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open sidebar"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            }
+            actions={<WalletConnector />}
+          />
 
           <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 overflow-auto">
             <div className="space-y-1">

@@ -28,6 +28,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { WalletConnector } from '@/components/WalletConnector';
 import { PriceAlertBell } from '@/components/PriceAlertBell';
+import { AppHeader } from '@/components/layout/AppHeader';
 
 export default function AlertsPage() {
   const { 
@@ -77,30 +78,24 @@ export default function AlertsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Link href="/properties">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Properties
-                </Button>
-              </Link>
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">PC</span>
-                </div>
-                <span className="font-bold text-gray-900 dark:text-white">PropChain</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <PriceAlertBell />
-              <WalletConnector />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        sticky
+        containerClassName="max-w-4xl"
+        leading={
+          <Link href="/properties">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Properties
+            </Button>
+          </Link>
+        }
+        actions={
+          <>
+            <PriceAlertBell />
+            <WalletConnector />
+          </>
+        }
+      />
 
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-4xl mx-auto">
