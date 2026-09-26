@@ -166,6 +166,9 @@ build/Release
 # Storybook build outputs
 .out
 .storybook-out
+storybook-static
+# `storybook index` writes the story index to the project root.
+index.json
 
 # Temporary folders
 tmp/

@@ -36,6 +36,8 @@
   "include": [
     "next-env.d.ts",
     "next.config.ts",
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
     "src/**/*.ts",
     "src/**/*.tsx",
     ".next/types/**/*.ts",

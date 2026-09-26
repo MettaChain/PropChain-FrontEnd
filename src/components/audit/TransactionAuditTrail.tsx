@@ -30,7 +30,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatEther } from 'ethers';
+import { formatEther } from 'viem';
 import { toast } from 'sonner';
 
 interface TransactionAuditTrailProps {
@@ -151,7 +151,13 @@ export const TransactionAuditTrail: React.FC<TransactionAuditTrailProps> = ({ cl
   };
 
   const formatValue = (value: string) => {
-    return parseFloat(formatEther(value || '0')).toFixed(6);
+    // viem's formatEther takes a bigint; audit entries store wei as a string,
+    // and a malformed value should render as 0 rather than crash the trail.
+    try {
+      return parseFloat(formatEther(BigInt(value || '0'))).toFixed(6);
+    } catch {
+      return (0).toFixed(6);
+    }
   };
 
   if (!stats) {

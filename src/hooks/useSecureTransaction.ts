@@ -3,7 +3,7 @@ import { logger } from '@/utils/logger';
 import { getFriendlyWeb3ErrorMessage } from '@/utils/errorHandling';
 
 import { useCallback, useState } from 'react';
-import { ethers } from 'ethers';
+import type { JsonRpcSigner } from '@/types/ethersSigner';
 import { useWalletStore } from '@/store/walletStore';
 import { useTransactionStore, type TransactionType } from '@/store/transactionStore';
 import { transactionAudit } from '@/utils/audit/transactionAudit';
@@ -32,11 +32,11 @@ interface SecureTransactionParams {
 interface UseSecureTransactionReturn {
   signAndVerifyTransaction: (
     params: SecureTransactionParams,
-    signer: ethers.JsonRpcSigner
+    signer: JsonRpcSigner
   ) => Promise<SignedTransaction | null>;
   broadcastTransaction: (
     signedTransaction: SignedTransaction,
-    signer: ethers.JsonRpcSigner
+    signer: JsonRpcSigner
   ) => Promise<string | null>;
   validateTransaction: (params: SecureTransactionParams) => {
     isValid: boolean;
@@ -75,7 +75,7 @@ export const useSecureTransaction = (): UseSecureTransactionReturn => {
   const signAndVerifyTransaction = useCallback(
     async (
       params: SecureTransactionParams,
-      signer: ethers.JsonRpcSigner
+      signer: JsonRpcSigner
     ): Promise<SignedTransaction | null> => {
       if (!address || !chainId) {
         toast.error('Wallet not connected');
@@ -162,7 +162,7 @@ export const useSecureTransaction = (): UseSecureTransactionReturn => {
   const broadcastTransaction = useCallback(
     async (
       signedTransaction: SignedTransaction,
-      signer: ethers.JsonRpcSigner
+      signer: JsonRpcSigner
     ): Promise<string | null> => {
       setIsBroadcasting(true);
 

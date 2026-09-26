@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { formatEther } from "viem";
 import { simulateTransaction } from "./tenderlySimulation";
 import { logger } from "./logger";
 
@@ -16,7 +16,7 @@ export const formatAddress = (address: string): string => {
 export const formatEth = (wei: string | undefined): string => {
   if (!wei) return "0.000000";
   try {
-    return parseFloat(ethers.formatEther(wei)).toFixed(6);
+    return parseFloat(formatEther(BigInt(wei))).toFixed(6);
   } catch (error) {
     return "0.000000";
   }
