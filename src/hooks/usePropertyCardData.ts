@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 
 import type { Property } from '@/types/property';
-import { useComparisonStore } from '@/store/comparisonStore';
-import { useCompareStore } from '@/store/compareStore';
+import { MAX_COMPARE, useCompareStore } from '@/store/compareStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 
 import {
@@ -16,7 +15,7 @@ import {
  * Derives the display-ready fields a property card renders from a `Property`.
  */
 export function usePropertyCardData(property: Property) {
-  const { isPropertySelected } = useComparisonStore();
+  const isPropertySelected = useCompareStore((state) => state.isPropertySelected);
 
   const selectedIds = useCompareStore((state) => state.selectedIds);
 
@@ -31,7 +30,7 @@ export function usePropertyCardData(property: Property) {
       isCompared,
 
       compareLimitReached:
-        selectedIds.length >= 3 && !isCompared,
+        selectedIds.length >= MAX_COMPARE && !isCompared,
 
       isFavorite: isFavorite(property.id),
 

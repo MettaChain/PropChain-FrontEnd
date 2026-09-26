@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { PropertyCard } from '@/components/PropertyCard';
 import { useFavoritesStore } from '@/store/favoritesStore';
 import { WalletConnector } from '@/components/WalletConnector';
-import { Heart, ArrowLeft } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AppHeader } from '@/components/layout/AppHeader';
 
 function WatchlistContent() {
   const { favorites, clearFavorites } = useFavoritesStore();
@@ -14,30 +14,12 @@ function WatchlistContent() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/properties"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span className="hidden sm:inline">Back to Properties</span>
-              </Link>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">PC</span>
-                </div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  PropChain
-                </h1>
-              </div>
-            </div>
-            <WalletConnector />
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        sticky
+        backHref="/properties"
+        backLabel="Back to Properties"
+        actions={<WalletConnector />}
+      />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
