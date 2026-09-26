@@ -6,6 +6,9 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 export const PAGE_SIZE_OPTIONS = [12, 24, 48] as const;
 export type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 
+/**
+ * Type guard narrowing an arbitrary number to a supported `PageSize`.
+ */
 export function isValidPageSize(value: number): value is PageSize {
   return PAGE_SIZE_OPTIONS.includes(value as PageSize);
 }

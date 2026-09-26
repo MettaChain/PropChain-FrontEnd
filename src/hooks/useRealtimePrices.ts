@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
+/**
+ * Subscribes to a live price feed at `url` and returns the latest prices.
+ */
 export default function useRealtimePrices(url) {
   const [status, setStatus] = useState('connecting');
   const [prices, setPrices] = useState({});

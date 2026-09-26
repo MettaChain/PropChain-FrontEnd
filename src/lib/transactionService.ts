@@ -32,6 +32,10 @@ function mapApiType(type: string): TransactionType {
     : 'other';
 }
 
+/**
+ * Maps an API transaction onto the domain `Transaction` shape, resolving
+ * direction relative to `walletAddress`.
+ */
 export function mapApiTransaction(api: ApiTransaction, walletAddress: string): Transaction {
   return {
     id: api.id,

@@ -120,9 +120,25 @@ describe('validateEnvRequirements', () => {
       NODE_ENV: 'staging' as const,
       ETHEREUM_MAINNET_RPC_URL: 'https://eth.example.com',
       NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: 'test-project-id',
+      // AUTH_SECRET and CSRF_SECRET became staging requirements when env
+      // validation was unified (#1089) - they were previously enforced only by
+      // scripts/validate-env.js and not at runtime.
+      AUTH_SECRET: 'a'.repeat(32),
+      CSRF_SECRET: 'csrf-secret',
     } as ReturnType<typeof validateEnv>;
 
     expect(() => validateEnvRequirements(config)).not.toThrow();
+  });
+
+  it('throws for staging when the auth secret is missing', () => {
+    const config = {
+      NODE_ENV: 'staging' as const,
+      ETHEREUM_MAINNET_RPC_URL: 'https://eth.example.com',
+      NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: 'test-project-id',
+      CSRF_SECRET: 'csrf-secret',
+    } as ReturnType<typeof validateEnv>;
+
+    expect(() => validateEnvRequirements(config)).toThrow(/AUTH_SECRET/);
   });
 
   it('warns (does not throw) for production with missing optional fields', () => {

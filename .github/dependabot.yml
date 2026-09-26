@@ -47,3 +47,43 @@ updates:
       - "Stellar Wave"
     reviewers:
       - "oladev2026-tech"
+
+  # GitHub Actions ecosystem (#1098).
+  #
+  # The npm entry above only covers package.json. Without this entry the
+  # actions pinned in .github/workflows/* (actions/checkout, actions/setup-node,
+  # actions/upload-artifact, ...) never get bump PRs, so CI action versions
+  # drift and Dependabot does not surface published advisories for them.
+  #
+  # Grouped the same way as the npm config: patch/minor bumps for the widely
+  # used first-party actions are batched into one reviewable PR, while major
+  # bumps are proposed individually because they are the ones that can break CI.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    groups:
+      actions:
+        patterns:
+          - "actions/*"
+        update-types:
+          - "minor"
+          - "patch"
+      actions-pinned:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "actions/*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
+      - "Stellar Wave"
+      - "devops"
+    reviewers:
+      - "oladev2026-tech"

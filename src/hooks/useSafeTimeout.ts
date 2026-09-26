@@ -1,5 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 
+/**
+ * Provides a `setTimeout` whose pending timers are cleared on unmount, so a
+ * callback cannot fire against an unmounted component.
+ */
 export function useSafeTimeout() {
   const timeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
 

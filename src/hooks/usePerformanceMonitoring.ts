@@ -4,6 +4,9 @@ import { setupPerformanceMonitoring, type PerformanceMetrics } from '@/lib/mobil
 
 let globalCleanup: (() => void) | null = null;
 
+/**
+ * Reports collected performance metrics to `callback` once they are available.
+ */
 export function usePerformanceMonitoring(callback: (metrics: PerformanceMetrics) => void) {
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
@@ -28,6 +31,10 @@ export function usePerformanceMonitoring(callback: (metrics: PerformanceMetrics)
   return callbackRef.current;
 }
 
+/**
+ * Clears collected metrics. Intended for tests, which would otherwise carry
+ * measurements between cases.
+ */
 export function resetPerformanceMonitoring() {
   if (globalCleanup) {
     globalCleanup();

@@ -16,6 +16,10 @@ export interface UseDebouncedSearchReturn<T> {
   clear: () => void;
 }
 
+/**
+ * Runs a search function against a debounced query, exposing results and
+ * loading state.
+ */
 export function useDebouncedSearch<T>({
   searchFn,
   delay = 300,

@@ -4,6 +4,10 @@ export interface ShareData {
   url: string;
 }
 
+/**
+ * Shares content through the Web Share API, falling back to the clipboard where
+ * the API is unavailable.
+ */
 export function useShare() {
   const share = async ({ title, text, url }: ShareData) => {
     if (navigator.share) {

@@ -11,6 +11,12 @@ interface UseTxRetryOptions {
   onFailure?: (error: Error) => void;
 }
 
+/**
+ * Sends a transaction with retry, raising the gas multiplier 20% per attempt.
+ *
+ * Exposes status, the last error, and the attempt count so the UI can show
+ * progress rather than appearing to hang between retries.
+ */
 export function useTxRetry(
   sendTx: (gasMultiplier: number) => Promise<string>,
   options: UseTxRetryOptions = {}

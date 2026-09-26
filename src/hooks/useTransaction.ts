@@ -3,7 +3,7 @@ import { logger } from '@/utils/logger';
 import { getFriendlyWeb3ErrorMessage } from '@/utils/errorHandling';
 
 import { useCallback } from 'react';
-import { ethers } from 'ethers';
+import type { JsonRpcSigner } from '@/types/ethersSigner';
 import { useTransactionStore } from '@/store/transactionStore';
 import type { Transaction, TransactionType } from '@/store/transactionStore';
 import { useWalletStore } from '@/store/walletStore';
@@ -19,7 +19,7 @@ interface TransactionParams {
   description?: string;
   propertyId?: string;
   requiredConfirmations?: number;
-  signer?: ethers.JsonRpcSigner;
+  signer?: JsonRpcSigner;
   useSecureSigning?: boolean;
   gasLimit?: string;
   gasPrice?: string;

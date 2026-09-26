@@ -11,6 +11,9 @@ import {
   getBlockchainColor,
 } from '@/utils/searchUtils';
 
+/**
+ * Derives the display-ready fields a property card renders from a `Property`.
+ */
 export function usePropertyCardData(property: Property) {
   const isPropertySelected = useCompareStore((state) => state.isPropertySelected);
 

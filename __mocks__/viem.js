@@ -67,4 +67,18 @@ module.exports = {
   parseUnits: jest.fn(parseUnitsValue),
   recoverMessageAddress: jest.fn(() => Promise.resolve('0x123')),
   defineChain: jest.fn((chain) => chain),
+  // Used by src/lib/cacheManager.ts to hash queue payloads. Kept deterministic
+  // (a counter-free FNV-1a) rather than pulling a real SHA-256 into the jsdom
+  // environment: the tests only assert that identical payloads hash the same and
+  // differing payloads do not collide, never a specific digest.
+  toBytes: jest.fn((value) => new TextEncoder().encode(String(value))),
+  sha256: jest.fn((bytes) => {
+    const view = Array.from(bytes);
+    let hash = 0x811c9dc5;
+    for (const byte of view) {
+      hash ^= byte;
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return `0x${hash.toString(16).padStart(8, '0').repeat(8)}`;
+  }),
 };
