@@ -55,8 +55,8 @@ but only at two boundaries that a third party forces, and nowhere else.
 
 | File | Why it needs `ethers` |
 | --- | --- |
-| `src/hooks/useSafeInfo.ts` | `@safe-global/protocol-kit`'s `EthersAdapter` is constructed with an ethers `signerOrProvider`. The Safe SDK's own adapter API is ethers-typed; there is no viem adapter to swap in without replacing the SDK. |
-| `src/utils/eip712/eip712Signing.ts` | The EIP-712 signing entry point. Its public contract takes an ethers `JsonRpcSigner` and calls `signer.signTypedData(...)`; viem's equivalent is a `WalletClient` action with a different shape. Changing it is a real migration, not a rename — see Follow-ups. |
+| `src/utils/eip712/eip712Signing.ts` | The EIP-712 signing entry point. Its public contract takes an ethers `JsonRpcSigner` and calls `signer.signTypedData(...)`; viem's equivalent is a `WalletClient` action with a different shape. Changing it is a real migration, not a rename — see Follow-ups. This boundary is live and covered by tests. |
+| `src/hooks/useSafeInfo.ts` | `@safe-global/protocol-kit`'s `EthersAdapter` is constructed with an ethers `signerOrProvider`, and that SDK's adapter API is ethers-typed. **Caveat: this import does not currently resolve** — `@safe-global/protocol-kit` is not a declared dependency and is not installed, so the Safe/multisig integration is not functional today and `useSafeInfo.test.ts` fails for that reason. The `ethers` usage here is real code that is waiting on a dependency, not working code, and should be treated as provisional. |
 | `src/types/ethersSigner.ts` | Re-exports the `JsonRpcSigner` **type only** so the two boundaries above can be referenced without every consumer importing `ethers`. Erased at compile time; costs nothing at runtime. |
 
 ### What changed in this ADR
@@ -78,11 +78,18 @@ but only at two boundaries that a third party forces, and nowhere else.
 ### Why not delete the dependency outright
 
 The issue allows "one stack removed **or** a justified split", and this is the
-justified split. Removing `ethers` from `package.json` is blocked on the Safe
-SDK, not on effort: `EthersAdapter` is the supported way to hand a signer to
-`@safe-global/protocol-kit`, so multisig support needs `ethers` to exist at all.
-Claiming otherwise would mean either dropping Safe support or vendoring an
-adapter, which is a much larger product decision than a stack cleanup issue.
+justified split. Only one of the two boundaries is real today: the EIP-712
+signer in `eip712Signing.ts`, whose `JsonRpcSigner` contract is a public API of
+this codebase and is exercised by the signing tests. Migrating it to a viem
+`WalletClient` means re-plumbing the signing and verification stack and its
+callers, which is a migration rather than a rename.
+
+The second boundary, the Safe adapter, is weaker than it first appears and should
+not be used to argue for keeping the dependency: `@safe-global/protocol-kit` is
+not installed and not declared in `package.json`, so `useSafeInfo.ts` does not
+compile today. If Safe support is still wanted, the honest sequence is to add the
+dependency and get that hook building first, and only then decide whether the
+SDK's `EthersAdapter` is acceptable or a viem-native alternative is preferred.
 
 What the split buys is the part that actually hurts: the boundary is now
 three named files instead of "most of `src/`", the accidental value imports are
