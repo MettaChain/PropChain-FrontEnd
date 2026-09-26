@@ -88,6 +88,37 @@ async function checkAdminAuth(request: NextRequest): Promise<NextResponse | null
   const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
 
   if (!isAdminRoute) {
+    return null;
+  }
+
+  const token = request.cookies.get('auth-token')?.value;
+
+  if (!token) {
+    const loginUrl = new URL('/', request.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  try {
+    const secretKey = process.env.AUTH_SECRET?.trim();
+    if (!secretKey) {
+      throw new Error('AUTH_SECRET is not configured');
+    }
+
+    const secret = new TextEncoder().encode(secretKey);
+    await jwtVerify(token, secret, { clockTolerance: 15 });
+
+    return null;
+  } catch {
+    const loginUrl = new URL('/', request.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete('auth-token');
+    return response;
+  }
+}
+
+/**
  * Redirects to "/" with a callbackUrl if the request is for a protected
  * route and doesn't carry a valid auth token. Returns null when the
  * request may continue.

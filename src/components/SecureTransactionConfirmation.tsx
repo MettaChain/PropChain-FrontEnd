@@ -2,8 +2,8 @@
 import { logger } from '@/utils/logger';
 
 import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { 
+import type { JsonRpcSigner } from '@/types/ethersSigner';
+import {
   AlertTriangle, 
   Shield, 
   CheckCircle, 
@@ -60,7 +60,7 @@ interface SecureTransactionConfirmationProps {
   };
   onConfirm: (txHash: string) => void;
   onCancel: () => void;
-  signer?: ethers.JsonRpcSigner;
+  signer?: JsonRpcSigner;
 }
 
 export const SecureTransactionConfirmation: React.FC<SecureTransactionConfirmationProps> = ({

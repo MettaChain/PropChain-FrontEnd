@@ -54,7 +54,11 @@ export default [
     ],
   },
   {
-    files: ["src/**/*.{ts,tsx}"],
+    // `.storybook/**` is included so the Storybook config is parsed and linted
+    // like the rest of the TypeScript in the repo. Without it these files match
+    // no config with a `files` pattern, get picked up by the default parser and
+    // fail on TS-only syntax.
+    files: ["src/**/*.{ts,tsx}", ".storybook/**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -130,6 +134,50 @@ export default [
         },
       ],
   },
+  },
+  {
+    // Canonical Web3 stack boundary (#1095, ADR-006).
+    //
+    // viem + wagmi is the app's Web3 stack. `ethers` is retained only where a
+    // third party forces it: the Gnosis Safe protocol-kit `EthersAdapter` and
+    // EIP-712 typed-data signing. This rule stops that exception from quietly
+    // spreading back across the codebase, which is how the repo ended up with
+    // two signing/encoding stacks and double bundle weight in the first place.
+    //
+    // The allowlist is deliberately short, and shrinking it is the goal:
+    //   - src/types/ethersSigner.ts        re-exports the JsonRpcSigner type
+    //   - src/hooks/useSafeInfo.ts         Safe protocol-kit adapter (value use)
+    //   - src/utils/eip712/eip712Signing.ts EIP-712 typed-data signing (value use)
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      "src/types/ethersSigner.ts",
+      "src/hooks/useSafeInfo.ts",
+      "src/utils/eip712/eip712Signing.ts",
+      // Tests assert against the real ethers behaviour of the two boundary
+      // modules above, so they are allowed to import it directly.
+      "src/**/__tests__/**",
+      "src/**/*.test.{ts,tsx}",
+      "src/**/*.spec.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "ethers",
+              message:
+                "viem + wagmi is the canonical Web3 stack (ADR-006). Do not import `ethers` here. If you need the EIP-712/Safe signer type, import it from `@/types/ethersSigner`; if you are adding real ethers functionality, it belongs in src/utils/eip712/eip712Signing.ts or src/hooks/useSafeInfo.ts and should come with an ADR update.",
+            },
+            {
+              name: "@ethersproject/*",
+              message:
+                "The legacy `@ethersproject/*` packages are not part of the Web3 stack (ADR-006). Use `viem` or the `ethers` facade allowed in src/utils/eip712/eip712Signing.ts and src/hooks/useSafeInfo.ts.",
+            },
+          ],
+        },
+      ],
+    },
   },
   {
     // Tests, stories and type-declaration files are exempt from the public-API

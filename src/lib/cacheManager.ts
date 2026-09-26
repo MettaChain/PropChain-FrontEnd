@@ -26,7 +26,7 @@ import {
 import { genId } from "@/utils/genId";
 import { generateSecureId } from "@/utils/secureId";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
-import { sha256, toUtf8Bytes } from "ethers";
+import { sha256, toBytes } from "viem";
 
 // Version migration handlers
 type VersionMigration = (data: unknown) => unknown;
@@ -306,11 +306,11 @@ export const addToSyncQueue = (
     );
 
     const canonicalPayload = JSON.stringify(payload);
-    const itemHash = sha256(toUtf8Bytes(type + canonicalPayload));
+    const itemHash = sha256(toBytes(type + canonicalPayload));
 
     const isDuplicate = queue.some((item) => {
       const existingHash = sha256(
-        toUtf8Bytes(item.type + JSON.stringify(item.payload)),
+        toBytes(item.type + JSON.stringify(item.payload)),
       );
       return existingHash === itemHash;
     });

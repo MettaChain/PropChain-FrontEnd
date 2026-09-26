@@ -19,6 +19,7 @@
     "storybook": "storybook dev -p 6006",
     "test": "jest",
     "test:ci": "jest --coverage --watchAll=false --ci",
+    "coverage:summary": "node scripts/write-coverage-summary.mjs",
     "test:coverage": "jest --coverage",
     "test:cy": "cypress run --component",
     "test:cy:component": "cypress run --component",
