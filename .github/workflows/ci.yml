@@ -56,17 +56,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The service healthcheck above already gates job start, but keep an
+      # explicit probe using a deterministic container lookup (published port,
+      # then service name) instead of matching on the runner's image ancestry,
+      # which could select the wrong container after a runner image change.
       - name: Wait for Redis
         run: |
+          set -euo pipefail
           for i in $(seq 1 30); do
-            if docker exec $(docker ps -q --filter "ancestor=redis:7-alpine") redis-cli ping 2>/dev/null | grep -q PONG; then
-              echo "Redis is ready!"
+            container_id="$(docker ps -q --filter 'publish=6379' | head -n1)"
+            if [ -z "$container_id" ]; then
+              container_id="$(docker ps -q --filter 'name=redis' | head -n1)"
+            fi
+            if [ -n "$container_id" ] && docker exec "$container_id" redis-cli ping 2>/dev/null | grep -q PONG; then
+              echo "Redis is ready (container ${container_id})."
               exit 0
             fi
-            echo "Waiting for Redis... ($i/30)"
+            echo "Waiting for Redis... (${i}/30, container=${container_id:-none})"
             sleep 2
           done
-          echo "Redis failed to start"
+          echo "::error::Redis did not respond to PING within 60s."
+          echo "--- docker ps -a ---"
+          docker ps -a
+          echo "--- container logs ---"
+          docker logs "${container_id:-$(docker ps -aq | head -n1)}" 2>&1 | tail -n 50 || true
           exit 1
 
       # json-summary is what scripts/write-coverage-summary.mjs renders into the

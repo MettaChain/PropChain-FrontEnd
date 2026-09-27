@@ -117,10 +117,23 @@ export const POST = withCsrf(async function (request: NextRequest) {
     // Here you would normally save the property to your database/blockchain
     // For now, we'll just invalidate the cache
     
-    // Invalidate relevant cache entries
-    await redisCacheService.invalidateAllProperties();
-    
-    logger.info('Property cache invalidated due to property creation/update');
+    // Invalidate narrowly when we know which property changed; only fall back
+    // to a listing/search flush for creations whose id isn't provided, since a
+    // new entry can change which properties a listing matches.
+    const propertyId =
+      propertyData && typeof propertyData === 'object' && 'id' in propertyData &&
+      typeof (propertyData as { id?: unknown }).id === 'string'
+        ? (propertyData as { id: string }).id
+        : null;
+
+    if (propertyId) {
+      await redisCacheService.invalidateProperty(propertyId);
+      logger.info(`Property ${propertyId} cache invalidated due to creation/update`);
+    } else {
+      await redisCacheService.invalidatePattern('listing:*');
+      await redisCacheService.invalidatePattern('search:*');
+      logger.info('Listing/search cache invalidated due to property creation');
+    }
     
     return NextResponse.json({ 
       message: 'Property created/updated successfully',

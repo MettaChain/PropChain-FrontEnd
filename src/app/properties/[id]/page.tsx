@@ -5,7 +5,7 @@ import { PropertyDetailClient } from '@/components/PropertyDetailClient';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { getPropertyForISR } from '@/lib/propertyServiceServer';
+import { getPropertyForISR, getPopularPropertyIds } from '@/lib/propertyServiceServer';
 import type { Property } from '@/types/property';
 
 // ISR configuration - revalidate every 60 seconds
@@ -120,9 +120,10 @@ function PropertyDetailSkeleton() {
   );
 }
 
-// Generate static params for known properties
+// Pre-render the popular property detail pages at build time. Any id that is
+// not returned here is still generated on demand (dynamicParams defaults to
+// true) and revalidated by ISR, so new properties work without a rebuild.
 export async function generateStaticParams() {
-  // In a real implementation, you would fetch this from your API/database
-  // For now, we'll return an empty array to generate pages on-demand
-  return [];
+  const ids = await getPopularPropertyIds();
+  return ids.map((id) => ({ id }));
 }

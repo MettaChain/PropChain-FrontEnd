@@ -35,6 +35,10 @@ const DEFAULT_REDIS_CONFIG: RedisConfig = {
   commandTimeout: 5000,
 };
 
+// Physical key prefix applied by the ioredis client below. Exported so callers
+// that build raw patterns (which ioredis does not prefix) can stay consistent.
+export const REDIS_KEY_PREFIX = 'propchain:';
+
 // Redis client instance
 let redisClient: Redis | null = null;
 
@@ -75,7 +79,7 @@ export const initRedis = async (): Promise<Redis> => {
       connectTimeout: config.connectTimeout,
       commandTimeout: config.commandTimeout,
       // Enable key prefixing for property cache
-      keyPrefix: 'propchain:',
+      keyPrefix: REDIS_KEY_PREFIX,
       // Enable compression for large values
       enableAutoPipelining: true,
       // Connection events
