@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { setupWalletMock } from './wallet-fixture';
+import { test, expect, setupWalletMock } from '../fixtures';
 
 // Covers referral share + leaderboard ranking described in issue #1052.
 // Note: no claim-rewards route exists in this codebase yet, so that leg of

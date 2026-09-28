@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 
 test.describe('Transaction history search, filter, and export', () => {
   test.beforeEach(async ({ page }) => {

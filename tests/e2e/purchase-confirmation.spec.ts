@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from '../fixtures';
 
 /**
  * Purchase Confirmation Flow E2E Tests
@@ -19,97 +19,6 @@ const MOCK_PROPERTY = {
 
 const TX_HASH = '0xabc123def4567890abc123def4567890abc123def4567890abc123def4567890';
 
-async function setupMockChain(page: Page) {
-  await page.addInitScript(() => {
-    (window as any).ethereum = {
-      isMetaMask: true,
-      request: async ({ method }: { method: string }) => {
-        if (method === 'eth_requestAccounts') {
-          return ['0x1234567890123456789012345678901234567890'];
-        }
-        if (method === 'eth_chainId') return '0x1';
-        if (method === 'eth_getBalance') return '0x56BC75E2D630E8000'; // 100 ETH
-        return null;
-      },
-      on: () => {},
-      removeListener: () => {},
-      isConnected: () => true,
-    };
-  });
-}
-
-async function setupMockApi(page: Page) {
-  await page.route('**/api/**', async (route) => {
-    const url = new URL(route.request().url());
-    const pathname = url.pathname;
-    const method = route.request().method();
-
-    if (pathname === '/api/properties' && method === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          properties: [{ ...MOCK_PROPERTY, tokenAmount: 100, totalCost: 500 }],
-          total: 1,
-          page: 1,
-          totalPages: 1,
-        }),
-      });
-      return;
-    }
-
-    const detailMatch = pathname.match(/^\/api\/properties\/([^\/]+)$/);
-    if (detailMatch && method === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ ...MOCK_PROPERTY, tokenAmount: 100, totalCost: 500 }),
-      });
-      return;
-    }
-
-    const purchaseMatch = pathname.match(/^\/api\/properties\/([^\/]+)\/purchase$/);
-    if (purchaseMatch && method === 'POST') {
-      const body = (await route.request().postDataJSON()) ?? {};
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          transactionHash: TX_HASH,
-          amount: body.amount ?? 1,
-          totalCost: body.amount ? body.amount * 100 : 100,
-          property: { id: purchaseMatch[1], name: MOCK_PROPERTY.name },
-        }),
-      });
-      return;
-    }
-
-    if (pathname === '/api/transactions' && method === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            id: 'tx-conf-1',
-            type: 'purchase',
-            propertyId: MOCK_PROPERTY.id,
-            propertyName: MOCK_PROPERTY.name,
-            amount: 1,
-            totalCost: 100,
-            transactionHash: TX_HASH,
-            timestamp: new Date().toISOString(),
-            status: 'completed',
-          },
-        ]),
-      });
-      return;
-    }
-
-    await route.continue();
-  });
-}
-
 async function navigateToProperty(page: Page, id = MOCK_PROPERTY.id) {
   await page.goto(`/properties/${id}`);
   // The buy button is rendered with a flexible label; match loosely.
@@ -126,8 +35,6 @@ async function submitPurchase(page: Page, amount = '1') {
 
 test.describe('Property Purchase — post-confirmation flow', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMockChain(page);
-    await setupMockApi(page);
     await page.goto('/');
     // Wait for the wallet connection prompt and connect.
     const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();

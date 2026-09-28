@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { setupWalletMock } from './wallet-fixture';
+import { test, expect, setupWalletMock } from '../fixtures';
 
 test.describe('Visual Regression Tests', () => {
   test.beforeEach(async ({ page }) => {
