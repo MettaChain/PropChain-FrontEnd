@@ -46,14 +46,15 @@ const mockProperty: Property = {
 
 // Selector-aware mock so PropertyCard's zustand-style calls work in tests.
 jest.mock('@/store/cartStore', () => ({ useCartStore: () => ({ addItem: jest.fn() }) }));
-jest.mock('@/store/comparisonStore', () => ({
-  useComparisonStore: () => ({ isPropertySelected: () => false, toggleProperty: jest.fn() }),
-}));
 jest.mock('@/store/compareStore', () => {
-  const stub = { selectedIds: [] as string[], toggleProperty: jest.fn() };
+  const stub = {
+    selectedIds: [] as string[],
+    toggleProperty: jest.fn(),
+    isPropertySelected: () => false,
+  };
   const useCompareStore = (selector?: (state: typeof stub) => unknown) =>
     typeof selector === 'function' ? selector(stub) : stub;
-  return { useCompareStore };
+  return { useCompareStore, MAX_COMPARE: 3 };
 });
 jest.mock('@/store/favoritesStore', () => ({
   useFavoritesStore: () => ({

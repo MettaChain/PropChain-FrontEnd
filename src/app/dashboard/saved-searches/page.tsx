@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Filter, Settings, Bell, Mail, Bookmark } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardSkeleton } from "@/components/ui/LoadingSkeletons";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 function SavedSearchesContent() {
   const { address } = useWalletStore();
@@ -88,21 +89,7 @@ function SavedSearchesContent() {
   if (!address) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">PC</span>
-                </div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  PropChain
-                </h1>
-              </Link>
-              <WalletConnector />
-            </div>
-          </div>
-        </header>
+        <AppHeader actions={<WalletConnector />} />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center py-20">
@@ -122,21 +109,7 @@ function SavedSearchesContent() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">PC</span>
-              </div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                PropChain
-              </h1>
-            </Link>
-            <WalletConnector />
-          </div>
-        </div>
-      </header>
+      <AppHeader actions={<WalletConnector />} />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

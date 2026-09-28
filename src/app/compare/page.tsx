@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Share2, Download, Clock, Trash2, FileText } from 'lucide-react';
 import { propertyService } from '@/lib/propertyService';
-import { useComparisonHistoryStore } from '@/store/comparisonHistoryStore';
-import { useComparisonStore } from '@/store/comparisonStore';
+import { useCompareStore } from '@/store/compareStore';
 import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundary';
 import type { Property } from '@/types/property';
 import { formatPrice, formatROI } from '@/utils/searchUtils';
@@ -94,8 +93,15 @@ function getBestValue(properties: Property[], metric: ComparisonMetric): number 
 function ComparePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { selectedProperties, clearProperties } = useComparisonStore();
-  const { addComparison, history, removeComparison, clearHistory } = useComparisonHistoryStore();
+  // Selection and history come from the one compare store now (#1090). This
+  // page previously read selection from comparisonStore while ComparisonBar read
+  // compareStore, so the two could show different selections.
+  const selectedProperties = useCompareStore((state) => state.getSelectedProperties());
+  const clearProperties = useCompareStore((state) => state.clearCompare);
+  const addComparison = useCompareStore((state) => state.addComparison);
+  const history = useCompareStore((state) => state.history);
+  const removeComparison = useCompareStore((state) => state.removeComparison);
+  const clearHistory = useCompareStore((state) => state.clearHistory);
   const [properties, setProperties] = useState<Property[]>([]);
 
   useEffect(() => {
