@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/wallet-msw';
+import { test, expect } from '../fixtures';
 
 test.describe('Wallet + Properties Integration', () => {
   test('should display properties and show connected wallet status', async ({ page }) => {

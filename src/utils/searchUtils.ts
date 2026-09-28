@@ -19,14 +19,18 @@ const getResolvedLocale = (locale?: string): string => {
  */
 
 /**
- * Convert search filters to URL parameters
- */
-/**
- * Converts search filters and sort options to a URL query string.
- * 
- * @param filters - The search filters to convert.
- * @param sortBy - The current sort option.
- * @returns A URL-encoded query string.
+ * Converts search filters and sort options into a URL-encoded query string.
+ * Parameter keys are canonicalized and invariant to user locale.
+ *
+ * @param filters - The search filters object containing query, price range, property types, etc.
+ * @param sortBy - The current property sort option to include in parameters.
+ * @returns A URL-encoded query string representation of the filters and sort option.
+ *
+ * @example
+ * ```ts
+ * const queryStr = filtersToUrlParams({ query: 'penthouse', priceRange: [1000, 5000000], propertyTypes: ['residential'] }, 'price-asc');
+ * // returns "q=penthouse&minPrice=1000&maxPrice=5000000&types=residential&sort=price-asc"
+ * ```
  */
 export function filtersToUrlParams(filters: SearchFilters, sortBy: SortOption): string {
   const params = new URLSearchParams();
@@ -49,10 +53,18 @@ export function filtersToUrlParams(filters: SearchFilters, sortBy: SortOption): 
 }
 
 /**
- * Parses URL query parameters into search filters and sort options.
- * 
- * @param searchParams - The URL search parameters.
- * @returns An object containing partial filters and the sort option.
+ * Parses URL query parameters into partial search filters and a sort option.
+ * Accepts standard URL parameter keys invariant across locales.
+ *
+ * @param searchParams - The URLSearchParams instance containing query keys to parse.
+ * @returns An object containing the parsed partial `filters` and the active `sortBy` option.
+ *
+ * @example
+ * ```ts
+ * const params = new URLSearchParams('q=condo&minPrice=200000&sort=newest');
+ * const { filters, sortBy } = urlParamsToFilters(params);
+ * // filters: { query: 'condo', priceRange: [200000, 10000000] }, sortBy: 'newest'
+ * ```
  */
 export function urlParamsToFilters(searchParams: URLSearchParams): {
   filters: Partial<SearchFilters>;
@@ -119,11 +131,20 @@ export function urlParamsToFilters(searchParams: URLSearchParams): {
 }
 
 /**
- * Formats a numeric price for display with currency.
- * 
- * @param price - The numeric price.
- * @param currency - The currency code (default: 'USD').
- * @returns The formatted price string.
+ * Formats a numeric price for localized currency display.
+ * Resolves locale using the provided `locale` argument, falling back to
+ * `navigator.language` in browser environments or 'en-US' as default.
+ *
+ * @param price - The numeric price value to format.
+ * @param currency - The ISO currency code (defaults to 'USD').
+ * @param locale - Optional BCP 47 language tag (e.g. 'en-US', 'de-DE'). Falls back to browser/environment locale.
+ * @returns Formatted currency string according to the resolved locale and currency.
+ *
+ * @example
+ * ```ts
+ * formatPrice(250000, 'USD', 'en-US'); // "$250,000"
+ * formatPrice(250000, 'EUR', 'de-DE'); // "250.000 €"
+ * ```
  */
 export function formatPrice(price: number, currency: string = 'USD', locale?: string): string {
   return new Intl.NumberFormat(getResolvedLocale(locale), {
@@ -135,30 +156,53 @@ export function formatPrice(price: number, currency: string = 'USD', locale?: st
 }
 
 /**
- * Formats a number with comma separators.
- * 
- * @param num - The number to format.
- * @returns The formatted number string.
+ * Formats a number with locale-sensitive grouping separators.
+ * Resolves locale using the provided `locale` argument, falling back to
+ * `navigator.language` in browser environments or 'en-US' as default.
+ *
+ * @param num - The numeric value to format.
+ * @param locale - Optional BCP 47 language tag (e.g. 'en-US', 'fr-FR'). Falls back to browser/environment locale.
+ * @returns Formatted number string with appropriate group separators for the locale.
+ *
+ * @example
+ * ```ts
+ * formatNumber(1250000, 'en-US'); // "1,250,000"
+ * formatNumber(1250000, 'fr-FR'); // "1 250 000"
+ * ```
  */
 export function formatNumber(num: number, locale?: string): string {
   return new Intl.NumberFormat(getResolvedLocale(locale)).format(num);
 }
 
 /**
- * Formats a return on investment (ROI) value as a percentage.
- * 
- * @param roi - The ROI value.
- * @returns The formatted ROI string.
+ * Formats a return on investment (ROI) number as a percentage string with 1 decimal place.
+ *
+ * @param roi - The numeric return on investment percentage (e.g. 8.5 for 8.5%).
+ * @returns Formatted percentage string ending with '%'.
+ *
+ * @example
+ * ```ts
+ * formatROI(8.54); // "8.5%"
+ * formatROI(12);   // "12.0%"
+ * ```
  */
 export function formatROI(roi: number): string {
   return `${roi.toFixed(1)}%`;
 }
 
 /**
- * Formats a date string for user-friendly display.
- * 
- * @param dateString - The ISO date string.
- * @returns The formatted date string.
+ * Formats an ISO date string for localized, human-friendly date display.
+ * Resolves locale using the provided `locale` argument, falling back to
+ * `navigator.language` in browser environments or 'en-US' as default.
+ *
+ * @param dateString - The ISO date string or date-compatible string to format.
+ * @param locale - Optional BCP 47 language tag (e.g. 'en-US', 'es-ES'). Falls back to browser/environment locale.
+ * @returns Localized date string formatted with numeric year, short month, and numeric day.
+ *
+ * @example
+ * ```ts
+ * formatDate('2024-01-15T00:00:00Z', 'en-US'); // "Jan 15, 2024"
+ * ```
  */
 export function formatDate(dateString: string, locale?: string): string {
   const date = new Date(dateString);
@@ -170,10 +214,16 @@ export function formatDate(dateString: string, locale?: string): string {
 }
 
 /**
- * Calculates and returns a relative "time ago" string from a date.
- * 
- * @param dateString - The ISO date string.
- * @returns A human-readable time ago string.
+ * Calculates and returns a relative elapsed time ("time ago") string from a date.
+ *
+ * @param dateString - The ISO date string to compare against the current time.
+ * @returns Human-readable relative time interval (e.g. "Just now", "2 hours ago", "3 days ago").
+ *
+ * @example
+ * ```ts
+ * timeAgo(new Date(Date.now() - 3600 * 1000).toISOString()); // "1 hour ago"
+ * timeAgo(new Date().toISOString()); // "Just now"
+ * ```
  */
 export function timeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -200,11 +250,17 @@ export function timeAgo(dateString: string): string {
 }
 
 /**
- * Truncates text to a maximum length and adds an ellipsis.
- * 
- * @param text - The text to truncate.
- * @param maxLength - The maximum allowed length.
- * @returns The truncated text.
+ * Truncates text to a specified maximum length, appending an ellipsis ('...') if trimmed.
+ *
+ * @param text - The input string to truncate.
+ * @param maxLength - Maximum permitted character length including the ellipsis.
+ * @returns Truncated string with ellipsis if length exceeded, or original text if within limit.
+ *
+ * @example
+ * ```ts
+ * truncateText('Luxury Manhattan Penthouse with Terrace', 20); // "Luxury Manhattan..."
+ * truncateText('Short text', 20); // "Short text"
+ * ```
  */
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
@@ -213,10 +269,16 @@ export function truncateText(text: string, maxLength: number): string {
 }
 
 /**
- * Returns the hex color code associated with a blockchain.
- * 
- * @param blockchain - The name of the blockchain.
- * @returns The hex color code.
+ * Returns the hex brand color code associated with a supported blockchain network.
+ *
+ * @param blockchain - The blockchain identifier (e.g. 'ethereum', 'polygon', 'bsc').
+ * @returns Hex color code string for the network, or fallback gray ('#666666') if unrecognized.
+ *
+ * @example
+ * ```ts
+ * getBlockchainColor('ethereum'); // "#627EEA"
+ * getBlockchainColor('polygon');  // "#8247E5"
+ * ```
  */
 export function getBlockchainColor(blockchain: string): string {
   const colors: Record<string, string> = {
@@ -228,34 +290,53 @@ export function getBlockchainColor(blockchain: string): string {
 }
 
 /**
- * Returns a descriptive icon label for a property type.
- * Note: Rendering the actual icon (lucide-react) should be done
- * at the component level. This utility returns the type string for
- * use with icon mapping components.
- * 
- * @param type - The property type.
- * @returns The property type label.
+ * Returns the property type identifier label for icon resolution.
+ * UI components map this returned string to the appropriate Lucide or design icon.
+ *
+ * @param type - The property type string (e.g. 'residential', 'commercial', 'industrial').
+ * @returns The normalized property type string.
+ *
+ * @example
+ * ```ts
+ * getPropertyTypeIcon('residential'); // "residential"
+ * ```
  */
 export function getPropertyTypeIcon(type: string): string {
   return type; // Components should map this to the appropriate lucide-react icon
 }
 
 /**
- * Validates whether a search query meets minimum length requirements.
- * 
- * @param query - The search query to validate.
- * @returns True if the query is valid, false otherwise.
+ * Validates whether a search query string satisfies the minimum search criteria (non-whitespace length >= 2).
+ *
+ * @param query - The user search input string to validate.
+ * @returns True if the trimmed query has at least 2 characters, false otherwise.
+ *
+ * @example
+ * ```ts
+ * isValidSearchQuery('NY');  // true
+ * isValidSearchQuery(' N '); // false
+ * isValidSearchQuery('   '); // false
+ * ```
  */
 export function isValidSearchQuery(query: string): boolean {
   return query.trim().length >= 2;
 }
 
 /**
- * Creates a debounced version of a function.
- * 
- * @param func - The function to debounce.
- * @param wait - The debounce timeout in milliseconds.
- * @returns A debounced version of the function.
+ * Creates a debounced version of a function that delays execution until after
+ * the specified wait time has elapsed since the last time it was invoked.
+ *
+ * @typeParam TArgs - The argument types of the target function.
+ * @typeParam TResult - The return type of the target function.
+ * @param func - The target function to debounce.
+ * @param wait - Milliseconds to delay invocation after the last call.
+ * @returns Debounced wrapper function accepting the same arguments.
+ *
+ * @example
+ * ```ts
+ * const handleSearch = debounce((query: string) => fetchResults(query), 300);
+ * handleSearch('prop');
+ * ```
  */
 export function debounce<TArgs extends unknown[], TResult>(
   func: (...args: TArgs) => TResult,

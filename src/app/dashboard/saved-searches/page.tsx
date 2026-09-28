@@ -4,6 +4,7 @@ import { logger } from '@/utils/logger';
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { WalletConnector } from "@/components/WalletConnector";
+import { SavedSearchCard } from "@/components/SavedSearchCard";
 import { useSavedSearchStore } from "@/store/savedSearchStore";
 import { useWalletStore } from "@/store/walletStore";
 import { SavedSearch, NotificationFrequency } from "@/types/property";
@@ -278,7 +279,7 @@ function SavedSearchesContent() {
         {isLoading && <CardSkeleton count={6} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" />}
 
         {!isLoading && filteredAndSortedSearches.length === 0 && (
-          <Card>
+          <Card data-testid="empty-saved-searches">
             <CardContent className="text-center py-20 space-y-3">
               <Bookmark className="w-16 h-16 text-gray-400 mx-auto mb-4" />
 
@@ -301,6 +302,19 @@ function SavedSearchesContent() {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Saved Searches Grid */}
+        {!isLoading && filteredAndSortedSearches.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="saved-searches-grid">
+            {filteredAndSortedSearches.map((search) => (
+              <SavedSearchCard
+                key={search.id}
+                search={search}
+                onDelete={() => handleDeleteSearch(search.id)}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

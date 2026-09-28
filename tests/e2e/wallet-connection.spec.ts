@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { setupWalletMock } from './wallet-fixture';
+import { test, expect, setupWalletMock } from '../fixtures';
 
 test.describe('Wallet Connection Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -47,24 +46,7 @@ test.describe('Wallet Connection Flow', () => {
 
   test('should show connecting state when wallet connection is initiated', async ({ page }) => {
     // Mock MetaMask connection with simulated delay
-    await page.addInitScript(() => {
-      (window as any).ethereum = {
-        isMetaMask: true,
-        request: async ({ method }: { method: string }) => {
-          if (method === 'eth_requestAccounts') {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return ['0x1234567890123456789012345678901234567890'];
-          }
-          if (method === 'eth_chainId') {
-            return '0x1';
-          }
-          return null;
-        },
-        on: () => {},
-        removeListener: () => {},
-        isConnected: () => true,
-      };
-    });
+    await setupWalletMock(page, { delay: 1000 });
 
     const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
@@ -157,9 +139,7 @@ test.describe('Wallet Connection Flow', () => {
 
   test('should handle wallet not installed', async ({ page }) => {
     // Mock no wallet installed
-    await page.addInitScript(() => {
-      delete (window as any).ethereum;
-    });
+    await setupWalletMock(page, { noWallet: true });
 
     const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
     await connectButton.click();
@@ -173,5 +153,20 @@ test.describe('Wallet Connection Flow', () => {
     // Check for install message or redirect
     const installMessage = page.getByText(/install/i).or(page.getByText(/download/i));
     await expect(installMessage).toBeVisible({ timeout: 5000 });
+  });
+
+  test('should restore wallet connected session across page reload', async ({ page }) => {
+    await setupWalletMock(page);
+    await page.goto('/');
+
+    const connectButton = page.getByRole('button', { name: 'Connect Wallet' }).first();
+    await connectButton.click();
+    await page.getByText('MetaMask').click();
+
+    await expect(page.getByText('0x1234...7890')).toBeVisible();
+
+    // Reload page and assert persisted connected session
+    await page.reload();
+    await expect(page.getByText('0x1234...7890')).toBeVisible();
   });
 });

@@ -1,10 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, setupWalletMock } from '../fixtures';
 
 test.describe('WalletConnect-Only Flow (No Injected Provider)', () => {
   test.beforeEach(async ({ page }) => {
     // 1. Delete window.ethereum and set WalletConnect mock before page nav
+    await setupWalletMock(page, { noWallet: true });
     await page.addInitScript(() => {
-      delete (window as any).ethereum;
       (window as any).__MOCK_WALLETCONNECT__ = {
         address: '0x9999999999999999999999999999999999999999',
         chainId: 1,

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 
 test.describe('Content Security Policy', () => {
   test('should have CSP headers on main page', async ({ page }) => {

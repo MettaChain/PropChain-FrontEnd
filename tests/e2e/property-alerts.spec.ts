@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 
 // Covers the create/validate/persist flow described in tests/test-property-alerts.md (#1051)
 test.describe('Property Price Alerts', () => {

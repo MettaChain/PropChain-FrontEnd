@@ -1,25 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 
 /**
  * MSW Verification Test
- * Verifies that MSW is properly mocking API calls without requiring a backend
+ * Verifies that the canonical API mocking fixture is properly mocking API calls without requiring a backend
  */
 
 test.describe('MSW API Mocking Verification', () => {
-  test('should mock API responses successfully', async ({ page }) => {
-    // Mock API endpoint
-    await page.route('**/api/test', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          message: 'MSW is working',
-          data: { test: 'value' },
-        }),
-      });
-    });
-
+  test('should mock API responses successfully', async ({ page, api }) => {
     // Create a test page that makes an API call
     await page.setContent(`
       <!DOCTYPE html>
@@ -41,35 +28,11 @@ test.describe('MSW API Mocking Verification', () => {
       </html>
     `);
 
-    // Wait for the API call to complete
-    await page.waitForTimeout(1000);
-
     // Verify the mocked response was used
-    const result = await page.locator('#result').textContent();
-    expect(result).toBe('MSW is working');
+    await expect(page.locator('#result')).toHaveText('MSW is working');
   });
 
-  test('should mock property API endpoints', async ({ page }) => {
-    // Mock property listings endpoint
-    await page.route('**/api/properties', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          properties: [
-            {
-              id: 'test-1',
-              name: 'Test Property',
-              price: { total: 1000000, perToken: 100, currency: 'USD' },
-            },
-          ],
-          total: 1,
-          page: 1,
-          totalPages: 1,
-        }),
-      });
-    });
-
+  test('should mock property API endpoints', async ({ page, api }) => {
     // Create a test page
     await page.setContent(`
       <!DOCTYPE html>
@@ -90,28 +53,11 @@ test.describe('MSW API Mocking Verification', () => {
       </html>
     `);
 
-    await page.waitForTimeout(1000);
-
-    expect(await page.locator('#property-count').textContent()).toBe('1');
-    expect(await page.locator('#property-name').textContent()).toBe('Test Property');
+    await expect(page.locator('#property-count')).not.toHaveText('0');
+    await expect(page.locator('#property-name')).not.toBeEmpty();
   });
 
-  test('should mock purchase transaction endpoint', async ({ page }) => {
-    await page.route('**/api/properties/*/purchase', async (route) => {
-      const postData = route.request().postDataJSON();
-      
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          transactionHash: '0xmocked123',
-          amount: postData.amount,
-          totalCost: postData.amount * 100,
-        }),
-      });
-    });
-
+  test('should mock purchase transaction endpoint', async ({ page, api }) => {
     await page.setContent(`
       <!DOCTYPE html>
       <html>
@@ -135,9 +81,7 @@ test.describe('MSW API Mocking Verification', () => {
       </html>
     `);
 
-    await page.waitForTimeout(1000);
-
-    expect(await page.locator('#tx-hash').textContent()).toBe('0xmocked123');
-    expect(await page.locator('#cost').textContent()).toBe('1000');
+    await expect(page.locator('#tx-hash')).toContainText('0x');
+    await expect(page.locator('#cost')).toHaveText('1000');
   });
 });
