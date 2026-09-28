@@ -1,11 +1,26 @@
 import { logger } from '@/utils/logger';
 import { propertyService } from './propertyService';
+import { MOCK_PROPERTIES, getFeaturedProperties } from './mockData';
 import type { Property } from '@/types/property';
 import { revalidatePath } from 'next/cache';
 
 /**
  * Server-side property service functions for ISR
  */
+
+/**
+ * IDs to pre-render at build time via `generateStaticParams`.
+ *
+ * Featured properties are the shared/SEO entry points that benefit most from
+ * being served statically, so they come first; if none are flagged we fall
+ * back to the full catalogue. Any id not returned here is still generated on
+ * demand and kept fresh by ISR (`revalidate = 60`).
+ */
+export async function getPopularPropertyIds(limit: number = 20): Promise<string[]> {
+  const featured = getFeaturedProperties();
+  const source = featured.length > 0 ? featured : MOCK_PROPERTIES;
+  return source.slice(0, limit).map((property) => property.id);
+}
 
 /**
  * Get property data for ISR - server side only

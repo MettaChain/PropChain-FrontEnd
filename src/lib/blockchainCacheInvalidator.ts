@@ -265,16 +265,12 @@ class BlockchainCacheInvalidator {
         return;
     }
 
-    // For events that affect listings, also invalidate listing cache
-    if (
-      [
-        "PropertyCreated",
-        "PropertyUpdated",
-        "PropertySold",
-        "PropertyListed",
-        "PropertyDelisted",
-      ].includes(event.type)
-    ) {
+    // `invalidateProperty` (above) already evicts the listing/search entries
+    // that embed this property via the key index, so updates no longer flush
+    // the whole cache. Only membership-changing events can affect listings that
+    // don't contain this property (ordering, result counts), so those keep a
+    // broader — but still explicit — listing/search invalidation.
+    if (["PropertyCreated", "PropertyDelisted"].includes(event.type)) {
       await redisCacheService.invalidatePattern("listing:*");
       await redisCacheService.invalidatePattern("search:*");
       logger.info(`Invalidated listing and search cache due to ${event.type}`);
