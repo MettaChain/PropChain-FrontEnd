@@ -11,6 +11,7 @@ import { withRouteErrorBoundary } from '@/components/error/withRouteErrorBoundar
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { AppHeader } from '@/components/layout/AppHeader';
 
 function SecondaryMarketPage() {
   const [listings, setListings] = useState<SecondaryMarketListing[]>([]);
@@ -46,21 +47,7 @@ function SecondaryMarketPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">PC</span>
-              </div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">PropChain</h1>
-            </Link>
-            <div className="flex items-center gap-3">
-              <WalletConnector />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader sticky actions={<WalletConnector />} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">

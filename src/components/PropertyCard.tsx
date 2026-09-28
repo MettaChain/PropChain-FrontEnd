@@ -8,8 +8,7 @@ import type { Property } from '@/types/property';
 import { formatPrice, formatNumber, formatROI, getBlockchainColor } from '@/utils/searchUtils';
 import { BLOCKCHAIN_LABELS, PROPERTY_TYPE_LABELS } from '@/types/property';
 import { useCartStore } from '@/store/cartStore';
-import { useComparisonStore } from '@/store/comparisonStore';
-import { useCompareStore } from '@/store/compareStore';
+import { MAX_COMPARE, useCompareStore } from '@/store/compareStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 import { ShareButton } from './property/ShareButton';
 import { CurrencyToggle } from './property/CurrencyToggle';
@@ -31,14 +30,15 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
 }) => {
   const isListView = viewMode === 'list';
   const { addItem } = useCartStore();
-  const { isPropertySelected, toggleProperty } = useComparisonStore();
-
-  const isSelectedForComparison = isPropertySelected(property.id);
   const selectedIds = useCompareStore((state) => state.selectedIds);
-  const togglePropertyId = useCompareStore((state) => state.toggleProperty);
+  const toggleProperty = useCompareStore((state) => state.toggleProperty);
 
+  // One source of truth (#1090). This used to write to two stores per toggle
+  // while reading selection from one and the limit from the other, so the two
+  // could disagree.
   const isCompared = selectedIds.includes(property.id);
-  const compareLimitReached = selectedIds.length >= 3 && !isCompared;
+  const isSelectedForComparison = isCompared;
+  const compareLimitReached = selectedIds.length >= MAX_COMPARE && !isCompared;
   const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -48,13 +48,15 @@ const PropertyCardInner: React.FC<PropertyCardProps> = ({
 
   const handleComparisonToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Passing the object caches it, so the floating bar can render a chip for a
+    // property the user just picked without refetching it.
     toggleProperty(property);
   };
 
   const handleCompareToggle = (e: React.MouseEvent<HTMLInputElement>) => {
     e.stopPropagation();
     if (!compareLimitReached) {
-      togglePropertyId(property.id);
+      toggleProperty(property);
     }
   };
 
