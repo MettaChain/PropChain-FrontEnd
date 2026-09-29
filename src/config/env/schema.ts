@@ -24,10 +24,23 @@ const envSchema = z.object({
     .enum(["development", "staging", "production"])
     .default("development"),
   ANALYZE: z.string().optional().default("false"),
+  // Issue #1107 — secure default. Only "true"/"false" are accepted (empty =
+  // unset). When unset, CSP is enforced in production/staging and disabled in
+  // development, mirroring resolveCspEnforcement() in src/middleware.ts.
   CSP_ENFORCE: z
     .string()
-    .transform((val) => val === "true")
-    .default(false),
+    .refine((val) => val === "" || val === "true" || val === "false", {
+      message: 'CSP_ENFORCE must be "true" or "false"',
+    })
+    .optional()
+    .transform((val) => {
+      if (val === "true") return true;
+      if (val === "false") return false;
+      // String() first: Next.js types NODE_ENV as a literal union without
+      // "staging", which would make the comparison a TS2367 error.
+      const nodeEnv = String(process.env.NODE_ENV);
+      return nodeEnv === "production" || nodeEnv === "staging";
+    }),
 
   // API Configurations
   NEXT_PUBLIC_PROPERTY_API_URL: z.string().url().optional(),
@@ -249,7 +262,8 @@ export const envVariableDescriptions: Record<keyof EnvConfig, string> = {
     "Base URL for the application (include protocol and trailing slash)",
   NODE_ENV: "Current deployment environment (development, staging, production)",
   ANALYZE: 'Enable build analysis (set to "true" for bundle analysis)',
-  CSP_ENFORCE: "Enable CSP enforcement (report-only when false)",
+  CSP_ENFORCE:
+    'Enable CSP enforcement. Secure default (#1107): enforced in production/staging when unset; set "false" to opt out',
   NEXT_PUBLIC_PROPERTY_API_URL:
     "Property API endpoint for fetching property data",
   NEXT_PUBLIC_ANALYTICS_API_URL: "Analytics API endpoint",

@@ -10,7 +10,31 @@ import { initRedisCacheSystem } from '@/lib/initRedisCache';
 import { logger } from '@/utils/logger';
 
 const isDev = process.env.NODE_ENV === 'development';
-const isCspEnforced = process.env.CSP_ENFORCE === 'true';
+
+/**
+ * Issue #1107 — CSP enforcement has a secure default:
+ * - `CSP_ENFORCE="true"`  → always enforce the nonce-based CSP
+ * - `CSP_ENFORCE="false"` → opt out entirely (warns outside development)
+ * - unset/empty/other     → enforce outside development; development stays
+ *                           off so hot reload and debugging remain easy
+ * This mirrors the environment-aware default applied in
+ * src/config/env/schema.ts.
+ */
+const resolveCspEnforcement = (): boolean => {
+  const raw = process.env.CSP_ENFORCE?.trim().toLowerCase();
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return !isDev;
+};
+
+const isCspEnforced = resolveCspEnforcement();
+
+if (process.env.CSP_ENFORCE?.trim().toLowerCase() === 'false' && !isDev) {
+  logger.warn(
+    '[CSP] CSP_ENFORCE=false — the nonce-based Content-Security-Policy is NOT enforced. ' +
+      'Remove CSP_ENFORCE (secure default) or set it to "true" in production. See docs/csp.md.',
+  );
+}
 
 // Admin routes require an authenticated session. This project has no
 // roles/permissions system yet, so this closes the "fully public admin
