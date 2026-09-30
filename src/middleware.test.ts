@@ -115,6 +115,29 @@ describe('middleware CSP enforcement, Redis init', () => {
     process.env = originalEnv;
   });
 
+  it('enforces CSP by default in production when CSP_ENFORCE is unset (#1107)', async () => {
+    delete process.env.CSP_ENFORCE;
+    jest.resetModules();
+    resetState();
+
+    const { middleware } = await import('./middleware');
+    await middleware(createMockRequest('/'));
+
+    expect(capturedHeaders.has('Content-Security-Policy')).toBe(true);
+  });
+
+  it('does not enforce CSP by default in development when unset (#1107)', async () => {
+    delete process.env.CSP_ENFORCE;
+    process.env.NODE_ENV = 'development';
+    jest.resetModules();
+    resetState();
+
+    const { middleware } = await import('./middleware');
+    await middleware(createMockRequest('/'));
+
+    expect(capturedHeaders.has('Content-Security-Policy')).toBe(false);
+  });
+
   it('returns NextResponse.next() when CSP_ENFORCE is not true', async () => {
     process.env.CSP_ENFORCE = 'false';
     jest.resetModules();

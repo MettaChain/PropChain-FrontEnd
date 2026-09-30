@@ -23,6 +23,27 @@ describe('envSchema', () => {
     expect(result.data.NEXT_PUBLIC_SUPPORTED_LOCALES).toBe('en,es,fr,de,zh,ar,he');
   });
 
+  it('defaults CSP_ENFORCE to true in production and staging, false in development (#1107)', () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = 'production';
+      expect(envSchema.safeParse({}).data?.CSP_ENFORCE).toBe(true);
+
+      process.env.NODE_ENV = 'staging';
+      expect(envSchema.safeParse({}).data?.CSP_ENFORCE).toBe(true);
+
+      process.env.NODE_ENV = 'development';
+      expect(envSchema.safeParse({}).data?.CSP_ENFORCE).toBe(false);
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
+  });
+
+  it('rejects invalid CSP_ENFORCE values (#1107)', () => {
+    expect(envSchema.safeParse({ CSP_ENFORCE: 'yes' }).success).toBe(false);
+    expect(envSchema.safeParse({ CSP_ENFORCE: '1' }).success).toBe(false);
+  });
+
   it('transforms string booleans correctly', () => {
     const result = envSchema.safeParse({
       CSP_ENFORCE: 'true',
@@ -48,6 +69,17 @@ describe('envSchema', () => {
     expect(result.data.NEXT_PUBLIC_MAINTENANCE_MODE).toBe(false);
     expect(result.data.NEXT_PUBLIC_USE_MOCK_DATA).toBe(false);
     expect(result.data.NEXT_PUBLIC_SKIP_AUTH).toBe(false);
+  });
+
+  it('lets an explicit CSP_ENFORCE=false override the secure default (#1107)', () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = 'production';
+      expect(envSchema.safeParse({ CSP_ENFORCE: 'false' }).data?.CSP_ENFORCE).toBe(false);
+      expect(envSchema.safeParse({ CSP_ENFORCE: '' }).data?.CSP_ENFORCE).toBe(true);
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
   });
 
   it('parses rate limit numeric strings', () => {

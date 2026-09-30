@@ -181,6 +181,11 @@ function main() {
     if (config.NODE_ENV === "production" && config.NEXT_PUBLIC_ENABLE_DEMOS) {
       warnings.push("Demo routes are enabled in production - they should 404 there");
     }
+    // Issue #1107 - the secure default enforces CSP in production; an explicit
+    // opt-out is worth surfacing to whoever runs this check.
+    if (config.NODE_ENV === "production" && config.CSP_ENFORCE === false) {
+      warnings.push("CSP_ENFORCE is disabled - the nonce-based CSP will NOT be enforced (see docs/csp.md)");
+    }
     if (config.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID === "your-walletconnect-project-id") {
       warnings.push("WalletConnect Project ID is still set to the example value");
     }
