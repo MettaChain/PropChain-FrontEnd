@@ -7,6 +7,7 @@ import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { SearchHistoryDropdown } from './search/SearchHistoryDropdown';
 import type { AutocompleteResult } from '@/types/property';
 import { logger } from '@/utils/logger';
+import { SearchEmptyState } from './ui/EmptyState';
 
 interface PropertySearchProps {
   value: string;
@@ -191,6 +192,8 @@ export const PropertySearch = ({
               <div className="inline-block w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
               <span className="ml-2">Searching...</span>
             </div>
+          ) : suggestions.length === 0 && debouncedValue.trim().length >= 2 ? (
+            <SearchEmptyState query={debouncedValue.trim()} />
           ) : (
             <div className="py-2">
               {suggestions.map((suggestion, index) => (
