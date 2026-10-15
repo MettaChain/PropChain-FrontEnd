@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWalletStore } from '@/store/walletStore';
+import { detectWalletExtensions } from '@/utils/extensionDetection';
 
 const WalletModal = dynamic(
   () => import('./WalletModal').then((m) => m.WalletModal),
@@ -14,11 +15,19 @@ const WalletModal = dynamic(
  * Displays the wallet's disconnected state including:
  * - Connect wallet button
  * - Wallet connection modal
+ * - Empty-state guidance when no browser wallet extension is installed
  * - Error messages
  */
 export function WalletDisconnectedView() {
   const { isConnecting, error } = useWalletStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Assume a wallet is present on the first render so server and client markup
+  // match, then refine after mount once extension detection can run.
+  const [hasBrowserWallet, setHasBrowserWallet] = useState(true);
+
+  useEffect(() => {
+    setHasBrowserWallet(detectWalletExtensions().some((ext) => ext.isInstalled));
+  }, []);
 
   const handleOpenModal = useCallback(() => setIsModalOpen(true), []);
   const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
@@ -40,6 +49,24 @@ export function WalletDisconnectedView() {
           'Connect Wallet'
         )}
       </button>
+
+      {!hasBrowserWallet && !isConnecting && (
+        <p
+          role="status"
+          className="hidden lg:flex max-w-xs items-center gap-1 text-xs leading-snug text-gray-500 dark:text-gray-400"
+        >
+          No browser wallet detected.{' '}
+          <a
+            href="https://metamask.io/download/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 underline"
+          >
+            Install a wallet
+          </a>
+          , or continue with WalletConnect.
+        </p>
+      )}
 
       <WalletModal isOpen={isModalOpen} onClose={handleCloseModal} />
 
