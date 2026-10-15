@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
 import type { Property } from '@/types/property';
@@ -34,10 +34,18 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
     return () => window.removeEventListener('resize', updateColumns);
   }, [viewMode]);
 
-  const rowCount = Math.ceil(properties.length / columns);
+  // Chunk the listings once per (properties, columns) change instead of
+  // re-slicing the array for every virtual row on every render.
+  const rows = useMemo(() => {
+    const chunked: Property[][] = [];
+    for (let i = 0; i < properties.length; i += columns) {
+      chunked.push(properties.slice(i, i + columns));
+    }
+    return chunked;
+  }, [properties, columns]);
 
   const rowVirtualizer = useVirtualizer({
-    count: rowCount,
+    count: rows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => (viewMode === 'grid' ? 450 : 200),
     overscan: 5,
@@ -62,8 +70,7 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
           className="list-none p-0 m-0"
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const startIndex = virtualRow.index * columns;
-            const itemsInRow = properties.slice(startIndex, startIndex + columns);
+            const itemsInRow = rows[virtualRow.index] ?? [];
 
             return (
               <li
