@@ -1,7 +1,9 @@
 'use client';
-import React, { useRef, useEffect, useState } from 'react';
+import React, { memo, useMemo, useRef, useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
+import { PropertyEmptyState } from './ui/EmptyState';
 import type { Property } from '@/types/property';
 
 interface VirtualizedPropertyGridProps {
@@ -10,7 +12,7 @@ interface VirtualizedPropertyGridProps {
   className?: string;
 }
 
-export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = ({
+const VirtualizedPropertyGridInner: React.FC<VirtualizedPropertyGridProps> = ({
   properties,
   viewMode = 'grid',
   className = ''
@@ -34,14 +36,33 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
     return () => window.removeEventListener('resize', updateColumns);
   }, [viewMode]);
 
-  const rowCount = Math.ceil(properties.length / columns);
+  // Chunk the listings once per (properties, columns) change instead of
+  // re-slicing the array for every virtual row on every render.
+  const rows = useMemo(() => {
+    const chunked: Property[][] = [];
+    for (let i = 0; i < properties.length; i += columns) {
+      chunked.push(properties.slice(i, i + columns));
+    }
+    return chunked;
+  }, [properties, columns]);
 
-  const rowVirtualizer = useVirtualizer({
-    count: rowCount,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => (viewMode === 'grid' ? 450 : 200),
-    overscan: 5,
-  });
+  // Keep a stable options object so the virtualizer is only reconfigured when
+  // its inputs change instead of on every render of the grid.
+  const virtualizerOptions = useMemo(
+    () => ({
+      count: rows.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => (viewMode === 'grid' ? 450 : 200),
+      overscan: 5,
+    }),
+    [rows.length, viewMode]
+  );
+
+  const rowVirtualizer = useVirtualizer(virtualizerOptions);
+
+  if (properties.length === 0) {
+    return <PropertyEmptyState className={className} />;
+  }
 
   return (
     <div
@@ -62,8 +83,7 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
           className="list-none p-0 m-0"
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const startIndex = virtualRow.index * columns;
-            const itemsInRow = properties.slice(startIndex, startIndex + columns);
+            const itemsInRow = rows[virtualRow.index] ?? [];
 
             return (
               <li
@@ -95,3 +115,15 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
     </div>
   );
 };
+
+/**
+ * Public entry point for the property list grid.
+ *
+ * The rendered grid sits behind an error boundary so a failure while rendering
+ * a row degrades to a retryable fallback instead of blanking the results page.
+ */
+export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (props) => (
+  <ErrorBoundary>
+    <VirtualizedPropertyGridInner {...props} />
+  </ErrorBoundary>
+);

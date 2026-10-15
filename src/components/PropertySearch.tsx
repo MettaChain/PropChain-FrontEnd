@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useId, useMemo } from 'react';
+import React, { memo, useCallback, useState, useRef, useEffect, useId } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePropertyAutocompleteQuery } from '@/hooks/usePropertySearchQuery';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { SearchHistoryDropdown } from './search/SearchHistoryDropdown';
 import type { AutocompleteResult } from '@/types/property';
 import { logger } from '@/utils/logger';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
 
 interface PropertySearchProps {
   value: string;
@@ -14,11 +15,7 @@ interface PropertySearchProps {
   placeholder?: string;
 }
 
-// Stable empty list so the default value does not allocate a new array on
-// every render while the autocomplete query has no data yet.
-const EMPTY_SUGGESTIONS: AutocompleteResult[] = [];
-
-export const PropertySearch = ({
+const PropertySearchInner = ({
   value,
   onChange,
   placeholder = 'Search properties, locations...',
@@ -54,35 +51,35 @@ export const PropertySearch = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
     setSelectedIndex(-1);
     if (e.target.value.length > 2) {
       setShowHistory(false);
     }
-  };
+  }, [onChange]);
 
-  const handleSuggestionClick = (suggestion: AutocompleteResult) => {
+  const handleSuggestionClick = useCallback((suggestion: AutocompleteResult) => {
     onChange(suggestion.value);
     setIsFocused(false);
     saveToHistory(suggestion.value, suggestion.type === 'property' ? 'property_type' : 'location');
-  };
+  }, [onChange, saveToHistory]);
 
-  const handleSearchSelect = (query: string) => {
+  const handleSearchSelect = useCallback((query: string) => {
     onChange(query);
     setIsFocused(false);
     setShowHistory(false);
     saveToHistory(query);
-  };
+  }, [onChange, saveToHistory]);
 
-  const handleFocus = () => {
+  const handleFocus = useCallback(() => {
     setIsFocused(true);
     if (value.length <= 2) {
       setShowHistory(true);
     }
-  };
+  }, [value]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!suggestions.length) return;
 
     switch (e.key) {
@@ -109,12 +106,12 @@ export const PropertySearch = ({
         setIsFocused(false);
         break;
     }
-  };
+  }, [suggestions, selectedIndex, handleSuggestionClick]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     onChange('');
     inputRef.current?.focus();
-  };
+  }, [onChange]);
 
   const showDropdown = useMemo(
     () => isFocused && (suggestions.length > 0 || isLoading || showHistory),
@@ -201,6 +198,8 @@ export const PropertySearch = ({
               <div className="inline-block w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
               <span className="ml-2">Searching...</span>
             </div>
+          ) : suggestions.length === 0 && debouncedValue.trim().length >= 2 ? (
+            <SearchEmptyState query={debouncedValue.trim()} />
           ) : (
             <div className="py-2">
               {suggestions.map((suggestion, index) => (
@@ -244,3 +243,16 @@ export const PropertySearch = ({
     </div>
   );
 };
+
+/**
+ * Public entry point for the property search box.
+ *
+ * The search input and its autocomplete dropdown render behind an error
+ * boundary so a failure while querying or rendering suggestions falls back to
+ * a retryable panel instead of blanking the surrounding search page.
+ */
+export const PropertySearch = (props: PropertySearchProps) => (
+  <ErrorBoundary>
+    <PropertySearchInner {...props} />
+  </ErrorBoundary>
+);

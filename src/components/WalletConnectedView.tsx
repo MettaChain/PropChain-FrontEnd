@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { KycStatusBadge } from '@/components/kyc/KycStatusBadge';
@@ -71,7 +71,15 @@ const WalletConnectedViewInner: React.FC<WalletConnectedViewProps> = ({ address 
     disconnectWallet(setDisconnected, clearError);
   }, [setDisconnected, clearError]);
 
-  const balanceText = balance ? formatBalanceForDisplay(balance) : null;
+  // Derived display strings are memoized so unrelated wallet/store updates do
+  // not recompute the address truncation and balance formatting on every render.
+  const { addressDisplay, balanceText } = useMemo(
+    () => ({
+      addressDisplay: formatAddress(address),
+      balanceText: balance ? formatBalanceForDisplay(balance) : null,
+    }),
+    [address, balance]
+  );
 
   return (
     <div className="flex items-center gap-3">
@@ -94,7 +102,7 @@ const WalletConnectedViewInner: React.FC<WalletConnectedViewProps> = ({ address 
 
       <div className="flex items-center gap-2 bg-blue-100 dark:bg-blue-900 rounded-lg px-3 py-2">
         <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-          {formatAddress(address)}
+          {addressDisplay}
         </span>
         <CopyButton address={address} />
       </div>
