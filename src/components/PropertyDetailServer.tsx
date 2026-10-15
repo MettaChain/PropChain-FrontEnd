@@ -23,7 +23,7 @@ const MortgageCalculator = dynamic(() => import('./MortgageCalculator').then(m =
 
 export type { PropertyDetailServerProps } from '@/types/propertyDetail';
 
-export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ property }) => {
+const PropertyDetailServerInner: React.FC<PropertyDetailServerProps> = ({ property }) => {
   // Each derived value is recomputed only when the slice of the property it
   // depends on changes, rather than on every render of the detail view.
   const locationDisplay = useMemo(

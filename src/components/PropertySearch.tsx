@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useCallback, useState, useRef, useEffect, useId } from 'react';
+import React, { useCallback, useState, useRef, useEffect, useId } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePropertyAutocompleteQuery } from '@/hooks/usePropertySearchQuery';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
