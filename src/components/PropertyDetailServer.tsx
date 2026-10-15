@@ -1,4 +1,5 @@
-import React from 'react';
+'use client';
+import React, { useMemo } from 'react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,11 +23,22 @@ const MortgageCalculator = dynamic(() => import('./MortgageCalculator').then(m =
 export type { PropertyDetailServerProps } from '@/types/propertyDetail';
 
 export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ property }) => {
-  const locationDisplay = formatPropertyLocation(property.location);
-  const tokenAvailability = formatTokenAvailability(property.tokenInfo);
-  const priceValues = getPropertyPriceValues(property.price);
-  const metricsSummary = getPropertyMetricsSummary(property.metrics);
-  const calculatorDefaults = getCalculatorDefaults(property);
+  // Each derived value is recomputed only when the slice of the property it
+  // depends on changes, rather than on every render of the detail view.
+  const locationDisplay = useMemo(
+    () => formatPropertyLocation(property.location),
+    [property.location]
+  );
+  const tokenAvailability = useMemo(
+    () => formatTokenAvailability(property.tokenInfo),
+    [property.tokenInfo]
+  );
+  const priceValues = useMemo(() => getPropertyPriceValues(property.price), [property.price]);
+  const metricsSummary = useMemo(
+    () => getPropertyMetricsSummary(property.metrics),
+    [property.metrics]
+  );
+  const calculatorDefaults = useMemo(() => getCalculatorDefaults(property), [property]);
 
   return (
     <div className="space-y-8">
