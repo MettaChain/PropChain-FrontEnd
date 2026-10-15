@@ -16,6 +16,7 @@ import {
 } from '@/types/propertyDetail';
 import { ImageGallery } from './property/ImageGallery';
 import { CurrencyToggle } from './property/CurrencyToggle';
+import { EmptyState } from '@/components/ui/EmptyState';
 import dynamic from 'next/dynamic';
 const MortgageCalculator = dynamic(() => import('./MortgageCalculator').then(m => ({ default: m.MortgageCalculator })));
 
@@ -138,9 +139,17 @@ export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ prop
               <CardTitle>About this Property</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                {property.description}
-              </p>
+              {property.description?.trim() ? (
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {property.description}
+                </p>
+              ) : (
+                <EmptyState
+                  variant="data"
+                  title="No description available"
+                  description="The seller has not added a description for this property yet. Use the investment details and calculator below to review the listing."
+                />
+              )}
             </CardContent>
           </Card>
 
