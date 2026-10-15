@@ -6,6 +6,7 @@ import { useChain } from '@/providers/ChainAwareProvider';
 import { updateWalletBalance } from '@/utils/walletHelpers';
 import { WalletConnectedView } from './WalletConnectedView';
 import { WalletDisconnectedView } from './WalletDisconnectedView';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
 
 /**
  * WalletConnector component that handles wallet connection UI, balance display,
@@ -13,6 +14,10 @@ import { WalletDisconnectedView } from './WalletDisconnectedView';
  *
  * Delegates the connected and disconnected UI states to dedicated sub-components
  * for better testability and separation of concerns.
+ *
+ * The whole wallet UI is wrapped in an error boundary so a failure inside one of
+ * the views degrades to a retryable fallback instead of unmounting the layout
+ * that hosts the connector.
  */
 export const WalletConnector: React.FC = () => {
   const { isConnected, address, setBalance } = useWalletStore();
@@ -25,9 +30,13 @@ export const WalletConnector: React.FC = () => {
     }
   }, [isConnected, address, currentChain, setBalance]);
 
-  if (isConnected && address) {
-    return <WalletConnectedView address={address} />;
-  }
-
-  return <WalletDisconnectedView />;
+  return (
+    <ErrorBoundary>
+      {isConnected && address ? (
+        <WalletConnectedView address={address} />
+      ) : (
+        <WalletDisconnectedView />
+      )}
+    </ErrorBoundary>
+  );
 };
