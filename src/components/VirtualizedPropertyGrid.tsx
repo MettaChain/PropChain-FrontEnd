@@ -2,6 +2,7 @@
 import React, { memo, useMemo, useRef, useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
 import type { Property } from '@/types/property';
 
 interface VirtualizedPropertyGridProps {
@@ -104,7 +105,13 @@ const VirtualizedPropertyGridInner: React.FC<VirtualizedPropertyGridProps> = ({
 };
 
 /**
- * Memoized so parent re-renders that pass an unchanged `properties` array,
- * `viewMode` or `className` skip re-rendering the virtualized list entirely.
+ * Public entry point for the property list grid.
+ *
+ * The rendered grid sits behind an error boundary so a failure while rendering
+ * a row degrades to a retryable fallback instead of blanking the results page.
  */
-export const VirtualizedPropertyGrid = memo(VirtualizedPropertyGridInner);
+export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (props) => (
+  <ErrorBoundary>
+    <VirtualizedPropertyGridInner {...props} />
+  </ErrorBoundary>
+);
