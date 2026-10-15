@@ -32,7 +32,7 @@ const PropertySearchInner = ({
   const debouncedValue = useDebounce(value, 300);
 
   // Use React Query for autocomplete suggestions
-  const { data: suggestions = [], isLoading } = usePropertyAutocompleteQuery(debouncedValue);
+  const { data: suggestions = EMPTY_SUGGESTIONS, isLoading } = usePropertyAutocompleteQuery(debouncedValue);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -113,8 +113,14 @@ const PropertySearchInner = ({
     inputRef.current?.focus();
   }, [onChange]);
 
-  const showDropdown = isFocused && (suggestions.length > 0 || isLoading || showHistory);
-  const activeOptionId = selectedIndex >= 0 ? `${listboxId}-option-${selectedIndex}` : undefined;
+  const showDropdown = useMemo(
+    () => isFocused && (suggestions.length > 0 || isLoading || showHistory),
+    [isFocused, suggestions.length, isLoading, showHistory]
+  );
+  const activeOptionId = useMemo(
+    () => (selectedIndex >= 0 ? `${listboxId}-option-${selectedIndex}` : undefined),
+    [listboxId, selectedIndex]
+  );
   // Keep the input and suggestion list in sync for assistive technologies.
 
   return (
