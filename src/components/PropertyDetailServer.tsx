@@ -17,6 +17,7 @@ import {
 } from '@/types/propertyDetail';
 import { ImageGallery } from './property/ImageGallery';
 import { CurrencyToggle } from './property/CurrencyToggle';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
 import dynamic from 'next/dynamic';
 const MortgageCalculator = dynamic(() => import('./MortgageCalculator').then(m => ({ default: m.MortgageCalculator })));
 
@@ -268,3 +269,16 @@ export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ prop
     </div>
   );
 };
+
+/**
+ * Public entry point for the property detail view.
+ *
+ * The view renders behind an error boundary so a failure while rendering the
+ * gallery, investment cards or calculator falls back to a retryable panel
+ * instead of taking down the whole detail route.
+ */
+export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ property }) => (
+  <ErrorBoundary>
+    <PropertyDetailServerInner property={property} />
+  </ErrorBoundary>
+);
