@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useId } from 'react';
+import React, { memo, useCallback, useState, useRef, useEffect, useId } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePropertyAutocompleteQuery } from '@/hooks/usePropertySearchQuery';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
@@ -51,35 +51,35 @@ const PropertySearchInner = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
     setSelectedIndex(-1);
     if (e.target.value.length > 2) {
       setShowHistory(false);
     }
-  };
+  }, [onChange]);
 
-  const handleSuggestionClick = (suggestion: AutocompleteResult) => {
+  const handleSuggestionClick = useCallback((suggestion: AutocompleteResult) => {
     onChange(suggestion.value);
     setIsFocused(false);
     saveToHistory(suggestion.value, suggestion.type === 'property' ? 'property_type' : 'location');
-  };
+  }, [onChange, saveToHistory]);
 
-  const handleSearchSelect = (query: string) => {
+  const handleSearchSelect = useCallback((query: string) => {
     onChange(query);
     setIsFocused(false);
     setShowHistory(false);
     saveToHistory(query);
-  };
+  }, [onChange, saveToHistory]);
 
-  const handleFocus = () => {
+  const handleFocus = useCallback(() => {
     setIsFocused(true);
     if (value.length <= 2) {
       setShowHistory(true);
     }
-  };
+  }, [value]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!suggestions.length) return;
 
     switch (e.key) {
@@ -106,12 +106,12 @@ const PropertySearchInner = ({
         setIsFocused(false);
         break;
     }
-  };
+  }, [suggestions, selectedIndex, handleSuggestionClick]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     onChange('');
     inputRef.current?.focus();
-  };
+  }, [onChange]);
 
   const showDropdown = isFocused && (suggestions.length > 0 || isLoading || showHistory);
   const activeOptionId = selectedIndex >= 0 ? `${listboxId}-option-${selectedIndex}` : undefined;
