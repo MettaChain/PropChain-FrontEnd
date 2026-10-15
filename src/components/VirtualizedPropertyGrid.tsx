@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useEffect, useState } from 'react';
+import React, { memo, useMemo, useRef, useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
 import type { Property } from '@/types/property';
@@ -10,7 +10,7 @@ interface VirtualizedPropertyGridProps {
   className?: string;
 }
 
-export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = ({
+const VirtualizedPropertyGridInner: React.FC<VirtualizedPropertyGridProps> = ({
   properties,
   viewMode = 'grid',
   className = ''
@@ -36,12 +36,19 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
 
   const rowCount = Math.ceil(properties.length / columns);
 
-  const rowVirtualizer = useVirtualizer({
-    count: rowCount,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => (viewMode === 'grid' ? 450 : 200),
-    overscan: 5,
-  });
+  // Keep a stable options object so the virtualizer is only reconfigured when
+  // its inputs change instead of on every render of the grid.
+  const virtualizerOptions = useMemo(
+    () => ({
+      count: rowCount,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => (viewMode === 'grid' ? 450 : 200),
+      overscan: 5,
+    }),
+    [rowCount, viewMode]
+  );
+
+  const rowVirtualizer = useVirtualizer(virtualizerOptions);
 
   return (
     <div
@@ -95,3 +102,9 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
     </div>
   );
 };
+
+/**
+ * Memoized so parent re-renders that pass an unchanged `properties` array,
+ * `viewMode` or `className` skip re-rendering the virtualized list entirely.
+ */
+export const VirtualizedPropertyGrid = memo(VirtualizedPropertyGridInner);
