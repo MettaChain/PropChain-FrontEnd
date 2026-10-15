@@ -1,7 +1,8 @@
 'use client';
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { memo, useMemo, useRef, useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
 import type { Property } from '@/types/property';
 
 interface VirtualizedPropertyGridProps {
@@ -10,7 +11,7 @@ interface VirtualizedPropertyGridProps {
   className?: string;
 }
 
-export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = ({
+const VirtualizedPropertyGridInner: React.FC<VirtualizedPropertyGridProps> = ({
   properties,
   viewMode = 'grid',
   className = ''
@@ -44,12 +45,19 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
     return chunked;
   }, [properties, columns]);
 
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => (viewMode === 'grid' ? 450 : 200),
-    overscan: 5,
-  });
+  // Keep a stable options object so the virtualizer is only reconfigured when
+  // its inputs change instead of on every render of the grid.
+  const virtualizerOptions = useMemo(
+    () => ({
+      count: rowCount,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => (viewMode === 'grid' ? 450 : 200),
+      overscan: 5,
+    }),
+    [rowCount, viewMode]
+  );
+
+  const rowVirtualizer = useVirtualizer(virtualizerOptions);
 
   return (
     <div
@@ -102,3 +110,15 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
     </div>
   );
 };
+
+/**
+ * Public entry point for the property list grid.
+ *
+ * The rendered grid sits behind an error boundary so a failure while rendering
+ * a row degrades to a retryable fallback instead of blanking the results page.
+ */
+export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (props) => (
+  <ErrorBoundary>
+    <VirtualizedPropertyGridInner {...props} />
+  </ErrorBoundary>
+);
