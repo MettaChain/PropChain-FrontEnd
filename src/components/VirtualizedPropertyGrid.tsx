@@ -35,7 +35,15 @@ const VirtualizedPropertyGridInner: React.FC<VirtualizedPropertyGridProps> = ({
     return () => window.removeEventListener('resize', updateColumns);
   }, [viewMode]);
 
-  const rowCount = Math.ceil(properties.length / columns);
+  // Chunk the listings once per (properties, columns) change instead of
+  // re-slicing the array for every virtual row on every render.
+  const rows = useMemo(() => {
+    const chunked: Property[][] = [];
+    for (let i = 0; i < properties.length; i += columns) {
+      chunked.push(properties.slice(i, i + columns));
+    }
+    return chunked;
+  }, [properties, columns]);
 
   // Keep a stable options object so the virtualizer is only reconfigured when
   // its inputs change instead of on every render of the grid.
@@ -70,8 +78,7 @@ const VirtualizedPropertyGridInner: React.FC<VirtualizedPropertyGridProps> = ({
           className="list-none p-0 m-0"
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const startIndex = virtualRow.index * columns;
-            const itemsInRow = properties.slice(startIndex, startIndex + columns);
+            const itemsInRow = rows[virtualRow.index] ?? [];
 
             return (
               <li
