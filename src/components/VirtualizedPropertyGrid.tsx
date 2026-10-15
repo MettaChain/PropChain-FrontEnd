@@ -2,6 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
 import type { Property } from '@/types/property';
 
 interface VirtualizedPropertyGridProps {
@@ -10,7 +11,7 @@ interface VirtualizedPropertyGridProps {
   className?: string;
 }
 
-export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = ({
+const VirtualizedPropertyGridInner: React.FC<VirtualizedPropertyGridProps> = ({
   properties,
   viewMode = 'grid',
   className = ''
@@ -95,3 +96,15 @@ export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (
     </div>
   );
 };
+
+/**
+ * Public entry point for the property list grid.
+ *
+ * The rendered grid sits behind an error boundary so a failure while rendering
+ * a row degrades to a retryable fallback instead of blanking the results page.
+ */
+export const VirtualizedPropertyGrid: React.FC<VirtualizedPropertyGridProps> = (props) => (
+  <ErrorBoundary>
+    <VirtualizedPropertyGridInner {...props} />
+  </ErrorBoundary>
+);
