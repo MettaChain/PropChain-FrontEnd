@@ -7,6 +7,7 @@ import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { SearchHistoryDropdown } from './search/SearchHistoryDropdown';
 import type { AutocompleteResult } from '@/types/property';
 import { logger } from '@/utils/logger';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
 
 interface PropertySearchProps {
   value: string;
@@ -14,7 +15,7 @@ interface PropertySearchProps {
   placeholder?: string;
 }
 
-export const PropertySearch = ({
+const PropertySearchInner = ({
   value,
   onChange,
   placeholder = 'Search properties, locations...',
@@ -234,3 +235,16 @@ export const PropertySearch = ({
     </div>
   );
 };
+
+/**
+ * Public entry point for the property search box.
+ *
+ * The search input and its autocomplete dropdown render behind an error
+ * boundary so a failure while querying or rendering suggestions falls back to
+ * a retryable panel instead of blanking the surrounding search page.
+ */
+export const PropertySearch = (props: PropertySearchProps) => (
+  <ErrorBoundary>
+    <PropertySearchInner {...props} />
+  </ErrorBoundary>
+);
