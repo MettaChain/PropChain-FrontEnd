@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useEffect, useState } from 'react';
+import React, { memo, useMemo, useRef, useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
 import { ErrorBoundary } from './ui/SimpleErrorBoundary';
@@ -37,12 +37,19 @@ const VirtualizedPropertyGridInner: React.FC<VirtualizedPropertyGridProps> = ({
 
   const rowCount = Math.ceil(properties.length / columns);
 
-  const rowVirtualizer = useVirtualizer({
-    count: rowCount,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => (viewMode === 'grid' ? 450 : 200),
-    overscan: 5,
-  });
+  // Keep a stable options object so the virtualizer is only reconfigured when
+  // its inputs change instead of on every render of the grid.
+  const virtualizerOptions = useMemo(
+    () => ({
+      count: rowCount,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => (viewMode === 'grid' ? 450 : 200),
+      overscan: 5,
+    }),
+    [rowCount, viewMode]
+  );
+
+  const rowVirtualizer = useVirtualizer(virtualizerOptions);
 
   return (
     <div
