@@ -3,6 +3,7 @@ import React, { memo, useMemo, useRef, useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PropertyCard } from './PropertyCard';
 import { ErrorBoundary } from './ui/SimpleErrorBoundary';
+import { PropertyEmptyState } from './ui/EmptyState';
 import type { Property } from '@/types/property';
 
 interface VirtualizedPropertyGridProps {
@@ -49,15 +50,19 @@ const VirtualizedPropertyGridInner: React.FC<VirtualizedPropertyGridProps> = ({
   // its inputs change instead of on every render of the grid.
   const virtualizerOptions = useMemo(
     () => ({
-      count: rowCount,
+      count: rows.length,
       getScrollElement: () => parentRef.current,
       estimateSize: () => (viewMode === 'grid' ? 450 : 200),
       overscan: 5,
     }),
-    [rowCount, viewMode]
+    [rows.length, viewMode]
   );
 
   const rowVirtualizer = useVirtualizer(virtualizerOptions);
+
+  if (properties.length === 0) {
+    return <PropertyEmptyState className={className} />;
+  }
 
   return (
     <div
