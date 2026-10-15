@@ -19,6 +19,45 @@ interface WalletModalProps {
   onClose: () => void;
 }
 
+type SupportedWalletId = 'metamask' | 'walletconnect' | 'coinbase';
+
+interface SupportedWalletOption {
+  id: SupportedWalletId;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  installUrl?: string;
+}
+
+// Wallet metadata is static, so the list and its icon elements are created once
+// here instead of being rebuilt — and re-sorted — on every render of the modal.
+const WALLET_OPTIONS: SupportedWalletOption[] = [
+  {
+    id: 'metamask',
+    name: 'MetaMask',
+    description: 'Connect to your MetaMask wallet',
+    icon: <Wallet className="w-6 h-6" aria-hidden="true" />,
+    color: 'bg-orange-500',
+    installUrl: 'https://metamask.io/download/',
+  },
+  {
+    id: 'coinbase',
+    name: 'Coinbase Wallet',
+    description: 'Connect to your Coinbase wallet',
+    icon: <QrCode className="w-6 h-6" aria-hidden="true" />,
+    color: 'bg-blue-600',
+    installUrl: 'https://www.coinbase.com/wallet',
+  },
+  {
+    id: 'walletconnect',
+    name: 'WalletConnect',
+    description: 'Connect with WalletConnect',
+    icon: <Link2 className="w-6 h-6" aria-hidden="true" />,
+    color: 'bg-blue-500',
+  },
+];
+
 export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => {
   const { setConnecting, setConnected, setError, error } = useWalletStore();
   const { validateWalletConnection } = useSecurity();
@@ -31,8 +70,6 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
   const [isConnecting, setIsConnecting] = useState(false);
   const [loadingStep, setLoadingStep] = useState<'connector' | 'security' | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-
-  type SupportedWalletId = 'metamask' | 'walletconnect' | 'coinbase';
 
   // #1032: clear stale error/security state whenever the modal is (re)opened
   // #1034: move focus to the first control when the dialog opens
@@ -55,7 +92,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     ? 'Connection blocked by security check'
     : '';
 
-  const connectWallet = async (walletType: SupportedWalletId) => {
+  const connectWallet = useCallback(async (walletType: SupportedWalletId) => {
     try {
       setIsConnecting(true);
       setConnecting(true);
@@ -91,7 +128,14 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
       setLoadingStep(null);
       setConnecting(false);
     }
-  };
+  }, [
+    lazyConnectWallet,
+    validateWalletConnection,
+    setConnected,
+    setConnecting,
+    setError,
+    onClose,
+  ]);
 
   const renderSecurityStatus = () => {
     if (!securityValidation) return null;
@@ -216,46 +260,21 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => 
     return installed;
   }, []);
 
-  const wallets: Array<{
-    id: SupportedWalletId;
-    name: string;
-    description: string;
-    icon: React.ReactNode;
-    color: string;
-    installUrl?: string;
-  }> = [
-    {
-      id: 'metamask',
-      name: 'MetaMask',
-      description: 'Connect to your MetaMask wallet',
-      icon: <Wallet className="w-6 h-6" aria-hidden="true" />,
-      color: 'bg-orange-500',
-      installUrl: 'https://metamask.io/download/',
-    },
-    {
-      id: 'coinbase',
-      name: 'Coinbase Wallet',
-      description: 'Connect to your Coinbase wallet',
-      icon: <QrCode className="w-6 h-6" aria-hidden="true" />,
-      color: 'bg-blue-600',
-      installUrl: 'https://www.coinbase.com/wallet',
-    },
-    {
-      id: 'walletconnect',
-      name: 'WalletConnect',
-      description: 'Connect with WalletConnect',
-      icon: <Link2 className="w-6 h-6" aria-hidden="true" />,
-      color: 'bg-blue-500',
-    },
-  ].sort((a, b) => {
-    // Sort installed wallets to top
-    const aInstalled = installedWallets.has(a.id);
-    const bInstalled = installedWallets.has(b.id);
-    
-    if (aInstalled && !bInstalled) return -1;
-    if (!aInstalled && bInstalled) return 1;
-    return 0;
-  });
+  // The sorted list is rebuilt only when the set of detected wallets changes,
+  // rather than on every render of the modal.
+  const wallets = useMemo(
+    () =>
+      [...WALLET_OPTIONS].sort((a, b) => {
+        // Sort installed wallets to top
+        const aInstalled = installedWallets.has(a.id);
+        const bInstalled = installedWallets.has(b.id);
+
+        if (aInstalled && !bInstalled) return -1;
+        if (!aInstalled && bInstalled) return 1;
+        return 0;
+      }),
+    [installedWallets]
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
