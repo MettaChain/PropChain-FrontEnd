@@ -7,6 +7,7 @@ import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { SearchHistoryDropdown } from './search/SearchHistoryDropdown';
 import type { AutocompleteResult } from '@/types/property';
 import { logger } from '@/utils/logger';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
 
 interface PropertySearchProps {
   value: string;
@@ -191,6 +192,8 @@ const PropertySearchInner = ({
               <div className="inline-block w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
               <span className="ml-2">Searching...</span>
             </div>
+          ) : suggestions.length === 0 && debouncedValue.trim().length >= 2 ? (
+            <SearchEmptyState query={debouncedValue.trim()} />
           ) : (
             <div className="py-2">
               {suggestions.map((suggestion, index) => (
@@ -236,7 +239,14 @@ const PropertySearchInner = ({
 };
 
 /**
- * Memoized so parent re-renders that pass an unchanged `value`, `onChange` and
- * `placeholder` skip re-rendering the search box and its suggestion list.
+ * Public entry point for the property search box.
+ *
+ * The search input and its autocomplete dropdown render behind an error
+ * boundary so a failure while querying or rendering suggestions falls back to
+ * a retryable panel instead of blanking the surrounding search page.
  */
-export const PropertySearch = memo(PropertySearchInner);
+export const PropertySearch = (props: PropertySearchProps) => (
+  <ErrorBoundary>
+    <PropertySearchInner {...props} />
+  </ErrorBoundary>
+);

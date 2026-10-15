@@ -1,4 +1,5 @@
-import React from 'react';
+'use client';
+import React, { useMemo } from 'react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,20 +17,39 @@ import {
 } from '@/types/propertyDetail';
 import { ImageGallery } from './property/ImageGallery';
 import { CurrencyToggle } from './property/CurrencyToggle';
+import { ErrorBoundary } from './ui/SimpleErrorBoundary';
 import dynamic from 'next/dynamic';
 const MortgageCalculator = dynamic(() => import('./MortgageCalculator').then(m => ({ default: m.MortgageCalculator })));
 
 export type { PropertyDetailServerProps } from '@/types/propertyDetail';
 
 export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ property }) => {
-  const locationDisplay = formatPropertyLocation(property.location);
-  const tokenAvailability = formatTokenAvailability(property.tokenInfo);
-  const priceValues = getPropertyPriceValues(property.price);
-  const metricsSummary = getPropertyMetricsSummary(property.metrics);
-  const calculatorDefaults = getCalculatorDefaults(property);
+  // Each derived value is recomputed only when the slice of the property it
+  // depends on changes, rather than on every render of the detail view.
+  const locationDisplay = useMemo(
+    () => formatPropertyLocation(property.location),
+    [property.location]
+  );
+  const tokenAvailability = useMemo(
+    () => formatTokenAvailability(property.tokenInfo),
+    [property.tokenInfo]
+  );
+  const priceValues = useMemo(() => getPropertyPriceValues(property.price), [property.price]);
+  const metricsSummary = useMemo(
+    () => getPropertyMetricsSummary(property.metrics),
+    [property.metrics]
+  );
+  const calculatorDefaults = useMemo(() => getCalculatorDefaults(property), [property]);
 
   return (
     <div className="space-y-8">
+      <a
+        href="#calculator"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-blue-600 focus:px-4 focus:py-2 focus:font-medium focus:text-white"
+      >
+        Skip to mortgage calculator
+      </a>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <div className="relative">
@@ -138,9 +158,17 @@ export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ prop
               <CardTitle>About this Property</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                {property.description}
-              </p>
+              {property.description?.trim() ? (
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {property.description}
+                </p>
+              ) : (
+                <EmptyState
+                  variant="data"
+                  title="No description available"
+                  description="The seller has not added a description for this property yet. Use the investment details and calculator below to review the listing."
+                />
+              )}
             </CardContent>
           </Card>
 
@@ -247,7 +275,7 @@ export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ prop
         </div>
       </div>
 
-      <div id="calculator" className="mt-12">
+      <div id="calculator" tabIndex={-1} aria-label="Mortgage calculator" className="mt-12">
         <MortgageCalculator 
           propertyPrice={calculatorDefaults.propertyPrice} 
           defaultYield={calculatorDefaults.defaultYield} 
@@ -256,3 +284,16 @@ export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ prop
     </div>
   );
 };
+
+/**
+ * Public entry point for the property detail view.
+ *
+ * The view renders behind an error boundary so a failure while rendering the
+ * gallery, investment cards or calculator falls back to a retryable panel
+ * instead of taking down the whole detail route.
+ */
+export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ property }) => (
+  <ErrorBoundary>
+    <PropertyDetailServerInner property={property} />
+  </ErrorBoundary>
+);

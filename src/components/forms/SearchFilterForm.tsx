@@ -25,6 +25,7 @@ import {
   type BlockchainNetwork,
 } from "@/types/property"
 import { useDebounce } from "@/hooks/useDebounce"
+import { ErrorBoundary } from "@/components/ui/SimpleErrorBoundary"
 
 interface SearchFilterFormProps {
   filters: SearchFilters
@@ -62,7 +63,7 @@ const filtersToFormValues = (filters: SearchFilters): SearchFilterFormValues => 
   status: filters.status,
 })
 
-export function SearchFilterForm({ filters, onApplyFilters, onClearFilters }: SearchFilterFormProps) {
+function SearchFilterFormInner({ filters, onApplyFilters, onClearFilters }: SearchFilterFormProps) {
   const form = useForm<SearchFilterFormValues>({
     resolver: zodResolver(searchFilterSchema),
     defaultValues: filtersToFormValues(filters),
@@ -378,5 +379,20 @@ export function SearchFilterForm({ filters, onApplyFilters, onClearFilters }: Se
         </div>
       </div>
     </Form>
+  )
+}
+
+/**
+ * FiltersPanel entry point.
+ *
+ * The form renders behind an error boundary so a failure in form state or a
+ * filter control degrades to a retryable fallback instead of taking down the
+ * whole search page.
+ */
+export function SearchFilterForm(props: SearchFilterFormProps) {
+  return (
+    <ErrorBoundary>
+      <SearchFilterFormInner {...props} />
+    </ErrorBoundary>
   )
 }
