@@ -30,6 +30,13 @@ export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ prop
 
   return (
     <div className="space-y-8">
+      <a
+        href="#calculator"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-blue-600 focus:px-4 focus:py-2 focus:font-medium focus:text-white"
+      >
+        Skip to mortgage calculator
+      </a>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <div className="relative">
@@ -247,7 +254,7 @@ export const PropertyDetailServer: React.FC<PropertyDetailServerProps> = ({ prop
         </div>
       </div>
 
-      <div id="calculator" className="mt-12">
+      <div id="calculator" tabIndex={-1} aria-label="Mortgage calculator" className="mt-12">
         <MortgageCalculator 
           propertyPrice={calculatorDefaults.propertyPrice} 
           defaultYield={calculatorDefaults.defaultYield} 
