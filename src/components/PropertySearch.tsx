@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useId } from 'react';
+import React, { useState, useRef, useEffect, useId, useMemo } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePropertyAutocompleteQuery } from '@/hooks/usePropertySearchQuery';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
@@ -13,6 +13,10 @@ interface PropertySearchProps {
   onChange: (value: string) => void;
   placeholder?: string;
 }
+
+// Stable empty list so the default value does not allocate a new array on
+// every render while the autocomplete query has no data yet.
+const EMPTY_SUGGESTIONS: AutocompleteResult[] = [];
 
 export const PropertySearch = ({
   value,
@@ -31,7 +35,7 @@ export const PropertySearch = ({
   const debouncedValue = useDebounce(value, 300);
 
   // Use React Query for autocomplete suggestions
-  const { data: suggestions = [], isLoading } = usePropertyAutocompleteQuery(debouncedValue);
+  const { data: suggestions = EMPTY_SUGGESTIONS, isLoading } = usePropertyAutocompleteQuery(debouncedValue);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -112,8 +116,14 @@ export const PropertySearch = ({
     inputRef.current?.focus();
   };
 
-  const showDropdown = isFocused && (suggestions.length > 0 || isLoading || showHistory);
-  const activeOptionId = selectedIndex >= 0 ? `${listboxId}-option-${selectedIndex}` : undefined;
+  const showDropdown = useMemo(
+    () => isFocused && (suggestions.length > 0 || isLoading || showHistory),
+    [isFocused, suggestions.length, isLoading, showHistory]
+  );
+  const activeOptionId = useMemo(
+    () => (selectedIndex >= 0 ? `${listboxId}-option-${selectedIndex}` : undefined),
+    [listboxId, selectedIndex]
+  );
   // Keep the input and suggestion list in sync for assistive technologies.
 
   return (
