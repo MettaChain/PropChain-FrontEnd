@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { ImageLightbox } from './ImageLightbox';
 import { ErrorBoundary } from '@/components/ui/SimpleErrorBoundary';
@@ -15,12 +15,62 @@ interface ImageGalleryProps {
  * failure in either used to take the whole property page down with it. The
  * boundary below keeps the failure inside the gallery, where it degrades to a
  * retryable fallback.
+ *
+ * Issue #1266 — the gallery sits inside the property detail view, which
+ * re-renders for reasons that have nothing to do with the images (the
+ * currency toggle, a parent state change, an analytics update). `React.memo`
+ * lets React skip the whole gallery when neither the image list nor the
+ * property name changed, so those re-renders no longer walk the thumbnail
+ * tree and re-create the `next/image` elements.
  */
-export const ImageGallery: React.FC<ImageGalleryProps> = (props) => (
-  <ErrorBoundary>
-    <ImageGalleryContent {...props} />
-  </ErrorBoundary>
-);
+export const ImageGallery = React.memo(function ImageGallery(props: ImageGalleryProps) {
+  return (
+    <ErrorBoundary>
+      <ImageGalleryContent {...props} />
+    </ErrorBoundary>
+  );
+});
+
+interface GalleryThumbnailProps {
+  image: string;
+  alt: string;
+  index: number;
+  onOpen: (index: number) => void;
+}
+
+/**
+ * Issue #1266 — a thumbnail only depends on its own image, its alt text and
+ * the (stable) open handler, so it is memoized on its own: a re-render of the
+ * gallery that leaves a thumbnail's props alone no longer re-renders it.
+ */
+const GalleryThumbnail = React.memo(function GalleryThumbnail({
+  image,
+  alt,
+  index,
+  onOpen,
+}: GalleryThumbnailProps) {
+  return (
+    <div
+      className="relative rounded-lg overflow-hidden cursor-pointer group"
+      onClick={() => onOpen(index)}
+    >
+      <Image
+        src={image}
+        alt={alt}
+        width={200}
+        height={150}
+        className="w-full h-24 object-cover transition-transform duration-300 group-hover:scale-110"
+      />
+
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
+        <svg className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+        </svg>
+      </div>
+    </div>
+  );
+});
 
 const ImageGalleryContent: React.FC<ImageGalleryProps> = ({ 
   images, 
@@ -32,15 +82,25 @@ const ImageGalleryContent: React.FC<ImageGalleryProps> = ({
   // image until the browser reports it has loaded.
   const [mainImageLoaded, setMainImageLoaded] = useState(false);
 
-  const openLightbox = (index: number) => {
+  const openLightbox = useCallback((index: number) => {
     setLightboxIndex(index);
-  };
+  }, []);
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
     setLightboxIndex(null);
-  };
+  }, []);
 
-  if (!images || images.length === 0) {
+  // Issue #1266 — everything below is derived from the image list. It used to
+  // be recomputed on every render, which allocated a new array and rebuilt
+  // the thumbnail elements even when the images had not changed. The list is
+  // normalised once so a missing `images` prop still renders the empty state
+  // instead of throwing.
+  const imageList = useMemo(() => (Array.isArray(images) ? images : []), [images]);
+  const thumbnails = useMemo(() => imageList.slice(1, 5), [imageList]);
+  const remainingImageCount = useMemo(() => Math.max(0, imageList.length - 5), [imageList]);
+  const hasThumbnails = imageList.length > 1;
+
+  if (imageList.length === 0) {
     return (
       <div className="relative rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700 h-[400px] flex items-center justify-center">
         <div className="text-center">
@@ -59,7 +119,7 @@ const ImageGalleryContent: React.FC<ImageGalleryProps> = ({
         {/* Main Image */}
         <div className="relative rounded-xl overflow-hidden cursor-pointer group">
           <Image
-            src={images[0]}
+            src={imageList[0]}
             alt={propertyName}
             width={800}
             height={600}
@@ -80,46 +140,33 @@ const ImageGalleryContent: React.FC<ImageGalleryProps> = ({
           {/* Overlay with image count */}
           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
             <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
-              <p className="text-gray-900 font-medium">Click to view all {images.length} images</p>
+              <p className="text-gray-900 font-medium">Click to view all {imageList.length} images</p>
             </div>
           </div>
         </div>
 
         {/* Thumbnail Gallery */}
-        {images.length > 1 && (
+        {hasThumbnails && (
           <div className="grid grid-cols-4 gap-2">
-            {images.slice(1, 5).map((image, index) => {
+            {thumbnails.map((image, index) => {
               const actualIndex = index + 1;
               return (
-                <div 
-                  key={actualIndex} 
-                  className="relative rounded-lg overflow-hidden cursor-pointer group"
-                  onClick={() => openLightbox(actualIndex)}
-                >
-                  <Image
-                    src={image}
-                    alt={`${propertyName} - Image ${actualIndex + 1}`}
-                    width={200}
-                    height={150}
-                    className="w-full h-24 object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                  
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                    </svg>
-                  </div>
-                </div>
+                <GalleryThumbnail
+                  key={actualIndex}
+                  image={image}
+                  alt={`${propertyName} - Image ${actualIndex + 1}`}
+                  index={actualIndex}
+                  onOpen={openLightbox}
+                />
               );
             })}
             
             {/* Show more indicator if there are more than 5 images */}
-            {images.length > 5 && (
+            {remainingImageCount > 0 && (
               <div className="relative rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center cursor-pointer group">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-600 dark:text-gray-400 mb-1">
-                    +{images.length - 5}
+                    +{remainingImageCount}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-500">
                     more
@@ -134,7 +181,7 @@ const ImageGalleryContent: React.FC<ImageGalleryProps> = ({
 
       {/* Lightbox */}
       <ImageLightbox
-        images={images}
+        images={imageList}
         initialIndex={lightboxIndex || 0}
         isOpen={lightboxIndex !== null}
         onClose={closeLightbox}
