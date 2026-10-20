@@ -293,6 +293,33 @@
     "securityWarning": "Ne partagez que des URL de domaines PropChain de confiance",
     "ariaLabel": "Code QR pour le lien de la propriété"
   },
+  "gallery": {
+    "label": "Images de la propriété",
+    "noImages": "Aucune image disponible",
+    "noImagesDescription": "Cette propriété n'a pas encore de photos.",
+    "viewAll": "Cliquez pour voir les {{count}} images",
+    "viewAll_one": "Cliquez pour voir {{count}} image",
+    "moreImages": "+{{count}} de plus",
+    "imageAlt": "{{property}} - Image {{index}}",
+    "mainImageAlt": "{{property}}",
+    "defaultPropertyName": "Propriété",
+    "lightboxLabel": "Images de la propriété",
+    "lightboxImageAlt": "Image de la propriété {{index}}",
+    "thumbnailAlt": "Miniature {{index}}",
+    "closeLightbox": "Fermer la galerie",
+    "previousImage": "Image précédente",
+    "nextImage": "Image suivante",
+    "counter": "{{current}} / {{total}}",
+    "invalidImagesTitle": "Certaines images n'ont pas pu être affichées",
+    "imagesDropped": "{{count}} images ne sont pas affichées car une galerie contient au maximum {{max}} images.",
+    "issue": {
+      "notAString": "Une entrée d'image n'était pas une adresse textuelle.",
+      "empty": "Une entrée d'image avait une adresse vide.",
+      "invalidSource": "Une entrée d'image n'était pas une adresse http(s) ni un chemin de site valide.",
+      "duplicate": "La même adresse d'image apparaissait plusieurs fois."
+    },
+    "imagesDropped_one": "{{count}} image n'est pas affichée car une galerie contient au maximum {{max}} images."
+  },
   "networkSwitcher": {
     "selectNetwork": "Sélectionner le réseau",
     "switchingNetwork": "Changement de réseau..."

@@ -293,6 +293,33 @@
     "securityWarning": "شارك فقط روابط من نطاقات PropChain الموثوقة",
     "ariaLabel": "رمز QR لرابط العقار"
   },
+  "gallery": {
+    "label": "صور العقار",
+    "noImages": "لا توجد صور متاحة",
+    "noImagesDescription": "لا توجد صور لهذا العقار بعد.",
+    "viewAll": "انقر لعرض جميع الصور البالغة {{count}}",
+    "viewAll_one": "انقر لعرض صورة واحدة",
+    "moreImages": "+{{count}} إضافية",
+    "imageAlt": "{{property}} - صورة {{index}}",
+    "mainImageAlt": "{{property}}",
+    "defaultPropertyName": "العقار",
+    "lightboxLabel": "صور العقار",
+    "lightboxImageAlt": "صورة العقار {{index}}",
+    "thumbnailAlt": "صورة مصغّرة {{index}}",
+    "closeLightbox": "إغلاق معرض الصور",
+    "previousImage": "الصورة السابقة",
+    "nextImage": "الصورة التالية",
+    "counter": "{{current}} / {{total}}",
+    "invalidImagesTitle": "تعذّر عرض بعض الصور",
+    "imagesDropped": "لا يتم عرض {{count}} صورة لأن المعرض يحتوي على {{max}} صورة كحد أقصى.",
+    "issue": {
+      "notAString": "إحدى مدخلات الصور ليست عنوانًا نصيًا.",
+      "empty": "إحدى مدخلات الصور بعنوان فارغ.",
+      "invalidSource": "إحدى مدخلات الصور ليست عنوان http(s) أو مسارًا صالحًا داخل الموقع.",
+      "duplicate": "تكرّر عنوان الصورة نفسه أكثر من مرة."
+    },
+    "imagesDropped_one": "لا يتم عرض {{count}} صورة لأن المعرض يحتوي على {{max}} صورة كحد أقصى."
+  },
   "networkSwitcher": {
     "selectNetwork": "اختر الشبكة",
     "switchingNetwork": "جارٍ تبديل الشبكة..."

@@ -293,6 +293,33 @@
     "securityWarning": "Teilen Sie nur URLs von vertrauenswürdigen PropChain-Domains",
     "ariaLabel": "QR-Code für Immobilienlink"
   },
+  "gallery": {
+    "label": "Immobilienbilder",
+    "noImages": "Keine Bilder verfügbar",
+    "noImagesDescription": "Für diese Immobilie gibt es noch keine Fotos.",
+    "viewAll": "Klicken, um alle {{count}} Bilder anzuzeigen",
+    "viewAll_one": "Klicken, um {{count}} Bild anzuzeigen",
+    "moreImages": "+{{count}} weitere",
+    "imageAlt": "{{property}} - Bild {{index}}",
+    "mainImageAlt": "{{property}}",
+    "defaultPropertyName": "Immobilie",
+    "lightboxLabel": "Immobilienbilder",
+    "lightboxImageAlt": "Immobilienbild {{index}}",
+    "thumbnailAlt": "Vorschaubild {{index}}",
+    "closeLightbox": "Galerie schließen",
+    "previousImage": "Vorheriges Bild",
+    "nextImage": "Nächstes Bild",
+    "counter": "{{current}} / {{total}}",
+    "invalidImagesTitle": "Einige Bilder konnten nicht angezeigt werden",
+    "imagesDropped": "{{count}} Bilder werden nicht angezeigt, da eine Galerie höchstens {{max}} Bilder enthält.",
+    "issue": {
+      "notAString": "Ein Bild-Eintrag war keine Textadresse.",
+      "empty": "Ein Bild-Eintrag hatte eine leere Adresse.",
+      "invalidSource": "Ein Bild-Eintrag war weder eine gültige http(s)-Adresse noch ein gültiger Website-Pfad.",
+      "duplicate": "Dieselbe Bildadresse war mehrfach aufgeführt."
+    },
+    "imagesDropped_one": "{{count}} Bild wird nicht angezeigt, da eine Galerie höchstens {{max}} Bilder enthält."
+  },
   "networkSwitcher": {
     "selectNetwork": "Netzwerk auswählen",
     "switchingNetwork": "Netzwerk wird gewechselt..."

@@ -2,6 +2,9 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ImageGallery } from '../ImageGallery';
 import { ImageLightbox } from '../ImageLightbox';
+// Boots i18next with the real translations so the gallery renders its
+// translated strings instead of the raw translation keys.
+import '@/test/i18n';
 
 // Mock next/image to render a plain img so tests don't hit loader/hostname validation.
 // Strip next/image-only props (priority, sizes, fill) that are not valid img attributes.
