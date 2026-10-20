@@ -141,6 +141,7 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 - **[⚡ Lazy Loading](./docs/lazy-loading-system.md)** - Bundle-splitting and lazy-loading patterns
 - **[🔒 CSP & Security Headers](./docs/csp.md)** - Content Security Policy configuration
 - **[🛡️ Phishing Denylist](./docs/phishing-denylist.md)** - Suspicious-domain protections
+- **[💰 Investment Form](./docs/investment-form.md)** - Token purchase form, validation and accessibility
 
 ### Repository Structure
 
