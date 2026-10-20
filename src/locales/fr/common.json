@@ -24,6 +24,45 @@
     "upload": "Télécharger",
     "refresh": "Actualiser"
   },
+  "filters": {
+    "panelLabel": "Filtres des propriétés",
+    "searchProperties": "Rechercher des propriétés",
+    "searchQuery": "Requête de recherche",
+    "searchPlaceholder": "Rechercher des propriétés, des lieux...",
+    "searchDescription": "Saisissez au moins 2 caractères pour affiner les résultats. Appuyez sur Échap pour effacer.",
+    "minimumPrice": "Prix minimum",
+    "maximumPrice": "Prix maximum",
+    "minimumRoi": "ROI minimum",
+    "maximumRoi": "ROI maximum",
+    "location": "Emplacement",
+    "locationPlaceholder": "Ville, région ou quartier",
+    "noFiltersApplied": "Aucun filtre appliqué — affichage des résultats par défaut.",
+    "clearFilters": "Effacer les filtres",
+    "filterSettings": "Paramètres des filtres",
+    "propertyType": "Type de propriété",
+    "blockchain": "Blockchain",
+    "bedrooms": "Chambres",
+    "bathrooms": "Salles de bain",
+    "minimumSquareFeet": "Surface minimale (pi²)",
+    "maximumSquareFeet": "Surface maximale (pi²)",
+    "status": "Statut",
+    "propertyTypes": {
+      "residential": "Résidentiel",
+      "commercial": "Commercial",
+      "industrial": "Industriel",
+      "mixed-use": "Usage mixte"
+    },
+    "blockchains": {
+      "ethereum": "Ethereum",
+      "polygon": "Polygon",
+      "bsc": "Binance Smart Chain"
+    },
+    "statuses": {
+      "active": "Active",
+      "sold": "Vendue",
+      "pending": "En attente"
+    }
+  },
   "navigation": {
     "home": "Accueil",
     "properties": "Propriétés",

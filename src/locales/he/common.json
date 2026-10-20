@@ -24,6 +24,45 @@
     "upload": "העלאה",
     "refresh": "רענון"
   },
+  "filters": {
+    "panelLabel": "מסנני נכסים",
+    "searchProperties": "חיפוש נכסים",
+    "searchQuery": "שאילתת חיפוש",
+    "searchPlaceholder": "חיפוש נכסים ומיקומים...",
+    "searchDescription": "יש להקליד לפחות 2 תווים כדי לצמצם תוצאות. יש ללחוץ על Escape כדי לנקות.",
+    "minimumPrice": "מחיר מינימלי",
+    "maximumPrice": "מחיר מקסימלי",
+    "minimumRoi": "תשואה מינימלית",
+    "maximumRoi": "תשואה מקסימלית",
+    "location": "מיקום",
+    "locationPlaceholder": "עיר, מחוז או שכונה",
+    "noFiltersApplied": "לא הוחלו מסננים — מוצגות תוצאות ברירת המחדל.",
+    "clearFilters": "ניקוי המסננים",
+    "filterSettings": "הגדרות מסננים",
+    "propertyType": "סוג נכס",
+    "blockchain": "בלוקצ'יין",
+    "bedrooms": "חדרי שינה",
+    "bathrooms": "חדרי רחצה",
+    "minimumSquareFeet": "שטח מינימלי (רגל רבועה)",
+    "maximumSquareFeet": "שטח מקסימלי (רגל רבועה)",
+    "status": "סטטוס",
+    "propertyTypes": {
+      "residential": "מגורים",
+      "commercial": "מסחרי",
+      "industrial": "תעשייתי",
+      "mixed-use": "שימוש מעורב"
+    },
+    "blockchains": {
+      "ethereum": "Ethereum",
+      "polygon": "Polygon",
+      "bsc": "Binance Smart Chain"
+    },
+    "statuses": {
+      "active": "פעיל",
+      "sold": "נמכר",
+      "pending": "ממתין"
+    }
+  },
   "navigation": {
     "home": "בית",
     "properties": "נכסים",
