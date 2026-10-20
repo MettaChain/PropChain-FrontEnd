@@ -87,6 +87,40 @@ describe('SearchFilterForm emitting', () => {
     expect(lastEmitted(onApplyFilters).propertyTypes).toEqual([]);
   });
 
+  it('shows range validation errors and does not emit invalid filters', async () => {
+    const user = userEvent.setup();
+    const { onApplyFilters } = renderPanel();
+    await waitFor(() => expect(onApplyFilters).toHaveBeenCalledTimes(1));
+
+    const maxPrice = screen.getByLabelText('Max price');
+    await user.clear(maxPrice);
+    await user.type(maxPrice, '100');
+    await waitFor(() => expect(lastEmitted(onApplyFilters).priceRange[1]).toBe(100));
+    onApplyFilters.mockClear();
+
+    const minPrice = screen.getByLabelText('Min price');
+    await user.clear(minPrice);
+    await user.type(minPrice, '200');
+
+    expect(
+      await screen.findByText('Maximum price must be greater than or equal to minimum price.'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Max price')).toHaveAttribute('aria-invalid', 'true');
+    expect(onApplyFilters).not.toHaveBeenCalled();
+  });
+
+  it('shows field validation errors for invalid numeric values', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    const minRoi = screen.getByLabelText('Min ROI');
+    await user.clear(minRoi);
+    await user.type(minRoi, '101');
+
+    expect(await screen.findByText('Minimum ROI cannot exceed 100%.')).toBeInTheDocument();
+    expect(minRoi).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('debounces the search query', async () => {
     jest.useFakeTimers();
     try {

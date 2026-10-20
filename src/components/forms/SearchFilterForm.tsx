@@ -2,13 +2,14 @@
 
 import React, { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, useController, useFormContext, useWatch } from "react-hook-form"
+import { useForm, useFormContext, useWatch } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Form,
   FormControl,
   FormDescription,
+  FormField,
   FormItem,
   FormLabel,
   FormMessage,
@@ -120,7 +121,7 @@ interface CheckboxGroupFieldProps {
  * One multi-select filter rendered as a single tab stop (roving tabindex).
  * Arrow keys move between options, Home/End jump to the ends, Space toggles.
  *
- * It subscribes to its own field via `useController`, so toggling an option
+ * It subscribes to its own field via `FormField`, so toggling an option
  * re-renders this group only, not the rest of the panel.
  */
 const CheckboxGroupField = memo(function CheckboxGroupField({
@@ -131,8 +132,6 @@ const CheckboxGroupField = memo(function CheckboxGroupField({
 }: CheckboxGroupFieldProps) {
   const labelId = useId()
   const { control } = useFormContext<SearchFilterFormValues>()
-  const { field } = useController({ control, name })
-  const selected = field.value as Array<string | number>
   const [activeIndex, setActiveIndex] = useState(0)
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([])
 
@@ -146,36 +145,144 @@ const CheckboxGroupField = memo(function CheckboxGroupField({
   }
 
   return (
-    <FormItem>
-      <FormLabel id={labelId}>{label}</FormLabel>
-      <div role="group" aria-labelledby={labelId} className={className}>
-        {options.map((option, index) => (
-          <label
-            key={option.value}
-            className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
-          >
-            <Checkbox
-              ref={(node) => {
-                itemRefs.current[index] = node
-              }}
-              value={String(option.value)}
-              tabIndex={index === activeIndex ? 0 : -1}
-              checked={selected.includes(option.value)}
-              onFocus={() => setActiveIndex(index)}
-              onKeyDown={(event) => handleKeyDown(event, index)}
-              onCheckedChange={(checked) => {
-                const next = checked
-                  ? [...selected, option.value]
-                  : selected.filter((value) => value !== option.value)
-                field.onChange(next)
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => {
+        const selected = field.value as Array<string | number>
+
+        return (
+          <FormItem>
+            <FormLabel id={labelId}>{label}</FormLabel>
+            <div role="group" aria-labelledby={labelId} className={className}>
+              {options.map((option, index) => (
+                <label
+                  key={option.value}
+                  className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  <Checkbox
+                    ref={(node) => {
+                      itemRefs.current[index] = node
+                    }}
+                    value={String(option.value)}
+                    tabIndex={index === activeIndex ? 0 : -1}
+                    checked={selected.includes(option.value)}
+                    onFocus={() => setActiveIndex(index)}
+                    onKeyDown={(event) => handleKeyDown(event, index)}
+                    onCheckedChange={(checked) => {
+                      const next = checked
+                        ? [...selected, option.value]
+                        : selected.filter((value) => value !== option.value)
+                      field.onChange(next)
+                    }}
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
+  )
+})
+
+type TextFilterName = "query" | "location"
+type NumberFilterName =
+  | "priceMin"
+  | "priceMax"
+  | "roiMin"
+  | "roiMax"
+  | "squareFeetMin"
+  | "squareFeetMax"
+
+interface TextFilterFieldProps {
+  name: TextFilterName
+  label: string
+  placeholder?: string
+  description?: string
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>
+}
+
+const TextFilterField = memo(function TextFilterField({
+  name,
+  label,
+  placeholder,
+  description,
+  onKeyDown,
+}: TextFilterFieldProps) {
+  const { control } = useFormContext<SearchFilterFormValues>()
+
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              value={field.value ?? ""}
+              placeholder={placeholder}
+              onKeyDown={onKeyDown}
+            />
+          </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+})
+
+interface NumberFilterFieldProps {
+  name: NumberFilterName
+  label: string
+  min: number
+  max?: number
+  step: number
+  dependsOn?: NumberFilterName
+}
+
+const NumberFilterField = memo(function NumberFilterField({
+  name,
+  label,
+  min,
+  max,
+  step,
+  dependsOn,
+}: NumberFilterFieldProps) {
+  const { control } = useFormContext<SearchFilterFormValues>()
+
+  return (
+    <FormField
+      control={control}
+      name={name}
+      rules={dependsOn ? { deps: dependsOn } : undefined}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              min={min}
+              max={max}
+              step={step}
+              name={field.name}
+              ref={field.ref}
+              onBlur={field.onBlur}
+              value={Number.isNaN(field.value) ? "" : field.value}
+              onChange={(event) => {
+                field.onChange(event.target.value === "" ? Number.NaN : event.target.valueAsNumber)
               }}
             />
-            {option.label}
-          </label>
-        ))}
-      </div>
-      <FormMessage />
-    </FormItem>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   )
 })
 
@@ -188,15 +295,15 @@ function FilterAutoApply({ onApply }: { onApply: (filters: SearchFilters) => voi
   const { control } = useFormContext<SearchFilterFormValues>()
   const values = useWatch({ control }) as SearchFilterFormValues
   const debouncedQuery = useDebounce(values.query, QUERY_DEBOUNCE_MS)
-
-  const filters = useMemo(
-    () => valueToFilters({ ...values, query: debouncedQuery }),
+  const validation = useMemo(
+    () => searchFilterSchema.safeParse({ ...values, query: debouncedQuery }),
     [values, debouncedQuery],
   )
 
   useEffect(() => {
-    onApply(filters)
-  }, [filters, onApply])
+    if (!validation.success) return
+    onApply(valueToFilters(validation.data))
+  }, [validation, onApply])
 
   return null
 }
@@ -255,84 +362,42 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
         <div className="space-y-6">
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Search Properties</h2>
-            <FormItem>
-              <FormLabel>Search query</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Search properties, locations..."
-                  onKeyDown={handleQueryKeyDown}
-                  {...form.register("query")}
-                />
-              </FormControl>
-              <FormDescription>
-                Type at least 2 characters to narrow down results. Press Escape to clear.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
+            <TextFilterField
+              name="query"
+              label="Search query"
+              placeholder="Search properties, locations..."
+              description="Type at least 2 characters to narrow down results. Press Escape to clear."
+              onKeyDown={handleQueryKeyDown}
+            />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormItem>
-                <FormLabel>Min price</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={1000}
-                    {...form.register("priceMin", { valueAsNumber: true })}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-              <FormItem>
-                <FormLabel>Max price</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={1000}
-                    {...form.register("priceMax", { valueAsNumber: true })}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+              <NumberFilterField name="priceMin" label="Min price" min={0} step={1000} />
+              <NumberFilterField
+                name="priceMax"
+                label="Max price"
+                min={0}
+                step={1000}
+                dependsOn="priceMin"
+              />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormItem>
-                <FormLabel>Min ROI</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={1}
-                    {...form.register("roiMin", { valueAsNumber: true })}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-              <FormItem>
-                <FormLabel>Max ROI</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={1}
-                    {...form.register("roiMax", { valueAsNumber: true })}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+              <NumberFilterField name="roiMin" label="Min ROI" min={0} max={100} step={1} />
+              <NumberFilterField
+                name="roiMax"
+                label="Max ROI"
+                min={0}
+                max={100}
+                step={1}
+                dependsOn="roiMin"
+              />
             </div>
 
-            <FormItem>
-              <FormLabel>Location</FormLabel>
-              <FormControl>
-                <Input placeholder="City, state or neighborhood" {...form.register("location")} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+            <TextFilterField
+              name="location"
+              label="Location"
+              placeholder="City, state or neighborhood"
+            />
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -362,30 +427,19 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormItem>
-                <FormLabel>Min square feet</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={50}
-                    {...form.register("squareFeetMin", { valueAsNumber: true })}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-              <FormItem>
-                <FormLabel>Max square feet</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={50}
-                    {...form.register("squareFeetMax", { valueAsNumber: true })}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+              <NumberFilterField
+                name="squareFeetMin"
+                label="Min square feet"
+                min={0}
+                step={50}
+              />
+              <NumberFilterField
+                name="squareFeetMax"
+                label="Max square feet"
+                min={0}
+                step={50}
+                dependsOn="squareFeetMin"
+              />
             </div>
 
             <CheckboxGroupField name="status" label="Status" options={STATUS_OPTIONS} />
