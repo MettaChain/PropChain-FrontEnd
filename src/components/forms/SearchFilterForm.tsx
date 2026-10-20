@@ -99,6 +99,35 @@ const filtersToFormValues = (filters: SearchFilters): SearchFilterFormValues => 
 
 const filtersKey = (filters: SearchFilters) => JSON.stringify(filters)
 
+/**
+ * Pushes an event onto the GA data layer (Issue #1227).
+ *
+ * The layer is only created when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set (see
+ * `src/lib/analyticsInit.ts`), so this is a no-op when analytics is off, and
+ * on the server there is no `window` at all.
+ *
+ * Only aggregate, non-identifying information is reported: which options are
+ * selected and how far each numeric range was narrowed. The search text and
+ * the location are left out on purpose — they are free text the user typed.
+ */
+function trackFiltersChanged(filters: SearchFilters): void {
+  if (typeof window === "undefined") return
+  window.dataLayer?.push([
+    "event",
+    "search_filters_changed",
+    {
+      reset_to_defaults: filtersKey(filters) === filtersKey(DEFAULT_FILTERS),
+      property_types: filters.propertyTypes,
+      blockchains: filters.blockchains,
+      bedrooms: filters.bedrooms,
+      bathrooms: filters.bathrooms,
+      status: filters.status,
+      price_range_narrowed: filters.priceRange[1] < DEFAULT_FILTERS.priceRange[1],
+      roi_range_narrowed: filters.roiMax < DEFAULT_FILTERS.roiMax,
+    },
+  ])
+}
+
 /** Keys that move focus within a checkbox group, mapped to the next index. */
 const NAVIGATION_KEYS: Record<string, (index: number, count: number) => number> = {
   ArrowDown: (index, count) => (index + 1) % count,
@@ -229,6 +258,9 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
       const key = filtersKey(next)
       if (key === lastSyncedKey.current) return
       lastSyncedKey.current = key
+      // Issue #1227 — the panel applies every change immediately, so this is
+      // the one place where an applied filter set is known.
+      trackFiltersChanged(next)
       onApplyFilters(next)
     },
     [onApplyFilters],
@@ -247,6 +279,13 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
     },
     [form],
   )
+
+  // Issue #1228 — the panel looked the same whether or not anything was
+  // filtered, and "Clear filters" was clickable even when there was nothing
+  // to clear. Both now reflect the empty state: the panel says that nothing
+  // has been narrowed down, and clearing is only offered when there is
+  // something to clear.
+  const hasActiveFilters = filtersKey(filters) !== filtersKey(DEFAULT_FILTERS)
 
   return (
     <Form {...form}>
@@ -335,8 +374,13 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
             </FormItem>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <Button type="button" variant="outline" onClick={handleClear}>
+          <div className="flex flex-wrap items-center gap-3">
+            {!hasActiveFilters && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No filters applied — showing the default results.
+              </p>
+            )}
+            <Button type="button" variant="outline" onClick={handleClear} disabled={!hasActiveFilters}>
               Clear filters
             </Button>
           </div>
