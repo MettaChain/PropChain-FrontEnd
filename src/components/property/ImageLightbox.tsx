@@ -9,6 +9,8 @@ interface ImageLightboxProps {
   initialIndex?: number;
   isOpen: boolean;
   onClose: () => void;
+  /** Optional analytics hook when the visible image changes (#1259). */
+  onNavigate?: (index: number, direction: 'next' | 'previous' | 'jump') => void;
 }
 
 export const ImageLightbox: React.FC<ImageLightboxProps> = ({
@@ -16,6 +18,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
   initialIndex = 0,
   isOpen,
   onClose,
+  onNavigate,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -45,6 +48,31 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
     };
   }, [isOpen]);
 
+  const navigateNext = useCallback(() => {
+    setCurrentIndex((prev) => {
+      const next = (prev + 1) % images.length;
+      onNavigate?.(next, 'next');
+      return next;
+    });
+  }, [images.length, onNavigate]);
+
+  const navigatePrevious = useCallback(() => {
+    setCurrentIndex((prev) => {
+      const next = (prev - 1 + images.length) % images.length;
+      onNavigate?.(next, 'previous');
+      return next;
+    });
+  }, [images.length, onNavigate]);
+
+  const handleThumbnailClick = useCallback(
+    (index: number) => {
+      setCurrentIndex(index);
+      onNavigate?.(index, 'jump');
+    },
+    [onNavigate],
+  );
+
+  if (!isOpen || images.length === 0) return null;
   // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
@@ -70,7 +98,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, currentIndex]);
+  }, [isOpen, navigateNext, navigatePrevious, onClose]);
 
   // Touch handlers for mobile swipe
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -95,21 +123,9 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
     if (isRightSwipe) {
       navigatePrevious();
     }
-  }, [touchStart, touchEnd]);
+  }, [touchStart, touchEnd, navigateNext, navigatePrevious]);
 
-  const navigateNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
 
-  const navigatePrevious = () => {
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const handleThumbnailClick = (index: number) => {
-    setCurrentIndex(index);
-  };
-
-  if (!isOpen || images.length === 0) return null;
 
   return (
     // Issue #1252 — `role="dialog"` + `aria-modal` tell assistive tech that
