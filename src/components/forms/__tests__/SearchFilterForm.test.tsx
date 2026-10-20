@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import {
   QUERY_DEBOUNCE_MS,
   SearchFilterForm,
+  type SearchFilterFormProps,
 } from '@/components/forms/SearchFilterForm';
 import i18n from '@/lib/i18n';
 import { DEFAULT_FILTERS, type SearchFilters } from '@/types/property';
@@ -35,6 +36,23 @@ const lastEmitted = (spy: jest.Mock) =>
   spy.mock.calls.at(-1)?.[0] as SearchFilters;
 
 describe('SearchFilterForm rendering', () => {
+  it('keeps the public filter callback aligned with the canonical filter types', () => {
+    const onApplyFilters: SearchFilterFormProps['onApplyFilters'] = (filters) => {
+      expect(filters.status).toEqual(['active']);
+      expect(filters.propertyTypes).toEqual([]);
+    };
+
+    onApplyFilters(DEFAULT_FILTERS);
+
+    const invalidFilters = {
+      ...DEFAULT_FILTERS,
+      // @ts-expect-error Status values must come from the canonical property status union.
+      status: ['available'],
+    } satisfies SearchFilters;
+
+    expect(invalidFilters.status).toEqual(['available']);
+  });
+
   it('exposes the panel as a labelled search landmark', () => {
     renderPanel();
     expect(

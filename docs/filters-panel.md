@@ -9,6 +9,14 @@ option names use the `filters` keys in the shared `common` namespace. The string
 are maintained for every supported locale in `src/locales/<locale>/common.json`;
 option values remain locale-independent in the emitted `SearchFilters` data.
 
+## Type contracts
+
+`SearchFilterFormProps` exposes the canonical `SearchFilters` input and callbacks.
+Form field names are derived from `SearchFilterFormValues` (inferred from
+`searchFilterSchema`), and checkbox option values are tied to the selected
+field's value type. This prevents unsupported status, property-type, blockchain,
+or numeric values from entering through a mismatched control.
+
 ```tsx
 <SearchFilterForm
   filters={filters}                 // current SearchFilters (e.g. from useSearchStore)
