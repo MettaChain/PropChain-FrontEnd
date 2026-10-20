@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -20,6 +20,8 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
   // Reset index when lightbox opens with new initialIndex
   useEffect(() => {
@@ -27,6 +29,21 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
       setCurrentIndex(initialIndex);
     }
   }, [initialIndex, isOpen]);
+
+  // Issue #1252 — the overlay was a plain div, so a screen reader had no way
+  // of knowing a dialog had opened, and focus stayed wherever it was behind
+  // the overlay. Focus now moves into the dialog and is handed back to the
+  // element that opened it.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+
+    return () => {
+      previouslyFocused.current?.focus?.();
+    };
+  }, [isOpen]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -95,11 +112,19 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
   if (!isOpen || images.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">
+    // Issue #1252 — `role="dialog"` + `aria-modal` tell assistive tech that
+    // the rest of the page is behind a modal, and the label names it.
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Property images"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black bg-opacity-90 p-2 sm:p-4"
+    >
       {/* Close Button */}
       <button
+        ref={closeButtonRef}
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        className="absolute right-2 top-2 z-10 rounded-full bg-white/10 p-1.5 transition-colors hover:bg-white/20 sm:right-4 sm:top-4 sm:p-2"
         aria-label="Close lightbox"
       >
         <X className="w-6 h-6 text-white" />
@@ -107,7 +132,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
 
       {/* Main Image Container */}
       <div 
-        className="relative max-w-7xl max-h-[80vh] mx-4"
+        className="relative mx-4 w-full max-w-7xl max-h-[70vh] sm:max-h-[80vh]"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -117,7 +142,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
           alt={`Property image ${currentIndex + 1}`}
           width={1200}
           height={800}
-          className="max-w-full max-h-[80vh] object-contain"
+          className="max-w-full max-h-[70vh] object-contain sm:max-h-[80vh]"
           priority
         />
 
@@ -126,14 +151,14 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
           <>
             <button
               onClick={navigatePrevious}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-1.5 transition-colors hover:bg-white/20 sm:left-4 sm:p-2"
               aria-label="Previous image"
             >
               <ChevronLeft className="w-6 h-6 text-white" />
             </button>
             <button
               onClick={navigateNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-1.5 transition-colors hover:bg-white/20 sm:right-4 sm:p-2"
               aria-label="Next image"
             >
               <ChevronRight className="w-6 h-6 text-white" />
@@ -142,21 +167,29 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
         )}
 
         {/* Image Counter */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+        {/* Issue #1252 — `aria-live` so the position is announced when it
+            changes. */}
+        <div
+          aria-live="polite"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-sm text-white"
+        >
           {currentIndex + 1} / {images.length}
         </div>
       </div>
 
       {/* Thumbnail Strip */}
       {images.length > 1 && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 max-w-[90vw] overflow-x-auto px-4">
+        <div className="absolute bottom-16 left-1/2 flex max-w-[92vw] -translate-x-1/2 gap-2 overflow-x-auto px-4 sm:bottom-20">
           {images.map((image, index) => (
             <button
               key={image}
               onClick={() => handleThumbnailClick(index)}
+              // Issue #1252 — `aria-current` marks the thumbnail that is
+              // currently shown.
+              aria-current={index === currentIndex ? "true" : undefined}
               className={`flex-shrink-0 relative rounded-lg overflow-hidden border-2 transition-all ${
                 index === currentIndex 
-                  ? 'border-blue-500 scale-110' 
+                  ? 'border-blue-500 scale-110 ' 
                   : 'border-transparent hover:border-white/50'
               }`}
             >
