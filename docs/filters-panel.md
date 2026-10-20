@@ -14,6 +14,7 @@
 
 - Checkbox and number changes are applied immediately.
 - The search query is debounced by `QUERY_DEBOUNCE_MS` (300 ms).
+- Numeric bounds, ROI limits, range ordering, and query/location lengths are validated by `searchFilterSchema`. Invalid values show an accessible field error and are not emitted until corrected.
 - `onApplyFilters` fires only when the emitted filters actually change. Re-rendering with equal `filters` does not emit again.
 - If the parent passes back the filters the panel just emitted, the form does not reset. A query you are still typing is kept when another filter round-trips through the store.
 - If the parent passes in filters that differ from the last ones emitted (URL sync, saved search, external reset), the form resets to them.
@@ -35,8 +36,8 @@ Each group (Property type, Blockchain, Bedrooms, Bathrooms, Status) is a `role="
 
 ## Re-render model
 
-- **Form body**: rendered once. Text and number inputs are uncontrolled (`register`), so typing does not re-render the panel.
-- **`FilterAutoApply`**: holds the `useWatch` subscription and the debounce, and renders nothing. A keystroke re-renders only this leaf.
+- **Form body**: scalar text and number inputs are isolated in memoized field components, so typing does not re-render the whole panel.
+- **`FilterAutoApply`**: holds the `useWatch` subscription, validates the current debounced values, and renders nothing. A keystroke re-renders this leaf and its isolated field component.
 - **`CheckboxGroupField`**: memoized, and subscribes to its own field with `useController`. Toggling an option re-renders only that group.
 - **Option lists**: module-level constants, so memoized groups never get new array props.
 - **`SearchFilterForm` / inner form**: wrapped in `React.memo`, so a parent re-render with the same props is skipped.
