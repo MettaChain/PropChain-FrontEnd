@@ -3,17 +3,34 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { ImageLightbox } from './ImageLightbox';
+import { ErrorBoundary } from '@/components/ui/SimpleErrorBoundary';
 
 interface ImageGalleryProps {
   images: string[];
   propertyName: string;
 }
 
-export const ImageGallery: React.FC<ImageGalleryProps> = ({ 
+/**
+ * Issue #1254 — the gallery renders the lightbox and a grid of thumbnails; a
+ * failure in either used to take the whole property page down with it. The
+ * boundary below keeps the failure inside the gallery, where it degrades to a
+ * retryable fallback.
+ */
+export const ImageGallery: React.FC<ImageGalleryProps> = (props) => (
+  <ErrorBoundary>
+    <ImageGalleryContent {...props} />
+  </ErrorBoundary>
+);
+
+const ImageGalleryContent: React.FC<ImageGalleryProps> = ({ 
   images, 
   propertyName 
 }) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  // Issue #1253 — the gallery had no loading state, so an image that was still
+  // being fetched left an empty grey box. The skeleton is drawn over the
+  // image until the browser reports it has loaded.
+  const [mainImageLoaded, setMainImageLoaded] = useState(false);
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -48,8 +65,18 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             height={600}
             className="w-full h-[400px] object-cover transition-transform duration-300 group-hover:scale-105"
             onClick={() => openLightbox(0)}
+            onLoad={() => setMainImageLoaded(true)}
           />
-          
+
+          {/* Issue #1253 — loading skeleton, drawn over the image until it has
+              loaded. It is decorative, so it is hidden from assistive tech. */}
+          {!mainImageLoaded && (
+            <div
+              className="absolute inset-0 animate-pulse bg-gray-200 dark:bg-gray-700"
+              aria-hidden="true"
+            />
+          )}
+           
           {/* Overlay with image count */}
           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
             <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
