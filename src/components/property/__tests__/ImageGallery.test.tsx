@@ -79,6 +79,8 @@ describe('ImageGallery', () => {
     render(<ImageGallery images={[]} propertyName="Sunset Villa" />);
 
     expect(screen.getByText('No images available')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('This property has no photos yet.');
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByAltText('Sunset Villa')).not.toBeInTheDocument();
   });
 

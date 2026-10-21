@@ -55,7 +55,7 @@ describe('ImageGallery integration (#1256–#1259)', () => {
 
   it('opens lightbox on main image click and tracks analytics', () => {
     render(<ImageGallery images={images} propertyName="Sky Villa" />);
-    fireEvent.click(screen.getByLabelText('View Sky Villa main image'));
+    fireEvent.click(screen.getByLabelText('View all 4 images of Sky Villa'));
     expect(trackMock).toHaveBeenCalledWith(
       'gallery_lightbox_open',
       expect.objectContaining({ imageIndex: 0, method: 'click' }),
@@ -65,7 +65,7 @@ describe('ImageGallery integration (#1256–#1259)', () => {
 
   it('supports keyboard navigation on the main image (Enter opens)', () => {
     render(<ImageGallery images={images} propertyName="Sky Villa" />);
-    const main = screen.getByLabelText('View Sky Villa main image');
+    const main = screen.getByLabelText('View all 4 images of Sky Villa');
     main.focus();
     fireEvent.keyDown(main, { key: 'Enter' });
     expect(trackMock).toHaveBeenCalledWith(
@@ -77,7 +77,7 @@ describe('ImageGallery integration (#1256–#1259)', () => {
 
   it('moves focus with arrow keys on the gallery grid', () => {
     render(<ImageGallery images={images} propertyName="Sky Villa" />);
-    const main = screen.getByLabelText('View Sky Villa main image');
+    const main = screen.getByLabelText('View all 4 images of Sky Villa');
     main.focus();
     fireEvent.keyDown(main, { key: 'ArrowRight' });
     expect(trackMock).toHaveBeenCalledWith(
@@ -88,7 +88,7 @@ describe('ImageGallery integration (#1256–#1259)', () => {
 
   it('closes lightbox with Escape and tracks close', () => {
     render(<ImageGallery images={images} propertyName="Sky Villa" />);
-    fireEvent.click(screen.getByLabelText('View Sky Villa main image'));
+    fireEvent.click(screen.getByLabelText('View all 4 images of Sky Villa'));
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(trackMock).toHaveBeenCalledWith(
       'gallery_lightbox_close',
