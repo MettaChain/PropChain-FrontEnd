@@ -390,7 +390,11 @@
       "invalidSource": "An image entry was not a valid http(s) address or site path.",
       "duplicate": "The same image address was listed more than once."
     },
-    "imagesDropped_one": "{{count}} image is not shown because a gallery holds at most {{max}} images."
+    "imagesDropped_one": "{{count}} image is not shown because a gallery holds at most {{max}} images.",
+    "mainImageButtonLabel": "View {{property}} main image",
+    "regionLabel": "{{property}} image gallery",
+    "thumbnailStripLabel": "Property image thumbnails",
+    "moreImagesLabel": "View {{count}} more images"
   },
   "networkSwitcher": {
     "selectNetwork": "Select Network",

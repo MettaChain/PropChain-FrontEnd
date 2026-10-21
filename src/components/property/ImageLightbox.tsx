@@ -10,6 +10,8 @@ interface ImageLightboxProps {
   initialIndex?: number;
   isOpen: boolean;
   onClose: () => void;
+  /** Optional analytics hook when the visible image changes (#1259). */
+  onNavigate?: (index: number, direction: 'next' | 'previous' | 'jump') => void;
 }
 
 /**
@@ -30,6 +32,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
   initialIndex = 0,
   isOpen,
   onClose,
+  onNavigate,
 }) => {
   const { t } = useTranslation('common');
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -71,6 +74,30 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
     };
   }, [isOpen]);
 
+  const navigateNext = useCallback(() => {
+    setCurrentIndex((prev) => {
+      const next = (prev + 1) % images.length;
+      onNavigate?.(next, 'next');
+      return next;
+    });
+  }, [images.length, onNavigate]);
+
+  const navigatePrevious = useCallback(() => {
+    setCurrentIndex((prev) => {
+      const next = (prev - 1 + images.length) % images.length;
+      onNavigate?.(next, 'previous');
+      return next;
+    });
+  }, [images.length, onNavigate]);
+
+  const handleThumbnailClick = useCallback(
+    (index: number) => {
+      setCurrentIndex(index);
+      onNavigate?.(index, 'jump');
+    },
+    [onNavigate],
+  );
+
   // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
@@ -96,7 +123,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, currentIndex]);
+  }, [isOpen, navigateNext, navigatePrevious, onClose]);
 
   // Touch handlers for mobile swipe
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -121,22 +148,10 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
     if (isRightSwipe) {
       navigatePrevious();
     }
-  }, [touchStart, touchEnd]);
+  }, [touchStart, touchEnd, navigateNext, navigatePrevious]);
 
-  const navigateNext = () => {
-    if (images.length === 0) return;
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const navigatePrevious = () => {
-    if (images.length === 0) return;
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const handleThumbnailClick = (index: number) => {
-    setCurrentIndex(index);
-  };
-
+  // Early return after every hook, so the hook order never changes when the
+  // lightbox opens or closes.
   if (!isOpen || images.length === 0) return null;
 
   return (

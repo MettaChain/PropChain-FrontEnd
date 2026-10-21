@@ -357,7 +357,11 @@
       "invalidSource": "某个图片条目不是有效的 http(s) 地址或站内路径。",
       "duplicate": "同一个图片地址出现了多次。"
     },
-    "imagesDropped_one": "最多只能显示 {{max}} 张图片，因此有 {{count}} 张图片未显示。"
+    "imagesDropped_one": "最多只能显示 {{max}} 张图片，因此有 {{count}} 张图片未显示。",
+    "mainImageButtonLabel": "查看{{property}}的主图",
+    "regionLabel": "{{property}}图片库",
+    "thumbnailStripLabel": "房产图片缩略图",
+    "moreImagesLabel": "查看另外{{count}}张图片"
   },
   "networkSwitcher": {
     "selectNetwork": "选择网络",

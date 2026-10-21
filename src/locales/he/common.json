@@ -357,7 +357,11 @@
       "invalidSource": "רשומת תמונה אחת אינה כתובת http(s) תקינה או נתיב תקין באתר.",
       "duplicate": "אותה כתובת תמונה הופיעה יותר מפעם אחת."
     },
-    "imagesDropped_one": "תמונה אחת אינה מוצגת מכיוון שגלריה מכילה {{max}} תמונות לכל היותר."
+    "imagesDropped_one": "תמונה אחת אינה מוצגת מכיוון שגלריה מכילה {{max}} תמונות לכל היותר.",
+    "mainImageButtonLabel": "הצג את התמונה הראשית של {{property}}",
+    "regionLabel": "גלריית התמונות של {{property}}",
+    "thumbnailStripLabel": "תמונות ממוזערות של הנכס",
+    "moreImagesLabel": "הצג עוד {{count}} תמונות"
   },
   "networkSwitcher": {
     "selectNetwork": "בחר רשת",

@@ -357,7 +357,11 @@
       "invalidSource": "Una entrada de imagen no era una dirección http(s) ni una ruta del sitio válida.",
       "duplicate": "La misma dirección de imagen aparecía más de una vez."
     },
-    "imagesDropped_one": "{{count}} imagen no se muestra porque una galería contiene como máximo {{max}} imágenes."
+    "imagesDropped_one": "{{count}} imagen no se muestra porque una galería contiene como máximo {{max}} imágenes.",
+    "mainImageButtonLabel": "Ver la imagen principal de {{property}}",
+    "regionLabel": "Galería de imágenes de {{property}}",
+    "thumbnailStripLabel": "Miniaturas de las imágenes de la propiedad",
+    "moreImagesLabel": "Ver {{count}} imágenes más"
   },
   "networkSwitcher": {
     "selectNetwork": "Seleccionar red",

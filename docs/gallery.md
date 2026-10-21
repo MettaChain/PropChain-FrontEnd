@@ -84,3 +84,15 @@ and Hebrew — still resolve to a sentence instead of a raw key.
 - `src/components/property/__tests__/ImageGallery.i18n.test.tsx`: the translated
   strings, the plural forms and the key parity between the languages.
 - `src/lib/__tests__/galleryValidation.test.ts`: the validation rules themselves.
+
+## Issues #1256–#1259
+
+| Issue | Behavior |
+| --- | --- |
+| #1259 Analytics | `trackGalleryEvent` → gtag + `dataLayer` (`gallery_view`, open/close/navigate, keyboard) |
+| #1258 Keyboard | Arrow/Home/End focus movement on the main image and thumbnails; Enter/Space opens the lightbox; the lightbox already supports ←/→/Esc |
+| #1257 Re-renders | `memo` on the gallery shells; `useCallback` / `useMemo` for handlers and thumbnail list |
+| #1256 Tests | `ImageGallery.integration.test.tsx`, `galleryAnalytics.test.ts` |
+
+Analytics payloads include optional `propertyName`, `imageIndex`, `imageCount`,
+`direction` and `method`.

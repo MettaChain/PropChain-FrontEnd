@@ -357,7 +357,11 @@
       "invalidSource": "إحدى مدخلات الصور ليست عنوان http(s) أو مسارًا صالحًا داخل الموقع.",
       "duplicate": "تكرّر عنوان الصورة نفسه أكثر من مرة."
     },
-    "imagesDropped_one": "لا يتم عرض {{count}} صورة لأن المعرض يحتوي على {{max}} صورة كحد أقصى."
+    "imagesDropped_one": "لا يتم عرض {{count}} صورة لأن المعرض يحتوي على {{max}} صورة كحد أقصى.",
+    "mainImageButtonLabel": "عرض الصورة الرئيسية لـ{{property}}",
+    "regionLabel": "معرض صور {{property}}",
+    "thumbnailStripLabel": "صور مصغرة لصور العقار",
+    "moreImagesLabel": "عرض {{count}} صور أخرى"
   },
   "networkSwitcher": {
     "selectNetwork": "اختر الشبكة",

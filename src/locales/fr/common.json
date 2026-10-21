@@ -357,7 +357,11 @@
       "invalidSource": "Une entrée d'image n'était pas une adresse http(s) ni un chemin de site valide.",
       "duplicate": "La même adresse d'image apparaissait plusieurs fois."
     },
-    "imagesDropped_one": "{{count}} image n'est pas affichée car une galerie contient au maximum {{max}} images."
+    "imagesDropped_one": "{{count}} image n'est pas affichée car une galerie contient au maximum {{max}} images.",
+    "mainImageButtonLabel": "Voir l'image principale de {{property}}",
+    "regionLabel": "Galerie d'images de {{property}}",
+    "thumbnailStripLabel": "Miniatures des images du bien",
+    "moreImagesLabel": "Voir {{count}} images de plus"
   },
   "networkSwitcher": {
     "selectNetwork": "Sélectionner le réseau",

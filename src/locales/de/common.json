@@ -357,7 +357,11 @@
       "invalidSource": "Ein Bild-Eintrag war weder eine gültige http(s)-Adresse noch ein gültiger Website-Pfad.",
       "duplicate": "Dieselbe Bildadresse war mehrfach aufgeführt."
     },
-    "imagesDropped_one": "{{count}} Bild wird nicht angezeigt, da eine Galerie höchstens {{max}} Bilder enthält."
+    "imagesDropped_one": "{{count}} Bild wird nicht angezeigt, da eine Galerie höchstens {{max}} Bilder enthält.",
+    "mainImageButtonLabel": "Hauptbild von {{property}} ansehen",
+    "regionLabel": "Bildergalerie für {{property}}",
+    "thumbnailStripLabel": "Miniaturen der Immobilienbilder",
+    "moreImagesLabel": "{{count}} weitere Bilder ansehen"
   },
   "networkSwitcher": {
     "selectNetwork": "Netzwerk auswählen",
