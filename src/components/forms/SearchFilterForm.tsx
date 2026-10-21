@@ -27,7 +27,7 @@ import {
 import { useDebounce } from "@/hooks/useDebounce"
 import { ErrorBoundary } from "@/components/ui/SimpleErrorBoundary"
 
-interface SearchFilterFormProps {
+export interface SearchFilterFormProps {
   filters: SearchFilters
   onApplyFilters: (filters: SearchFilters) => void
   onClearFilters: () => void
@@ -35,21 +35,35 @@ interface SearchFilterFormProps {
 
 export const QUERY_DEBOUNCE_MS = 300
 
-type CheckboxGroupFieldName = "propertyTypes" | "blockchains" | "bedrooms" | "bathrooms" | "status"
+type FieldsWithValue<Value> = {
+  [Name in keyof SearchFilterFormValues]-?: NonNullable<
+    SearchFilterFormValues[Name]
+  > extends Value
+    ? Name
+    : never
+}[keyof SearchFilterFormValues]
 
-interface CheckboxOption {
-  value: string | number
+type TextFilterName = FieldsWithValue<string>
+type NumberFilterName = FieldsWithValue<number>
+type CheckboxGroupFieldName = FieldsWithValue<readonly (string | number)[]>
+type CheckboxOptionValue<Name extends CheckboxGroupFieldName> =
+  NonNullable<SearchFilterFormValues[Name]> extends readonly (infer Value)[]
+    ? Extract<Value, string | number>
+    : never
+
+interface CheckboxOption<Value extends string | number> {
+  value: Value
   label: string
 }
 
 // Option lists are module-level so their identity is stable and the memoized
 // checkbox groups below never re-render because of a fresh array prop.
-const BEDROOM_OPTIONS: readonly CheckboxOption[] = [1, 2, 3, 4, 5].map((num) => ({
+const BEDROOM_OPTIONS: readonly CheckboxOption<number>[] = [1, 2, 3, 4, 5].map((num) => ({
   value: num,
   label: `${num}+`,
 }))
 
-const BATHROOM_OPTIONS: readonly CheckboxOption[] = [1, 2, 3, 4].map((num) => ({
+const BATHROOM_OPTIONS: readonly CheckboxOption<number>[] = [1, 2, 3, 4].map((num) => ({
   value: num,
   label: `${num}+`,
 }))
@@ -116,7 +130,7 @@ function trackFiltersChanged(filters: SearchFilters): void {
 }
 
 /** Keys that move focus within a checkbox group, mapped to the next index. */
-const NAVIGATION_KEYS: Record<string, (index: number, count: number) => number> = {
+const NAVIGATION_KEYS: Partial<Record<string, (index: number, count: number) => number>> = {
   ArrowDown: (index, count) => (index + 1) % count,
   ArrowRight: (index, count) => (index + 1) % count,
   ArrowUp: (index, count) => (index - 1 + count) % count,
@@ -125,12 +139,14 @@ const NAVIGATION_KEYS: Record<string, (index: number, count: number) => number> 
   End: (_index, count) => count - 1,
 }
 
-interface CheckboxGroupFieldProps {
-  name: CheckboxGroupFieldName
-  label: string
-  options: readonly CheckboxOption[]
-  className?: string
-}
+type CheckboxGroupFieldProps = {
+  [Name in CheckboxGroupFieldName]: {
+    name: Name
+    label: string
+    options: readonly CheckboxOption<CheckboxOptionValue<Name>>[]
+    className?: string
+  }
+}[CheckboxGroupFieldName]
 
 /**
  * One multi-select filter rendered as a single tab stop (roving tabindex).
@@ -164,7 +180,7 @@ const CheckboxGroupField = memo(function CheckboxGroupField({
       control={control}
       name={name}
       render={({ field }) => {
-        const selected = field.value as Array<string | number>
+        const selected: readonly (string | number)[] = field.value
 
         return (
           <FormItem>
@@ -202,15 +218,6 @@ const CheckboxGroupField = memo(function CheckboxGroupField({
     />
   )
 })
-
-type TextFilterName = "query" | "location"
-type NumberFilterName =
-  | "priceMin"
-  | "priceMax"
-  | "roiMin"
-  | "roiMax"
-  | "squareFeetMin"
-  | "squareFeetMax"
 
 interface TextFilterFieldProps {
   name: TextFilterName
@@ -308,7 +315,7 @@ const NumberFilterField = memo(function NumberFilterField({
  */
 function FilterAutoApply({ onApply }: { onApply: (filters: SearchFilters) => void }) {
   const { control } = useFormContext<SearchFilterFormValues>()
-  const values = useWatch({ control }) as SearchFilterFormValues
+  const values = useWatch({ control })
   const debouncedQuery = useDebounce(values.query, QUERY_DEBOUNCE_MS)
   const validation = useMemo(
     () => searchFilterSchema.safeParse({ ...values, query: debouncedQuery }),
