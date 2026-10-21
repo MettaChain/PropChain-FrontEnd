@@ -142,6 +142,7 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 - **[🔒 CSP & Security Headers](./docs/csp.md)** - Content Security Policy configuration
 - **[🛡️ Phishing Denylist](./docs/phishing-denylist.md)** - Suspicious-domain protections
 - **[🖼️ Gallery](./docs/gallery.md)** - Image gallery validation and translations
+- **[💰 Investment Form](./docs/investment-form.md)** - Token purchase form, validation and accessibility
 
 ### Repository Structure
 

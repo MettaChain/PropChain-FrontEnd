@@ -8,16 +8,16 @@ import {
 export const purchaseTokenSchema = z.object({
   propertyId: z.string().min(1, "Property selection is required."),
   tokenAmount: z
-    .number({ invalid_type_error: "Token amount must be a number." })
+    .number({ error: "Token amount must be a number." })
     .int("Token amount must be a whole number.")
     .positive("Token amount must be at least 1.")
     .max(100000, "Token amount cannot exceed 100,000."),
   maxPricePerToken: z
-    .number({ invalid_type_error: "Max price must be a number." })
+    .number({ error: "Max price must be a number." })
     .positive("Max price per token must be greater than zero."),
   purchaseType: z.enum(["market", "bid"]),
-  agreeToTerms: z.literal(true, {
-    errorMap: () => ({ message: "You must agree to the terms before purchasing." }),
+  agreeToTerms: z.boolean().refine((accepted) => accepted, {
+    error: "You must agree to the terms before purchasing.",
   }),
 })
 
