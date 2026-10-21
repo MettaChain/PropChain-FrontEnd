@@ -5,7 +5,9 @@ import PropertyMapView from '@/components/property/PropertyMapView';
 jest.mock('react-leaflet', () => ({
   MapContainer: ({ children }: any) => <div data-testid="map-container">{children}</div>,
   TileLayer: () => <div data-testid="tile-layer" />,
-  Marker: ({ children }: any) => <div data-testid="map-marker">{children}</div>,
+  Marker: ({ children, title }: any) => (
+    <div data-testid="map-marker" title={title}>{children}</div>
+  ),
   Popup: ({ children }: any) => <div>{children}</div>,
 }));
 
@@ -47,6 +49,25 @@ describe('PropertyMapView', () => {
     expect(await screen.findAllByTestId('map-marker')).toHaveLength(2);
   });
 
+  it('gives the map landmark and property markers accessible names', async () => {
+    render(<PropertyMapView properties={mockProperties} />);
+
+    expect(await screen.findByRole('region', { name: 'Property map' }))
+      .toHaveAccessibleDescription(
+        'Use the arrow keys to pan the map, plus and minus to zoom, and Tab to move between property markers.',
+      );
+
+    const markers = await screen.findAllByTestId('map-marker');
+    expect(markers[0]).toHaveAttribute(
+      'title',
+      '1 Wall St, New York — $500,000',
+    );
+    expect(markers[1]).toHaveAttribute(
+      'title',
+      '5 Times Sq, New York — $750,000',
+    );
+  });
+
   it('shows the price and address in the marker popup', async () => {
     render(<PropertyMapView properties={mockProperties} />);
     expect(await screen.findByText('$500,000')).toBeInTheDocument();
@@ -67,5 +88,8 @@ describe('PropertyMapView', () => {
     // The map container itself still renders.
     expect(screen.queryAllByTestId('map-marker')).toHaveLength(0);
     expect(screen.getByTestId('marker-cluster')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'No properties to show on the map',
+    );
   });
 });

@@ -46,6 +46,7 @@ export default function MapCanvas({
         <Marker
           key={p.id}
           position={[p.lat, p.lng]}
+          title={`${p.address} — $${p.price.toLocaleString()}`}
         >
           <Popup>
             <div>
@@ -61,9 +62,19 @@ export default function MapCanvas({
   );
 
   return (
-    <div className="relative h-screen w-full">
+    <section
+      aria-describedby="property-map-instructions"
+      aria-label="Property map"
+      className="relative h-screen w-full"
+      role="region"
+    >
+      <p className="sr-only" id="property-map-instructions">
+        Use the arrow keys to pan the map, plus and minus to zoom, and Tab to
+        move between property markers.
+      </p>
       <MapContainer
         center={MAP_CENTER}
+        keyboard
         zoom={12}
         style={{ height: "100%", width: "100%" }}
       >
@@ -79,7 +90,11 @@ export default function MapCanvas({
           failed to load. The map stays underneath and a notice explains why
           there are no markers on it. */}
       {properties.length === 0 && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/80 p-6 text-center backdrop-blur-sm dark:bg-gray-900/80">
+        <div
+          aria-live="polite"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/80 p-6 text-center backdrop-blur-sm dark:bg-gray-900/80"
+          role="status"
+        >
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             No properties to show on the map
           </h2>
@@ -89,6 +104,6 @@ export default function MapCanvas({
           </p>
         </div>
       )}
-    </div>
+    </section>
   );
 }
