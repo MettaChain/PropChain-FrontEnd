@@ -3,6 +3,7 @@
 import { useState } from "react"
 import {
   AlertConfigurationForm,
+  InvestmentForm,
   ProfileSettingsForm,
   PurchaseTokenForm,
   SearchFilterForm,
@@ -29,6 +30,16 @@ export default function FormsPage() {
         <PurchaseTokenForm
           propertyId="property-123"
           propertyName="Oceanview Estate"
+          onSubmit={(values) => setSubmittedValues(JSON.stringify(values, null, 2))}
+        />
+
+        <InvestmentForm
+          propertyId="property-123"
+          propertyName="Oceanview Estate"
+          tokenPrice={25}
+          minInvestment={100}
+          maxInvestment={50000}
+          annualYieldPercent={7.5}
           onSubmit={(values) => setSubmittedValues(JSON.stringify(values, null, 2))}
         />
 
