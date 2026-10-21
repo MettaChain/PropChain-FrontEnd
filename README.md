@@ -134,6 +134,8 @@ NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 
 ### Project Documentation
 
+- **[Gallery](./docs/gallery.md)** - Reusable image gallery, empty states, theme support and types
+
 - **[🔧 Mocking](./docs/mocking.md)** - Local mocking and development overrides
 - **[🗄️ Cache API](./docs/cache-api.md)** - Caching model and invalidation rules
 - **[🎣 Hooks Guide](./docs/hooks.md)** - Custom hooks reference

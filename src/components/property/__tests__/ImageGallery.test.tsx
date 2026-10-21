@@ -65,6 +65,8 @@ describe('ImageGallery', () => {
     render(<ImageGallery images={[]} propertyName="Sunset Villa" />);
 
     expect(screen.getByText('No images available')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Photos of Sunset Villa have not been added yet.');
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByAltText('Sunset Villa')).not.toBeInTheDocument();
   });
 });
