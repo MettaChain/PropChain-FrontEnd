@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import Image from 'next/image';
 import { ImageGallery } from '../ImageGallery';
 import { ImageLightbox } from '../ImageLightbox';
 // Boots i18next with the real translations so the gallery renders its
@@ -14,15 +15,21 @@ type NextImageMockProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   sizes?: string;
 };
 
+// The mock is a jest.fn so the tests can count how many images were rendered,
+// which is how the memoization is observed.
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: ({
-    priority: _priority,
-    fill: _fill,
-    sizes: _sizes,
-    ...imgProps
-  }: NextImageMockProps) => <img {...imgProps} />,
+  default: jest.fn(
+    ({
+      priority: _priority,
+      fill: _fill,
+      sizes: _sizes,
+      ...imgProps
+    }: NextImageMockProps) => <img {...imgProps} />
+  ),
 }));
+
+const imageMock = Image as unknown as jest.Mock;
 
 const images = [
   'https://images.unsplash.com/photo-1',
@@ -31,6 +38,10 @@ const images = [
 ];
 
 describe('ImageGallery', () => {
+  beforeEach(() => {
+    imageMock.mockClear();
+  });
+
   it('should render the main image with the property name alt text', () => {
     render(<ImageGallery images={images} propertyName="Sunset Villa" />);
 
@@ -69,6 +80,51 @@ describe('ImageGallery', () => {
 
     expect(screen.getByText('No images available')).toBeInTheDocument();
     expect(screen.queryByAltText('Sunset Villa')).not.toBeInTheDocument();
+  });
+
+  // Issue #1266 — the gallery is memoized, so a re-render with unchanged
+  // props must not rebuild the images.
+  it('should not re-render the images when re-rendered with the same props', () => {
+    const { rerender } = render(<ImageGallery images={images} propertyName="Sunset Villa" />);
+
+    const rendersAfterMount = imageMock.mock.calls.length;
+    expect(rendersAfterMount).toBeGreaterThan(0);
+
+    rerender(<ImageGallery images={images} propertyName="Sunset Villa" />);
+
+    expect(imageMock.mock.calls.length).toBe(rendersAfterMount);
+  });
+
+  it('should re-render the images when the property name changes', () => {
+    const { rerender } = render(<ImageGallery images={images} propertyName="Sunset Villa" />);
+
+    const rendersAfterMount = imageMock.mock.calls.length;
+
+    rerender(<ImageGallery images={images} propertyName="Oceanview Estate" />);
+
+    expect(imageMock.mock.calls.length).toBeGreaterThan(rendersAfterMount);
+    expect(screen.getByAltText('Oceanview Estate')).toBeInTheDocument();
+  });
+
+  it('should still render every thumbnail after the memoization', () => {
+    render(<ImageGallery images={images} propertyName="Sunset Villa" />);
+
+    expect(screen.getByAltText('Sunset Villa - Image 2')).toBeInTheDocument();
+    expect(screen.getByAltText('Sunset Villa - Image 3')).toBeInTheDocument();
+    expect(screen.getByText('Click to view all 3 images')).toBeInTheDocument();
+  });
+
+  it('should count the images that do not fit in the thumbnail strip', () => {
+    const manyImages = Array.from(
+      { length: 8 },
+      (_, index) => `https://images.unsplash.com/photo-${index}`
+    );
+
+    render(<ImageGallery images={manyImages} propertyName="Sunset Villa" />);
+
+    // The main image and four thumbnails are shown, the remaining three are counted.
+    expect(screen.getByText('+3')).toBeInTheDocument();
+    expect(screen.getByText('Click to view all 8 images')).toBeInTheDocument();
   });
 });
 
