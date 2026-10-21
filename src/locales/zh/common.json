@@ -293,6 +293,33 @@
     "securityWarning": "仅分享来自受信任 PropChain 域名的 URL",
     "ariaLabel": "房产链接二维码"
   },
+  "gallery": {
+    "label": "房产图片",
+    "noImages": "暂无图片",
+    "noImagesDescription": "该房产还没有照片。",
+    "viewAll": "点击查看全部 {{count}} 张图片",
+    "viewAll_one": "点击查看 {{count}} 张图片",
+    "moreImages": "还有 {{count}} 张",
+    "imageAlt": "{{property}} - 图片 {{index}}",
+    "mainImageAlt": "{{property}}",
+    "defaultPropertyName": "房产",
+    "lightboxLabel": "房产图片",
+    "lightboxImageAlt": "房产图片 {{index}}",
+    "thumbnailAlt": "缩略图 {{index}}",
+    "closeLightbox": "关闭图片查看器",
+    "previousImage": "上一张图片",
+    "nextImage": "下一张图片",
+    "counter": "{{current}} / {{total}}",
+    "invalidImagesTitle": "部分图片无法显示",
+    "imagesDropped": "最多只能显示 {{max}} 张图片，因此有 {{count}} 张图片未显示。",
+    "issue": {
+      "notAString": "某个图片条目不是文本地址。",
+      "empty": "某个图片条目的地址为空。",
+      "invalidSource": "某个图片条目不是有效的 http(s) 地址或站内路径。",
+      "duplicate": "同一个图片地址出现了多次。"
+    },
+    "imagesDropped_one": "最多只能显示 {{max}} 张图片，因此有 {{count}} 张图片未显示。"
+  },
   "networkSwitcher": {
     "selectNetwork": "选择网络",
     "switchingNetwork": "正在切换网络..."

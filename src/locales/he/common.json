@@ -293,6 +293,33 @@
     "securityWarning": "שתף רק כתובות URL מדומיינים מהימנים של PropChain",
     "ariaLabel": "QR Code לקישור נכס"
   },
+  "gallery": {
+    "label": "תמונות הנכס",
+    "noImages": "אין תמונות זמינות",
+    "noImagesDescription": "לנכס הזה עדיין אין תמונות.",
+    "viewAll": "לחץ כדי להציג את כל {{count}} התמונות",
+    "viewAll_one": "לחץ כדי להציג תמונה אחת",
+    "moreImages": "+{{count}} נוספות",
+    "imageAlt": "{{property}} - תמונה {{index}}",
+    "mainImageAlt": "{{property}}",
+    "defaultPropertyName": "נכס",
+    "lightboxLabel": "תמונות הנכס",
+    "lightboxImageAlt": "תמונת נכס {{index}}",
+    "thumbnailAlt": "תמונה ממוזערת {{index}}",
+    "closeLightbox": "סגירת מציג התמונות",
+    "previousImage": "התמונה הקודמת",
+    "nextImage": "התמונה הבאה",
+    "counter": "{{current}} / {{total}}",
+    "invalidImagesTitle": "חלק מהתמונות לא ניתנו להצגה",
+    "imagesDropped": "{{count}} תמונות אינן מוצגות מכיוון שגלריה מכילה {{max}} תמונות לכל היותר.",
+    "issue": {
+      "notAString": "רשומת תמונה אחת אינה כתובת טקסט.",
+      "empty": "רשומת תמונה אחת הייתה עם כתובת ריקה.",
+      "invalidSource": "רשומת תמונה אחת אינה כתובת http(s) תקינה או נתיב תקין באתר.",
+      "duplicate": "אותה כתובת תמונה הופיעה יותר מפעם אחת."
+    },
+    "imagesDropped_one": "תמונה אחת אינה מוצגת מכיוון שגלריה מכילה {{max}} תמונות לכל היותר."
+  },
   "networkSwitcher": {
     "selectNetwork": "בחר רשת",
     "switchingNetwork": "מחליף רשת..."

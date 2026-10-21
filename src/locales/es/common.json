@@ -293,6 +293,33 @@
     "securityWarning": "Comparte solo URLs de dominios PropChain de confianza",
     "ariaLabel": "Código QR para enlace de propiedad"
   },
+  "gallery": {
+    "label": "Imágenes de la propiedad",
+    "noImages": "No hay imágenes disponibles",
+    "noImagesDescription": "Esta propiedad todavía no tiene fotos.",
+    "viewAll": "Haz clic para ver las {{count}} imágenes",
+    "viewAll_one": "Haz clic para ver {{count}} imagen",
+    "moreImages": "+{{count}} más",
+    "imageAlt": "{{property}} - Imagen {{index}}",
+    "mainImageAlt": "{{property}}",
+    "defaultPropertyName": "Propiedad",
+    "lightboxLabel": "Imágenes de la propiedad",
+    "lightboxImageAlt": "Imagen de la propiedad {{index}}",
+    "thumbnailAlt": "Miniatura {{index}}",
+    "closeLightbox": "Cerrar la galería",
+    "previousImage": "Imagen anterior",
+    "nextImage": "Imagen siguiente",
+    "counter": "{{current}} / {{total}}",
+    "invalidImagesTitle": "Algunas imágenes no se pudieron mostrar",
+    "imagesDropped": "{{count}} imágenes no se muestran porque una galería contiene como máximo {{max}} imágenes.",
+    "issue": {
+      "notAString": "Una entrada de imagen no era una dirección de texto.",
+      "empty": "Una entrada de imagen tenía una dirección vacía.",
+      "invalidSource": "Una entrada de imagen no era una dirección http(s) ni una ruta del sitio válida.",
+      "duplicate": "La misma dirección de imagen aparecía más de una vez."
+    },
+    "imagesDropped_one": "{{count}} imagen no se muestra porque una galería contiene como máximo {{max}} imágenes."
+  },
   "networkSwitcher": {
     "selectNetwork": "Seleccionar red",
     "switchingNetwork": "Cambiando de red..."

@@ -326,6 +326,33 @@
     "securityWarning": "Only share URLs from trusted PropChain domains",
     "ariaLabel": "QR code for property link"
   },
+  "gallery": {
+    "label": "Property images",
+    "noImages": "No images available",
+    "noImagesDescription": "This property has no photos yet.",
+    "viewAll": "Click to view all {{count}} images",
+    "viewAll_one": "Click to view all {{count}} image",
+    "moreImages": "+{{count}} more",
+    "imageAlt": "{{property}} - Image {{index}}",
+    "mainImageAlt": "{{property}}",
+    "defaultPropertyName": "Property",
+    "lightboxLabel": "Property images",
+    "lightboxImageAlt": "Property image {{index}}",
+    "thumbnailAlt": "Thumbnail {{index}}",
+    "closeLightbox": "Close lightbox",
+    "previousImage": "Previous image",
+    "nextImage": "Next image",
+    "counter": "{{current}} / {{total}}",
+    "invalidImagesTitle": "Some images could not be displayed",
+    "imagesDropped": "{{count}} images are not shown because a gallery holds at most {{max}} images.",
+    "issue": {
+      "notAString": "An image entry was not a text address.",
+      "empty": "An image entry had an empty address.",
+      "invalidSource": "An image entry was not a valid http(s) address or site path.",
+      "duplicate": "The same image address was listed more than once."
+    },
+    "imagesDropped_one": "{{count}} image is not shown because a gallery holds at most {{max}} images."
+  },
   "networkSwitcher": {
     "selectNetwork": "Select Network",
     "switchingNetwork": "Switching network..."
