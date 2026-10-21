@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
+import { ErrorBoundary } from "@/components/ui/SimpleErrorBoundary";
 import type { MapProperty } from "./MapCanvas";
 
 /**
@@ -61,8 +62,19 @@ export default function PropertyMapView({ properties }: PropertyMapViewProps) {
   }, [properties.length]);
 
   return (
-    <MapCanvas
-      properties={properties}
-    />
+    <ErrorBoundary
+      fallback={
+        <div
+          className="flex h-screen w-full items-center justify-center bg-gray-50 text-center dark:bg-gray-900"
+          role="alert"
+        >
+          <p className="text-gray-600 dark:text-gray-300">
+            The map could not be loaded. Please try again.
+          </p>
+        </div>
+      }
+    >
+      <MapCanvas properties={properties} />
+    </ErrorBoundary>
   );
 }
