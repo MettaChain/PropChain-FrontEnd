@@ -2,6 +2,13 @@
 
 `SearchFilterForm` (`src/components/forms/SearchFilterForm.tsx`) is the one filter UI in the app. It is rendered on `/properties` and `/forms`, validates through `searchFilterSchema`, and emits the canonical `SearchFilters` shape.
 
+## Translations
+
+All panel labels, descriptions, placeholders, empty-filter messaging, and filter
+option names use the `filters` keys in the shared `common` namespace. The strings
+are maintained for every supported locale in `src/locales/<locale>/common.json`;
+option values remain locale-independent in the emitted `SearchFilters` data.
+
 ```tsx
 <SearchFilterForm
   filters={filters}                 // current SearchFilters (e.g. from useSearchStore)

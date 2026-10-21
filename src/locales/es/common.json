@@ -24,6 +24,45 @@
     "upload": "Subir",
     "refresh": "Actualizar"
   },
+  "filters": {
+    "panelLabel": "Filtros de propiedades",
+    "searchProperties": "Buscar propiedades",
+    "searchQuery": "Buscar",
+    "searchPlaceholder": "Buscar propiedades y ubicaciones...",
+    "searchDescription": "Escribe al menos 2 caracteres para filtrar los resultados. Pulsa Escape para borrar.",
+    "minimumPrice": "Precio mínimo",
+    "maximumPrice": "Precio máximo",
+    "minimumRoi": "ROI mínimo",
+    "maximumRoi": "ROI máximo",
+    "location": "Ubicación",
+    "locationPlaceholder": "Ciudad, estado o barrio",
+    "noFiltersApplied": "No hay filtros aplicados; se muestran los resultados predeterminados.",
+    "clearFilters": "Borrar filtros",
+    "filterSettings": "Configuración de filtros",
+    "propertyType": "Tipo de propiedad",
+    "blockchain": "Blockchain",
+    "bedrooms": "Dormitorios",
+    "bathrooms": "Baños",
+    "minimumSquareFeet": "Superficie mínima (pies²)",
+    "maximumSquareFeet": "Superficie máxima (pies²)",
+    "status": "Estado",
+    "propertyTypes": {
+      "residential": "Residencial",
+      "commercial": "Comercial",
+      "industrial": "Industrial",
+      "mixed-use": "Uso mixto"
+    },
+    "blockchains": {
+      "ethereum": "Ethereum",
+      "polygon": "Polygon",
+      "bsc": "Binance Smart Chain"
+    },
+    "statuses": {
+      "active": "Activa",
+      "sold": "Vendida",
+      "pending": "Pendiente"
+    }
+  },
   "navigation": {
     "home": "Inicio",
     "properties": "Propiedades",

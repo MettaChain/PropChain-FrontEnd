@@ -24,6 +24,45 @@
     "upload": "Hochladen",
     "refresh": "Aktualisieren"
   },
+  "filters": {
+    "panelLabel": "Immobilienfilter",
+    "searchProperties": "Immobilien suchen",
+    "searchQuery": "Suchbegriff",
+    "searchPlaceholder": "Immobilien und Standorte suchen...",
+    "searchDescription": "Geben Sie mindestens 2 Zeichen ein, um die Ergebnisse einzugrenzen. Drücken Sie Escape zum Löschen.",
+    "minimumPrice": "Mindestpreis",
+    "maximumPrice": "Höchstpreis",
+    "minimumRoi": "Minimaler ROI",
+    "maximumRoi": "Maximaler ROI",
+    "location": "Standort",
+    "locationPlaceholder": "Stadt, Bundesland oder Stadtteil",
+    "noFiltersApplied": "Keine Filter angewendet — Standardergebnisse werden angezeigt.",
+    "clearFilters": "Filter löschen",
+    "filterSettings": "Filtereinstellungen",
+    "propertyType": "Immobilientyp",
+    "blockchain": "Blockchain",
+    "bedrooms": "Schlafzimmer",
+    "bathrooms": "Badezimmer",
+    "minimumSquareFeet": "Mindestfläche (Quadratfuß)",
+    "maximumSquareFeet": "Höchstfläche (Quadratfuß)",
+    "status": "Status",
+    "propertyTypes": {
+      "residential": "Wohnimmobilie",
+      "commercial": "Gewerbeimmobilie",
+      "industrial": "Industrieimmobilie",
+      "mixed-use": "Mischnutzung"
+    },
+    "blockchains": {
+      "ethereum": "Ethereum",
+      "polygon": "Polygon",
+      "bsc": "Binance Smart Chain"
+    },
+    "statuses": {
+      "active": "Aktiv",
+      "sold": "Verkauft",
+      "pending": "Ausstehend"
+    }
+  },
   "navigation": {
     "home": "Startseite",
     "properties": "Immobilien",

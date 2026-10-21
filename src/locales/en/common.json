@@ -24,6 +24,45 @@
     "upload": "Upload",
     "refresh": "Refresh"
   },
+  "filters": {
+    "panelLabel": "Property filters",
+    "searchProperties": "Search Properties",
+    "searchQuery": "Search query",
+    "searchPlaceholder": "Search properties, locations...",
+    "searchDescription": "Type at least 2 characters to narrow down results. Press Escape to clear.",
+    "minimumPrice": "Min price",
+    "maximumPrice": "Max price",
+    "minimumRoi": "Min ROI",
+    "maximumRoi": "Max ROI",
+    "location": "Location",
+    "locationPlaceholder": "City, state or neighborhood",
+    "noFiltersApplied": "No filters applied — showing the default results.",
+    "clearFilters": "Clear filters",
+    "filterSettings": "Filter settings",
+    "propertyType": "Property type",
+    "blockchain": "Blockchain",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "minimumSquareFeet": "Min square feet",
+    "maximumSquareFeet": "Max square feet",
+    "status": "Status",
+    "propertyTypes": {
+      "residential": "Residential",
+      "commercial": "Commercial",
+      "industrial": "Industrial",
+      "mixed-use": "Mixed Use"
+    },
+    "blockchains": {
+      "ethereum": "Ethereum",
+      "polygon": "Polygon",
+      "bsc": "Binance Smart Chain"
+    },
+    "statuses": {
+      "active": "Active",
+      "sold": "Sold",
+      "pending": "Pending"
+    }
+  },
   "navigation": {
     "home": "Home",
     "properties": "Properties",

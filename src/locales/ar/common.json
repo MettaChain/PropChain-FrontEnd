@@ -24,6 +24,45 @@
     "upload": "رفع",
     "refresh": "تحديث"
   },
+  "filters": {
+    "panelLabel": "فلاتر العقارات",
+    "searchProperties": "البحث عن العقارات",
+    "searchQuery": "استعلام البحث",
+    "searchPlaceholder": "ابحث عن العقارات والمواقع...",
+    "searchDescription": "اكتب حرفين على الأقل لتضييق النتائج. اضغط Escape للمسح.",
+    "minimumPrice": "الحد الأدنى للسعر",
+    "maximumPrice": "الحد الأقصى للسعر",
+    "minimumRoi": "الحد الأدنى للعائد",
+    "maximumRoi": "الحد الأقصى للعائد",
+    "location": "الموقع",
+    "locationPlaceholder": "المدينة أو الولاية أو الحي",
+    "noFiltersApplied": "لم يتم تطبيق أي فلاتر — يتم عرض النتائج الافتراضية.",
+    "clearFilters": "مسح الفلاتر",
+    "filterSettings": "إعدادات الفلاتر",
+    "propertyType": "نوع العقار",
+    "blockchain": "البلوكتشين",
+    "bedrooms": "غرف النوم",
+    "bathrooms": "الحمامات",
+    "minimumSquareFeet": "الحد الأدنى للمساحة (قدم²)",
+    "maximumSquareFeet": "الحد الأقصى للمساحة (قدم²)",
+    "status": "الحالة",
+    "propertyTypes": {
+      "residential": "سكني",
+      "commercial": "تجاري",
+      "industrial": "صناعي",
+      "mixed-use": "استخدام مختلط"
+    },
+    "blockchains": {
+      "ethereum": "Ethereum",
+      "polygon": "Polygon",
+      "bsc": "Binance Smart Chain"
+    },
+    "statuses": {
+      "active": "نشط",
+      "sold": "مباع",
+      "pending": "قيد الانتظار"
+    }
+  },
   "navigation": {
     "home": "الرئيسية",
     "properties": "العقارات",

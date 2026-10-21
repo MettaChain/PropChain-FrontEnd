@@ -1,6 +1,7 @@
 "use client"
 
 import React, { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFormContext, useWatch } from "react-hook-form"
 import { Button } from "@/components/ui/button"
@@ -17,13 +18,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { searchFilterSchema, type SearchFilterFormValues } from "@/lib/formSchemas"
 import {
-  BLOCKCHAIN_LABELS,
   DEFAULT_FILTERS,
-  PROPERTY_TYPE_LABELS,
+  PROPERTY_TYPES,
+  BLOCKCHAIN_NETWORKS,
   PROPERTY_STATUSES,
   type SearchFilters,
-  type PropertyType,
-  type BlockchainNetwork,
 } from "@/types/property"
 import { useDebounce } from "@/hooks/useDebounce"
 import { ErrorBoundary } from "@/components/ui/SimpleErrorBoundary"
@@ -45,14 +44,6 @@ interface CheckboxOption {
 
 // Option lists are module-level so their identity is stable and the memoized
 // checkbox groups below never re-render because of a fresh array prop.
-const PROPERTY_TYPE_OPTIONS: readonly CheckboxOption[] = (
-  Object.keys(PROPERTY_TYPE_LABELS) as PropertyType[]
-).map((type) => ({ value: type, label: PROPERTY_TYPE_LABELS[type] }))
-
-const BLOCKCHAIN_OPTIONS: readonly CheckboxOption[] = (
-  Object.keys(BLOCKCHAIN_LABELS) as BlockchainNetwork[]
-).map((chain) => ({ value: chain, label: BLOCKCHAIN_LABELS[chain] }))
-
 const BEDROOM_OPTIONS: readonly CheckboxOption[] = [1, 2, 3, 4, 5].map((num) => ({
   value: num,
   label: `${num}+`,
@@ -61,11 +52,6 @@ const BEDROOM_OPTIONS: readonly CheckboxOption[] = [1, 2, 3, 4, 5].map((num) => 
 const BATHROOM_OPTIONS: readonly CheckboxOption[] = [1, 2, 3, 4].map((num) => ({
   value: num,
   label: `${num}+`,
-}))
-
-const STATUS_OPTIONS: readonly CheckboxOption[] = PROPERTY_STATUSES.map((status) => ({
-  value: status,
-  label: status,
 }))
 
 const valueToFilters = (values: SearchFilterFormValues): SearchFilters => ({
@@ -342,6 +328,28 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
   onApplyFilters,
   onClearFilters,
 }: SearchFilterFormProps) {
+  const { t } = useTranslation("common")
+  const propertyTypeOptions = useMemo(
+    () => PROPERTY_TYPES.map((type) => ({
+      value: type,
+      label: t(`filters.propertyTypes.${type}`),
+    })),
+    [t],
+  )
+  const blockchainOptions = useMemo(
+    () => BLOCKCHAIN_NETWORKS.map((network) => ({
+      value: network,
+      label: t(`filters.blockchains.${network}`),
+    })),
+    [t],
+  )
+  const statusOptions = useMemo(
+    () => PROPERTY_STATUSES.map((status) => ({
+      value: status,
+      label: t(`filters.statuses.${status}`),
+    })),
+    [t],
+  )
   const form = useForm<SearchFilterFormValues>({
     resolver: zodResolver(searchFilterSchema),
     defaultValues: filtersToFormValues(filters),
@@ -397,23 +405,23 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
   return (
     <Form {...form}>
       <FilterAutoApply onApply={handleApply} />
-      <div role="search" aria-label="Property filters" className="grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div role="search" aria-label={t("filters.panelLabel")} className="grid gap-8 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Search Properties</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{t("filters.searchProperties")}</h2>
             <TextFilterField
               name="query"
-              label="Search query"
-              placeholder="Search properties, locations..."
-              description="Type at least 2 characters to narrow down results. Press Escape to clear."
+              label={t("filters.searchQuery")}
+              placeholder={t("filters.searchPlaceholder")}
+              description={t("filters.searchDescription")}
               onKeyDown={handleQueryKeyDown}
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <NumberFilterField name="priceMin" label="Min price" min={0} step={1000} />
+              <NumberFilterField name="priceMin" label={t("filters.minimumPrice")} min={0} step={1000} />
               <NumberFilterField
                 name="priceMax"
-                label="Max price"
+                label={t("filters.maximumPrice")}
                 min={0}
                 step={1000}
                 dependsOn="priceMin"
@@ -421,10 +429,10 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <NumberFilterField name="roiMin" label="Min ROI" min={0} max={100} step={1} />
+              <NumberFilterField name="roiMin" label={t("filters.minimumRoi")} min={0} max={100} step={1} />
               <NumberFilterField
                 name="roiMax"
-                label="Max ROI"
+                label={t("filters.maximumRoi")}
                 min={0}
                 max={100}
                 step={1}
@@ -434,38 +442,38 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
 
             <TextFilterField
               name="location"
-              label="Location"
-              placeholder="City, state or neighborhood"
+              label={t("filters.location")}
+              placeholder={t("filters.locationPlaceholder")}
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             {!hasActiveFilters && (
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                No filters applied — showing the default results.
+                {t("filters.noFiltersApplied")}
               </p>
             )}
             <Button type="button" variant="outline" onClick={handleClear} disabled={!hasActiveFilters}>
-              Clear filters
+              {t("filters.clearFilters")}
             </Button>
           </div>
         </div>
 
         <div className="space-y-6">
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Filter settings</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{t("filters.filterSettings")}</h2>
 
-            <CheckboxGroupField name="propertyTypes" label="Property type" options={PROPERTY_TYPE_OPTIONS} />
-            <CheckboxGroupField name="blockchains" label="Blockchain" options={BLOCKCHAIN_OPTIONS} />
+            <CheckboxGroupField name="propertyTypes" label={t("filters.propertyType")} options={propertyTypeOptions} />
+            <CheckboxGroupField name="blockchains" label={t("filters.blockchain")} options={blockchainOptions} />
             <CheckboxGroupField
               name="bedrooms"
-              label="Bedrooms"
+              label={t("filters.bedrooms")}
               options={BEDROOM_OPTIONS}
               className="grid gap-2 sm:grid-cols-3"
             />
             <CheckboxGroupField
               name="bathrooms"
-              label="Bathrooms"
+              label={t("filters.bathrooms")}
               options={BATHROOM_OPTIONS}
               className="grid gap-2 sm:grid-cols-3"
             />
@@ -473,20 +481,20 @@ const SearchFilterFormInner = memo(function SearchFilterFormInner({
             <div className="grid gap-4 sm:grid-cols-2">
               <NumberFilterField
                 name="squareFeetMin"
-                label="Min square feet"
+                label={t("filters.minimumSquareFeet")}
                 min={0}
                 step={50}
               />
               <NumberFilterField
                 name="squareFeetMax"
-                label="Max square feet"
+                label={t("filters.maximumSquareFeet")}
                 min={0}
                 step={50}
                 dependsOn="squareFeetMin"
               />
             </div>
 
-            <CheckboxGroupField name="status" label="Status" options={STATUS_OPTIONS} />
+            <CheckboxGroupField name="status" label={t("filters.status")} options={statusOptions} />
           </div>
         </div>
       </div>

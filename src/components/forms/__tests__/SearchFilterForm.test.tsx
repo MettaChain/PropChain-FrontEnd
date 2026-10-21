@@ -4,6 +4,7 @@ import {
   QUERY_DEBOUNCE_MS,
   SearchFilterForm,
 } from '@/components/forms/SearchFilterForm';
+import i18n from '@/lib/i18n';
 import { DEFAULT_FILTERS, type SearchFilters } from '@/types/property';
 
 /**
@@ -26,6 +27,10 @@ function renderPanel(filters: SearchFilters = DEFAULT_FILTERS) {
   return { ...utils, onApplyFilters, onClearFilters };
 }
 
+beforeEach(async () => {
+  await i18n.changeLanguage('en');
+});
+
 const lastEmitted = (spy: jest.Mock) =>
   spy.mock.calls.at(-1)?.[0] as SearchFilters;
 
@@ -37,12 +42,23 @@ describe('SearchFilterForm rendering', () => {
     ).toBeInTheDocument();
   });
 
+  it('translates filter labels and options when the language changes', async () => {
+    await i18n.changeLanguage('es');
+    renderPanel();
+
+    expect(screen.getByRole('search', { name: 'Filtros de propiedades' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Precio mínimo')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Tipo de propiedad' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Residencial' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Activa' })).toBeChecked();
+  });
+
   it.each([
     ['Property type', ['Residential', 'Commercial', 'Industrial', 'Mixed Use']],
     ['Blockchain', ['Ethereum', 'Polygon', 'Binance Smart Chain']],
     ['Bedrooms', ['1+', '2+', '3+', '4+', '5+']],
     ['Bathrooms', ['1+', '2+', '3+', '4+']],
-    ['Status', ['active', 'sold', 'pending']],
+    ['Status', ['Active', 'Sold', 'Pending']],
   ])('renders the %s group with its options', (group, options) => {
     renderPanel();
     const region = screen.getByRole('group', { name: group });
@@ -62,7 +78,7 @@ describe('SearchFilterForm rendering', () => {
     expect(screen.getByLabelText('Search query')).toHaveValue('loft');
     expect(screen.getByRole('checkbox', { name: 'Polygon' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Ethereum' })).not.toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'active' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Active' })).toBeChecked();
   });
 });
 
