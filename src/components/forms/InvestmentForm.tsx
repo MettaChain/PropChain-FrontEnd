@@ -349,7 +349,7 @@ const PaymentMethodField = memo(function PaymentMethodField({
           const match = INVESTMENT_PAYMENT_METHODS.find((option) => option.value === next)
           if (match) onChange(match.value)
         }}
-        className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] md:text-sm"
+        className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50"
       >
         {INVESTMENT_PAYMENT_METHODS.map((option) => (
           <option key={option.value} value={option.value}>
@@ -418,6 +418,29 @@ export const InvestmentSummary = memo(function InvestmentSummary({
   tokenPrice,
   annualYieldPercent,
 }: InvestmentSummaryProps) {
+  if (amount === null) {
+    return (
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="rounded-2xl border border-dashed border-border bg-muted/35 p-5"
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-200">
+            +
+          </div>
+          <div>
+            <p className="text-base font-semibold text-foreground">Projected investment summary</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Enter an amount to see your projection. Add a value to preview token count, annual income,
+              and projected yield.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <dl
       aria-live="polite"
@@ -451,9 +474,7 @@ export const InvestmentSummary = memo(function InvestmentSummary({
       </div>
       <div className="sm:col-span-3">
         <dt className="sr-only">Amount invested</dt>
-        <dd className="text-sm text-muted-foreground">
-          {amount === null ? "Enter an amount to see your projection." : `Investing ${formatCurrency(amount)}`}
-        </dd>
+        <dd className="text-sm text-muted-foreground">Investing {formatCurrency(amount)}</dd>
       </div>
     </dl>
   )
