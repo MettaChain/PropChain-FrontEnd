@@ -112,7 +112,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.2",
     "@chromatic-com/storybook": "^5.1.1",
-    "@commitlint/cli": "^19.5.0",
+    "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^19.5.0",
     "@cypress/react": "^9.0.2",
     "@playwright/test": "^1.48.0",
