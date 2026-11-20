@@ -29,3 +29,24 @@ The main codebase (`src/`, `public/`, `tests/`, etc.) is undergoing active clean
 5. **Use TypeScript.** All code must be properly typed.
 6. **Keep dependencies self-contained.** Use only dependencies already in `package.json`.
 7. **Ensure lint and build pass** before submitting a PR.
+
+## Property amenity badges
+
+`PropertyAmenityBadges` renders typed amenities with icons and full-name tooltips.
+Each item includes its prevalence percentage; amenities below 10% are hidden by
+default and can be revealed with the uncommon-amenities toggle. Set
+`maxDisplayCount` to control how many badges are shown before the `+N more`
+indicator.
+
+```tsx
+import { PropertyAmenityBadges } from './components/PropertyAmenityBadges';
+import { AmenityType } from './types/amenity';
+
+<PropertyAmenityBadges
+  amenities={[
+    { type: AmenityType.Pool, prevalencePercent: 42 },
+    { type: AmenityType.Parking, prevalencePercent: 8 },
+  ]}
+  maxDisplayCount={4}
+/>;
+```
