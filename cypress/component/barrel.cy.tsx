@@ -43,6 +43,21 @@
 //   updatedAt: new Date().toISOString(),
 // }
 
+//     available: 50,
+//     totalSupply: 100,
+//   },
+//   location: {
+//     city: 'New York',
+//     state: 'NY',
+//     coordinates: { lat: 40.7128, lng: -74.0060 },
+//   },
+//   propertyType: 'apartment',
+//   blockchain: 'ethereum',
+//   metrics: {
+//     roi: 12.5,
+//     occupancy: 95,
+//     appreciation: 8.2,
+
 // describe('PropertyCard Component', () => {
 //   beforeEach(() => {
 //     // Mock Next.js router
