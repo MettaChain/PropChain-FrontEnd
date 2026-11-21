@@ -1,0 +1,58 @@
+{
+  "propertyComparison": {
+    "title": "比较房产",
+    "subtitle": "正在比较 {{count}} / {{max}} 个已选房产",
+    "headers": {
+      "property": "房产",
+      "location": "位置",
+      "price": "价格",
+      "roi": "投资回报率 (%)",
+      "yield": "收益率 (%)",
+      "details": "详情",
+      "actions": "操作"
+    },
+    "filters": {
+      "label": "比较筛选",
+      "search": "搜索房产",
+      "searchPlaceholder": "按名称或位置搜索...",
+      "minPrice": "最低价格",
+      "maxPrice": "最高价格",
+      "minRoi": "最低投资回报率",
+      "maxRoi": "最高投资回报率",
+      "propertyType": "房产类型",
+      "location": "位置",
+      "sortBy": "排序方式",
+      "clearFilters": "清除筛选",
+      "applyFilters": "应用筛选"
+    },
+    "empty": {
+      "title": "没有可比较的房产",
+      "description": "请至少选择两个房产以进行并排比较。",
+      "noResultsTitle": "没有匹配的房产",
+      "noResultsDescription": "请尝试调整筛选条件以查看更多结果。"
+    },
+    "errors": {
+      "loadFailed": "无法加载比较结果",
+      "loadFailedDescription": "加载这些房产时出现问题。",
+      "invalidPriceRange": "最低价格不能高于最高价格。",
+      "selectionLimit": "最多可以比较 {{max}} 个房产。",
+      "missingProperty": "所选房产中有一个已不可用。",
+      "retry": "重试"
+    },
+    "tooltips": {
+      "roi": "十二个月期间的投资回报率。",
+      "yield": "年租金收入占房产价值的百分比。",
+      "price": "以美元标示的挂牌价格。",
+      "location": "房产所在的城市和街区。",
+      "sort": "点击列标题可对比较结果排序。",
+      "remove": "从比较中移除此房产。"
+    },
+    "actions": {
+      "add": "加入比较",
+      "remove": "从比较中移除",
+      "clear": "清空比较",
+      "share": "分享比较"
+    },
+    "_direction": "ltr"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "propertyComparison": {
+    "title": "Compare Properties",
+    "subtitle": "Comparing {{count}} of {{max}} selected properties",
+    "headers": {
+      "property": "Property",
+      "location": "Location",
+      "price": "Price",
+      "roi": "ROI (%)",
+      "yield": "Yield (%)",
+      "details": "Details",
+      "actions": "Actions"
+    },
+    "filters": {
+      "label": "Comparison filters",
+      "search": "Search properties",
+      "searchPlaceholder": "Search by name or location...",
+      "minPrice": "Min price",
+      "maxPrice": "Max price",
+      "minRoi": "Min ROI",
+      "maxRoi": "Max ROI",
+      "propertyType": "Property type",
+      "location": "Location",
+      "sortBy": "Sort by",
+      "clearFilters": "Clear filters",
+      "applyFilters": "Apply filters"
+    },
+    "empty": {
+      "title": "No properties to compare",
+      "description": "Select at least two properties to see a side-by-side comparison.",
+      "noResultsTitle": "No matching properties",
+      "noResultsDescription": "Try adjusting your filters to see more results."
+    },
+    "errors": {
+      "loadFailed": "Could not load the comparison",
+      "loadFailedDescription": "Something went wrong while loading these properties.",
+      "invalidPriceRange": "Minimum price cannot be greater than maximum price.",
+      "selectionLimit": "You can compare at most {{max}} properties.",
+      "missingProperty": "One of the selected properties is no longer available.",
+      "retry": "Try again"
+    },
+    "tooltips": {
+      "roi": "Return on investment over a twelve-month period.",
+      "yield": "Annual rental income as a percentage of the property value.",
+      "price": "Listing price in US dollars.",
+      "location": "City and neighbourhood of the property.",
+      "sort": "Click a column header to sort the comparison.",
+      "remove": "Remove this property from the comparison."
+    },
+    "actions": {
+      "add": "Add to comparison",
+      "remove": "Remove from comparison",
+      "clear": "Clear comparison",
+      "share": "Share comparison"
+    },
+    "_direction": "ltr"
+  }
+}
