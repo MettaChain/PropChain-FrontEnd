@@ -30,6 +30,7 @@ export interface GasPriceTrackerProps {
   rpcUrls?: Partial<Record<GasChainId, string>>;
   nativeTokenPricesUsd?: Partial<Record<GasChainId, number>>;
   initialAlertThreshold?: number;
+  initialChainId?: GasChainId;
 }
 
 const CHAINS: GasChain[] = [
@@ -257,8 +258,10 @@ export function GasPriceTracker({
   rpcUrls = {},
   nativeTokenPricesUsd = {},
   initialAlertThreshold = 100,
+  initialChainId = 1,
 }: GasPriceTrackerProps) {
-  const [chainId, setChainId] = useState<GasChainId>(1);
+  const [chainId, setChainId] = useState<GasChainId>(initialChainId);
+  useEffect(() => setChainId(initialChainId), [initialChainId]);
   const [unit, setUnit] = useState<GasUnit>('Gwei');
   const [alertThreshold, setAlertThreshold] = useState(
     Number.isFinite(initialAlertThreshold) && initialAlertThreshold >= 0
