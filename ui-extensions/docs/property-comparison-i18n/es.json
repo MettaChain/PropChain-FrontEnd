@@ -1,0 +1,58 @@
+{
+  "propertyComparison": {
+    "title": "Comparar propiedades",
+    "subtitle": "Comparando {{count}} de {{max}} propiedades seleccionadas",
+    "headers": {
+      "property": "Propiedad",
+      "location": "Ubicación",
+      "price": "Precio",
+      "roi": "ROI (%)",
+      "yield": "Rendimiento (%)",
+      "details": "Detalles",
+      "actions": "Acciones"
+    },
+    "filters": {
+      "label": "Filtros de comparación",
+      "search": "Buscar propiedades",
+      "searchPlaceholder": "Buscar por nombre o ubicación...",
+      "minPrice": "Precio mínimo",
+      "maxPrice": "Precio máximo",
+      "minRoi": "ROI mínimo",
+      "maxRoi": "ROI máximo",
+      "propertyType": "Tipo de propiedad",
+      "location": "Ubicación",
+      "sortBy": "Ordenar por",
+      "clearFilters": "Limpiar filtros",
+      "applyFilters": "Aplicar filtros"
+    },
+    "empty": {
+      "title": "No hay propiedades para comparar",
+      "description": "Selecciona al menos dos propiedades para ver una comparación lado a lado.",
+      "noResultsTitle": "No hay propiedades coincidentes",
+      "noResultsDescription": "Prueba a cambiar los filtros para ver más resultados."
+    },
+    "errors": {
+      "loadFailed": "No se pudo cargar la comparación",
+      "loadFailedDescription": "Se produjo un error al cargar estas propiedades.",
+      "invalidPriceRange": "El precio mínimo no puede ser mayor que el precio máximo.",
+      "selectionLimit": "Puedes comparar como máximo {{max}} propiedades.",
+      "missingProperty": "Una de las propiedades seleccionadas ya no está disponible.",
+      "retry": "Reintentar"
+    },
+    "tooltips": {
+      "roi": "Rentabilidad de la inversión en un periodo de doce meses.",
+      "yield": "Ingresos anuales por alquiler como porcentaje del valor de la propiedad.",
+      "price": "Precio de venta en dólares estadounidenses.",
+      "location": "Ciudad y barrio de la propiedad.",
+      "sort": "Haz clic en el encabezado de una columna para ordenar la comparación.",
+      "remove": "Elimina esta propiedad de la comparación."
+    },
+    "actions": {
+      "add": "Añadir a la comparación",
+      "remove": "Quitar de la comparación",
+      "clear": "Limpiar la comparación",
+      "share": "Compartir la comparación"
+    },
+    "_direction": "ltr"
+  }
+}
