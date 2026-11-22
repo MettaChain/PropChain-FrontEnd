@@ -1,0 +1,58 @@
+{
+  "propertyComparison": {
+    "title": "Immobilien vergleichen",
+    "subtitle": "Vergleich von {{count}} von {{max}} ausgewählten Immobilien",
+    "headers": {
+      "property": "Immobilie",
+      "location": "Standort",
+      "price": "Preis",
+      "roi": "ROI (%)",
+      "yield": "Rendite (%)",
+      "details": "Details",
+      "actions": "Aktionen"
+    },
+    "filters": {
+      "label": "Vergleichsfilter",
+      "search": "Immobilien suchen",
+      "searchPlaceholder": "Nach Name oder Standort suchen...",
+      "minPrice": "Mindestpreis",
+      "maxPrice": "Höchstpreis",
+      "minRoi": "Min. ROI",
+      "maxRoi": "Max. ROI",
+      "propertyType": "Immobilientyp",
+      "location": "Standort",
+      "sortBy": "Sortieren nach",
+      "clearFilters": "Filter zurücksetzen",
+      "applyFilters": "Filter anwenden"
+    },
+    "empty": {
+      "title": "Keine Immobilien zum Vergleichen",
+      "description": "Wählen Sie mindestens zwei Immobilien für einen direkten Vergleich aus.",
+      "noResultsTitle": "Keine passenden Immobilien",
+      "noResultsDescription": "Ändern Sie die Filter, um mehr Ergebnisse zu sehen."
+    },
+    "errors": {
+      "loadFailed": "Vergleich konnte nicht geladen werden",
+      "loadFailedDescription": "Beim Laden dieser Immobilien ist ein Fehler aufgetreten.",
+      "invalidPriceRange": "Der Mindestpreis darf nicht höher als der Höchstpreis sein.",
+      "selectionLimit": "Sie können höchstens {{max}} Immobilien vergleichen.",
+      "missingProperty": "Eine der ausgewählten Immobilien ist nicht mehr verfügbar.",
+      "retry": "Erneut versuchen"
+    },
+    "tooltips": {
+      "roi": "Kapitalrendite über einen Zeitraum von zwölf Monaten.",
+      "yield": "Jährliche Mieteinnahmen als Prozentsatz des Immobilienwerts.",
+      "price": "Angebotspreis in US-Dollar.",
+      "location": "Stadt und Stadtteil der Immobilie.",
+      "sort": "Klicken Sie auf eine Spaltenüberschrift, um den Vergleich zu sortieren.",
+      "remove": "Diese Immobilie aus dem Vergleich entfernen."
+    },
+    "actions": {
+      "add": "Zum Vergleich hinzufügen",
+      "remove": "Aus dem Vergleich entfernen",
+      "clear": "Vergleich löschen",
+      "share": "Vergleich teilen"
+    },
+    "_direction": "ltr"
+  }
+}

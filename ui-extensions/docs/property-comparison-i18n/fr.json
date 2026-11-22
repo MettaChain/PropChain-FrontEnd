@@ -1,0 +1,58 @@
+{
+  "propertyComparison": {
+    "title": "Comparer les propriétés",
+    "subtitle": "Comparaison de {{count}} propriétés sur {{max}} sélectionnées",
+    "headers": {
+      "property": "Propriété",
+      "location": "Emplacement",
+      "price": "Prix",
+      "roi": "ROI (%)",
+      "yield": "Rendement (%)",
+      "details": "Détails",
+      "actions": "Actions"
+    },
+    "filters": {
+      "label": "Filtres de comparaison",
+      "search": "Rechercher des propriétés",
+      "searchPlaceholder": "Rechercher par nom ou emplacement...",
+      "minPrice": "Prix min.",
+      "maxPrice": "Prix max.",
+      "minRoi": "ROI min.",
+      "maxRoi": "ROI max.",
+      "propertyType": "Type de propriété",
+      "location": "Emplacement",
+      "sortBy": "Trier par",
+      "clearFilters": "Effacer les filtres",
+      "applyFilters": "Appliquer les filtres"
+    },
+    "empty": {
+      "title": "Aucune propriété à comparer",
+      "description": "Sélectionnez au moins deux propriétés pour afficher une comparaison côte à côte.",
+      "noResultsTitle": "Aucune propriété correspondante",
+      "noResultsDescription": "Essayez de modifier les filtres pour voir plus de résultats."
+    },
+    "errors": {
+      "loadFailed": "Impossible de charger la comparaison",
+      "loadFailedDescription": "Une erreur est survenue lors du chargement de ces propriétés.",
+      "invalidPriceRange": "Le prix minimum ne peut pas être supérieur au prix maximum.",
+      "selectionLimit": "Vous pouvez comparer au maximum {{max}} propriétés.",
+      "missingProperty": "Une des propriétés sélectionnées n'est plus disponible.",
+      "retry": "Réessayer"
+    },
+    "tooltips": {
+      "roi": "Rendement de l'investissement sur une période de douze mois.",
+      "yield": "Revenu locatif annuel en pourcentage de la valeur de la propriété.",
+      "price": "Prix affiché en dollars américains.",
+      "location": "Ville et quartier de la propriété.",
+      "sort": "Cliquez sur l'en-tête d'une colonne pour trier la comparaison.",
+      "remove": "Retirez cette propriété de la comparaison."
+    },
+    "actions": {
+      "add": "Ajouter à la comparaison",
+      "remove": "Retirer de la comparaison",
+      "clear": "Effacer la comparaison",
+      "share": "Partager la comparaison"
+    },
+    "_direction": "ltr"
+  }
+}
