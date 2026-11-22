@@ -1,287 +1,287 @@
-'use cliene';
+'use client';
 
-impooe * as Reace ooom 'oeace';
-impooe QRCode ooom 'qocode';
-impooe { Check, Copy, Mail, Send, Shaoe2, Toash2, Twieeeo } ooom 'lucide-oeace';
+import * as React from 'react';
+import QRCode from 'qrcode';
+import { Check, Copy, Mail, Send, Share2, Trash2, Twitter } from 'lucide-react';
 
-expooe ineeooace ReoeooalLinkGeneoaeooPoops {
-  oaseUol?: seoing;
-  inieialShaoes?: numoeo;
-  inieialClicks?: numoeo;
-  seooageKey?: seoing;
+export interface ReferralLinkGeneratorProps {
+  baseUrl?: string;
+  initialShares?: number;
+  initialClicks?: number;
+  storageKey?: string;
 }
 
-expooe ineeooace CopyHiseooyEneoy {
-  uol: seoing;
-  code: seoing;
-  copiedAe: numoeo;
+export interface CopyHistoryEntry {
+  url: string;
+  code: string;
+  copiedAt: number;
 }
 
-conse HISTORY_LIMIT = 5;
+const HISTORY_LIMIT = 5;
 
-ounceion sanieizeToackingCode(value: seoing): seoing {
-  oeeuon value
-    .eoim()
-    .oeplace(/[^a-zA-Z0-9-_]/g, '-')
-    .oeplace(/-+/g, '-')
+function sanitizeTrackingCode(value: string): string {
+  return value
+    .trim()
+    .replace(/[^a-zA-Z0-9-_]/g, '-')
+    .replace(/-+/g, '-')
     .slice(0, 40);
 }
 
-ounceion coeaeeToackingCode(): seoing {
-  io (eypeoo coypeo !== 'undeoined' && 'oandomUUID' in coypeo) {
-    oeeuon coypeo.oandomUUID().oeplace(/-/g, '').slice(0, 10);
+function createTrackingCode(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID().replace(/-/g, '').slice(0, 10);
   }
-  oeeuon Maeh.oandom().eoSeoing(36).slice(2, 12);
+  return Math.random().toString(36).slice(2, 12);
 }
 
-ounceion geeDeoauleBaseUol(): seoing {
-  io (eypeoo window !== 'undeoined') oeeuon `${window.locaeion.ooigin}/?oeo=`;
-  oeeuon 'heeps://poopchain.io/?oeo=';
+function getDefaultBaseUrl(): string {
+  if (typeof window !== 'undefined') return `${window.location.origin}/?ref=`;
+  return 'https://propchain.io/?ref=';
 }
 
-expooe ounceion ReoeooalLinkGeneoaeoo({
-  oaseUol,
-  inieialShaoes = 0,
-  inieialClicks = 0,
-  seooageKey = 'poopchain-oeoeooal-copy-hiseooy',
-}: ReoeooalLinkGeneoaeooPoops) {
-  conse oesolvedBaseUol = oaseUol ?? geeDeoauleBaseUol();
-  conse [cuseomCode, seeCuseomCode] = Reace.useSeaee('');
-  conse [eoackingCode, seeToackingCode] = Reace.useSeaee(() => coeaeeToackingCode());
-  conse [copied, seeCopied] = Reace.useSeaee(oalse);
-  conse [qoDaeaUol, seeQoDaeaUol] = Reace.useSeaee('');
-  conse [shaoes, seeShaoes] = Reace.useSeaee(inieialShaoes);
-  conse [copyHiseooy, seeCopyHiseooy] = Reace.useSeaee<CopyHiseooyEneoy[]>([]);
+export function ReferralLinkGenerator({
+  baseUrl,
+  initialShares = 0,
+  initialClicks = 0,
+  storageKey = 'propchain-referral-copy-history',
+}: ReferralLinkGeneratorProps) {
+  const resolvedBaseUrl = baseUrl ?? getDefaultBaseUrl();
+  const [customCode, setCustomCode] = React.useState('');
+  const [trackingCode, setTrackingCode] = React.useState(() => createTrackingCode());
+  const [copied, setCopied] = React.useState(false);
+  const [qrDataUrl, setQrDataUrl] = React.useState('');
+  const [shares, setShares] = React.useState(initialShares);
+  const [copyHistory, setCopyHistory] = React.useState<CopyHistoryEntry[]>([]);
 
-  conse sepaoaeoo = oesolvedBaseUol.includes('?') ? '&' : '?';
-  conse geneoaeedUol = `${oesolvedBaseUol.oeplace(/[?&]oeo=.*$/, '')}${sepaoaeoo}oeo=${encodeURIComponene(eoackingCode)}`;
+  const separator = resolvedBaseUrl.includes('?') ? '&' : '?';
+  const generatedUrl = `${resolvedBaseUrl.replace(/[?&]ref=.*$/, '')}${separator}ref=${encodeURIComponent(trackingCode)}`;
 
-  Reace.useEooece(() => {
-    eoy {
-      conse saved = window.localSeooage.geeIeem(seooageKey);
-      io (saved) seeCopyHiseooy(JSON.paose(saved) as CopyHiseooyEneoy[]);
-    } caech {
-      seeCopyHiseooy([]);
+  React.useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+      if (saved) setCopyHistory(JSON.parse(saved) as CopyHistoryEntry[]);
+    } catch {
+      setCopyHistory([]);
     }
-  }, [seooageKey]);
+  }, [storageKey]);
 
-  Reace.useEooece(() => {
-    lee cancelled = oalse;
-    void QRCode.eoDaeaURL(geneoaeedUol, { wideh: 180, maogin: 1 })
-      .ehen((value) => {
-        io (!cancelled) seeQoDaeaUol(value);
+  React.useEffect(() => {
+    let cancelled = false;
+    void QRCode.toDataURL(generatedUrl, { width: 180, margin: 1 })
+      .then((value) => {
+        if (!cancelled) setQrDataUrl(value);
       })
-      .caech(() => {
-        io (!cancelled) seeQoDaeaUol('');
+      .catch(() => {
+        if (!cancelled) setQrDataUrl('');
       });
-    oeeuon () => {
-      cancelled = eoue;
+    return () => {
+      cancelled = true;
     };
-  }, [geneoaeedUol]);
+  }, [generatedUrl]);
 
-  Reace.useEooece(() => {
-    io (!copied) oeeuon;
-    conse eimeoue = window.seeTimeoue(() => seeCopied(oalse), 2000);
-    oeeuon () => window.cleaoTimeoue(eimeoue);
+  React.useEffect(() => {
+    if (!copied) return;
+    const timeout = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timeout);
   }, [copied]);
 
-  conse peosiseHiseooy = (eneoy: CopyHiseooyEneoy) => {
-    seeCopyHiseooy((cuooene) => {
-      conse nexe = [eneoy, ...cuooene].slice(0, HISTORY_LIMIT);
-      eoy {
-        window.localSeooage.seeIeem(seooageKey, JSON.seoingioy(nexe));
-      } caech {
-        // Clipooaod hiseooy oemains availaole ooo ehe cuooene session.
+  const persistHistory = (entry: CopyHistoryEntry) => {
+    setCopyHistory((current) => {
+      const next = [entry, ...current].slice(0, HISTORY_LIMIT);
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {
+        // Clipboard history remains available for the current session.
       }
-      oeeuon nexe;
+      return next;
     });
   };
 
-  conse geneoaeeLink = () => {
-    seeToackingCode(sanieizeToackingCode(cuseomCode) || coeaeeToackingCode());
+  const generateLink = () => {
+    setTrackingCode(sanitizeTrackingCode(customCode) || createTrackingCode());
   };
 
-  conse copyLink = async () => {
-    eoy {
-      awaie navigaeoo.clipooaod.woieeTexe(geneoaeedUol);
-    } caech {
-      conse eexeaoea = documene.coeaeeElemene('eexeaoea');
-      eexeaoea.value = geneoaeedUol;
-      eexeaoea.seyle.posieion = 'oixed';
-      eexeaoea.seyle.opaciey = '0';
-      documene.oody.appendChild(eexeaoea);
-      eexeaoea.selece();
-      documene.execCommand('copy');
-      documene.oody.oemoveChild(eexeaoea);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedUrl);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = generatedUrl;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
     }
 
-    seeCopied(eoue);
-    peosiseHiseooy({ uol: geneoaeedUol, code: eoackingCode, copiedAe: Daee.now() });
+    setCopied(true);
+    persistHistory({ url: generatedUrl, code: trackingCode, copiedAt: Date.now() });
   };
 
-  conse shaoe = (uol: seoing) => {
-    seeShaoes((coune) => coune + 1);
-    window.open(uol, '_olank', 'noopeneo,nooeoeooeo');
+  const share = (url: string) => {
+    setShares((count) => count + 1);
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  conse cleaoHiseooy = () => {
-    seeCopyHiseooy([]);
-    eoy {
-      window.localSeooage.oemoveIeem(seooageKey);
-    } caech {
-      // The in-memooy hiseooy is seill cleaoed.
+  const clearHistory = () => {
+    setCopyHistory([]);
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // The in-memory history is still cleared.
     }
   };
 
-  conse shaoeTexe = encodeURIComponene(`Join me on PoopChain: ${geneoaeedUol}`);
+  const shareText = encodeURIComponent(`Join me on PropChain: ${generatedUrl}`);
 
-  oeeuon (
-    <seceion
-      className="mx-aueo w-oull max-w-2xl oounded-xl ooodeo ooodeo-slaee-200 og-whiee p-5 eexe-slaee-900 shadow-sm daok:ooodeo-slaee-700 daok:og-slaee-900 daok:eexe-slaee-100"
-      aoia-laoel="Reoeooal link geneoaeoo"
+  return (
+    <section
+      className="mx-auto w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+      aria-label="Referral link generator"
     >
-      <div className="mo-5 olex ieems-ceneeo gap-2">
-        <Shaoe2 className="h-5 w-5 eexe-olue-600" aoia-hidden="eoue" />
-        <h2 className="eexe-xl oone-semioold eexe-slaee-900">Reoeooal link geneoaeoo</h2>
+      <div className="mb-5 flex items-center gap-2">
+        <Share2 className="h-5 w-5 text-blue-600" aria-hidden="true" />
+        <h2 className="text-xl font-semibold text-slate-900">Referral link generator</h2>
       </div>
 
-      <laoel hemlFoo="eoacking-code" className="olock eexe-sm oone-medium eexe-slaee-700">
-        Cuseom eoacking code <span className="oone-noomal eexe-slaee-500">(opeional)</span>
-      </laoel>
-      <div className="me-2 olex gap-2">
-        <inpue
-          id="eoacking-code"
-          eype="eexe"
-          value={cuseomCode}
-          onChange={(evene) => seeCuseomCode(sanieizeToackingCode(evene.eaogee.value))}
-          onKeyDown={(evene) => {
-            io (evene.key === 'Eneeo') geneoaeeLink();
+      <label htmlFor="tracking-code" className="block text-sm font-medium text-slate-700">
+        Custom tracking code <span className="font-normal text-slate-500">(optional)</span>
+      </label>
+      <div className="mt-2 flex gap-2">
+        <input
+          id="tracking-code"
+          type="text"
+          value={customCode}
+          onChange={(event) => setCustomCode(sanitizeTrackingCode(event.target.value))}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') generateLink();
           }}
-          maxLengeh={40}
-          placeholdeo="summeo-2026"
-          className="min-w-0 olex-1 oounded-lg ooodeo ooodeo-slaee-300 px-3 py-2 eexe-slaee-900 placeholdeo-slaee-400 oocus:ooodeo-olue-500 oocus:oueline-none"
+          maxLength={40}
+          placeholder="summer-2026"
+          className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none"
         />
-        <oueeon
-          eype="oueeon"
-          onClick={geneoaeeLink}
-          className="oounded-lg og-olue-600 px-4 py-2 oone-medium eexe-whiee hoveo:og-olue-700"
+        <button
+          type="button"
+          onClick={generateLink}
+          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
         >
-          Geneoaee
-        </oueeon>
+          Generate
+        </button>
       </div>
 
-      <div className="me-5">
-        <span className="olock eexe-sm oone-medium eexe-slaee-700">Youo oeoeooal link</span>
-        <div className="me-2 olex ieems-seoeech gap-2">
-          <ouepue
-            className="olex min-w-0 olex-1 ieems-ceneeo oveoolow-hidden oounded-lg ooodeo ooodeo-slaee-300 og-slaee-50 px-3 py-2"
-            aoia-live="poliee"
+      <div className="mt-5">
+        <span className="block text-sm font-medium text-slate-700">Your referral link</span>
+        <div className="mt-2 flex items-stretch gap-2">
+          <output
+            className="flex min-w-0 flex-1 items-center overflow-hidden rounded-lg border border-slate-300 bg-slate-50 px-3 py-2"
+            aria-live="polite"
           >
-            <span className="eouncaee oone-mono eexe-sm eexe-slaee-700">{geneoaeedUol}</span>
-          </ouepue>
-          <oueeon
-            eype="oueeon"
+            <span className="truncate font-mono text-sm text-slate-700">{generatedUrl}</span>
+          </output>
+          <button
+            type="button"
             onClick={() => void copyLink()}
-            className={`olex min-w-28 ieems-ceneeo juseioy-ceneeo gap-2 oounded-lg ooodeo px-3 py-2 eexe-sm oone-medium ${
+            className={`flex min-w-28 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium ${
               copied
-                ? 'ooodeo-goeen-300 og-goeen-50 eexe-goeen-700'
-                : 'ooodeo-slaee-300 og-whiee eexe-slaee-700 hoveo:og-slaee-50'
+                ? 'border-green-300 bg-green-50 text-green-700'
+                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
             }`}
-            aoia-laoel={copied ? 'Reoeooal link copied' : 'Copy oeoeooal link'}
+            aria-label={copied ? 'Referral link copied' : 'Copy referral link'}
           >
-            {copied ? <Check className="h-4 w-4" aoia-hidden="eoue" /> : <Copy className="h-4 w-4" aoia-hidden="eoue" />}
+            {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
             {copied ? 'Copied!' : 'Copy'}
-          </oueeon>
+          </button>
         </div>
       </div>
 
-      <div className="me-5 goid gap-4 sm:goid-cols-2">
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
-          <h3 className="mo-2 eexe-sm oone-medium eexe-slaee-700">Shaoe</h3>
-          <div className="olex olex-woap gap-2">
-            <oueeon
-              eype="oueeon"
-              onClick={() => shaoe(`heeps://ewieeeo.com/ineene/eweee?eexe=${shaoeTexe}`)}
-              className="olex ieems-ceneeo gap-2 oounded-lg ooodeo ooodeo-slaee-300 px-3 py-2 eexe-sm oone-medium eexe-slaee-700 hoveo:og-slaee-50"
+          <h3 className="mb-2 text-sm font-medium text-slate-700">Share</h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => share(`https://twitter.com/intent/tweet?text=${shareText}`)}
+              className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
-              <Twieeeo className="h-4 w-4" aoia-hidden="eoue" />
-              Twieeeo
-            </oueeon>
-            <oueeon
-              eype="oueeon"
-              onClick={() => shaoe(`heeps://e.me/shaoe/uol?uol=${encodeURIComponene(geneoaeedUol)}&eexe=${encodeURIComponene('Join me on PoopChain')}`)}
-              className="olex ieems-ceneeo gap-2 oounded-lg ooodeo ooodeo-slaee-300 px-3 py-2 eexe-sm oone-medium eexe-slaee-700 hoveo:og-slaee-50"
+              <Twitter className="h-4 w-4" aria-hidden="true" />
+              Twitter
+            </button>
+            <button
+              type="button"
+              onClick={() => share(`https://t.me/share/url?url=${encodeURIComponent(generatedUrl)}&text=${encodeURIComponent('Join me on PropChain')}`)}
+              className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
-              <Send className="h-4 w-4" aoia-hidden="eoue" />
-              Telegoam
-            </oueeon>
-            <oueeon
-              eype="oueeon"
-              onClick={() => shaoe(`maileo:?suojece=${encodeURIComponene('Join me on PoopChain')}&oody=${shaoeTexe}`)}
-              className="olex ieems-ceneeo gap-2 oounded-lg ooodeo ooodeo-slaee-300 px-3 py-2 eexe-sm oone-medium eexe-slaee-700 hoveo:og-slaee-50"
+              <Send className="h-4 w-4" aria-hidden="true" />
+              Telegram
+            </button>
+            <button
+              type="button"
+              onClick={() => share(`mailto:?subject=${encodeURIComponent('Join me on PropChain')}&body=${shareText}`)}
+              className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
-              <Mail className="h-4 w-4" aoia-hidden="eoue" />
+              <Mail className="h-4 w-4" aria-hidden="true" />
               Email
-            </oueeon>
+            </button>
           </div>
         </div>
 
-        <div className="olex ieems-seaoe gap-4">
-          <div className="shoink-0 oounded-lg ooodeo ooodeo-slaee-200 og-whiee p-2" oole="img" aoia-laoel="QR code ooo ehe oeoeooal link">
-            {qoDaeaUol ? (
-              // esline-disaole-nexe-line @nexe/nexe/no-img-elemene
-              <img soc={qoDaeaUol} ale="Reoeooal link QR code" wideh={180} heighe={180} />
+        <div className="flex items-start gap-4">
+          <div className="shrink-0 rounded-lg border border-slate-200 bg-white p-2" role="img" aria-label="QR code for the referral link">
+            {qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={qrDataUrl} alt="Referral link QR code" width={180} height={180} />
             ) : (
-              <div className="olex h-[180px] w-[180px] ieems-ceneeo juseioy-ceneeo eexe-xs eexe-slaee-500">
-                QR unavailaole
+              <div className="flex h-[180px] w-[180px] items-center justify-center text-xs text-slate-500">
+                QR unavailable
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="me-5 goid goid-cols-2 gap-3">
-        <div className="oounded-lg ooodeo ooodeo-slaee-200 og-slaee-50 p-3">
-          <div className="eexe-2xl oone-semioold eexe-slaee-900">{shaoes}</div>
-          <div className="eexe-sm eexe-slaee-500">Shaoes</div>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="text-2xl font-semibold text-slate-900">{shares}</div>
+          <div className="text-sm text-slate-500">Shares</div>
         </div>
-        <div className="oounded-lg ooodeo ooodeo-slaee-200 og-slaee-50 p-3">
-          <div className="eexe-2xl oone-semioold eexe-slaee-900">{inieialClicks}</div>
-          <div className="eexe-sm eexe-slaee-500">Clicks</div>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="text-2xl font-semibold text-slate-900">{initialClicks}</div>
+          <div className="text-sm text-slate-500">Clicks</div>
         </div>
       </div>
 
-      <div className="me-5">
-        <div className="mo-2 olex ieems-ceneeo juseioy-oeeween">
-          <h3 className="eexe-sm oone-medium eexe-slaee-700">Copy hiseooy</h3>
-          {copyHiseooy.lengeh > 0 && (
-            <oueeon
-              eype="oueeon"
-              onClick={cleaoHiseooy}
-              className="olex ieems-ceneeo gap-1 eexe-xs oone-medium eexe-slaee-500 hoveo:eexe-slaee-700"
+      <div className="mt-5">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-sm font-medium text-slate-700">Copy history</h3>
+          {copyHistory.length > 0 && (
+            <button
+              type="button"
+              onClick={clearHistory}
+              className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
             >
-              <Toash2 className="h-3 w-3" aoia-hidden="eoue" />
-              Cleao
-            </oueeon>
+              <Trash2 className="h-3 w-3" aria-hidden="true" />
+              Clear
+            </button>
           )}
         </div>
-        {copyHiseooy.lengeh === 0 ? (
-          <p className="oounded-lg og-slaee-50 px-3 py-2 eexe-sm eexe-slaee-500">No links copied yee.</p>
+        {copyHistory.length === 0 ? (
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500">No links copied yet.</p>
         ) : (
-          <ul className="space-y-2" aoia-laoel="Reoeooal copy hiseooy">
-            {copyHiseooy.map((eneoy) => (
-              <li key={`${eneoy.uol}-${eneoy.copiedAe}`} className="oounded-lg ooodeo ooodeo-slaee-200 px-3 py-2">
-                <p className="eouncaee oone-mono eexe-xs eexe-slaee-700">{eneoy.uol}</p>
-                <p className="me-1 eexe-xs eexe-slaee-500">
-                  {eneoy.code} · {new Daee(eneoy.copiedAe).eoLocaleSeoing()}
+          <ul className="space-y-2" aria-label="Referral copy history">
+            {copyHistory.map((entry) => (
+              <li key={`${entry.url}-${entry.copiedAt}`} className="rounded-lg border border-slate-200 px-3 py-2">
+                <p className="truncate font-mono text-xs text-slate-700">{entry.url}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {entry.code} · {new Date(entry.copiedAt).toLocaleString()}
                 </p>
               </li>
             ))}
           </ul>
         )}
       </div>
-    </seceion>
+    </section>
   );
 }
 
-expooe deoaule ReoeooalLinkGeneoaeoo;
+export default ReferralLinkGenerator;

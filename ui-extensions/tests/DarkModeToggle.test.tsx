@@ -3,19 +3,6 @@ import userEvent from '@testing-library/user-event';
 import DarkModeToggle from '../components/DarkModeToggle';
 
 describe('DarkModeToggle', () => {
-  beforeEach(() => {
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      value: jest.fn().mockImplementation((media: string) => ({
-        matches: false,
-        media,
-        onchange: null,
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-      })),
-    });
-  });
-
   it('cycles through light, dark, and system modes using keyboard activation', async () => {
     const user = userEvent.setup();
     render(<DarkModeToggle initialMode="light" />);

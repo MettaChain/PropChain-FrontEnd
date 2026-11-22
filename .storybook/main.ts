@@ -10,7 +10,11 @@ import type { StorybookConfig } from "@storybook/nextjs-vite";
  * resolve any story.
  */
 const config: StorybookConfig = {
-  stories: ["../src/**/*.mdx", "../src/**/*.stories.@(ts|tsx)"],
+  stories: [
+    "../src/**/*.mdx",
+    "../src/**/*.stories.@(ts|tsx)",
+    "../ui-extensions/stories/**/*.stories.@(ts|tsx)",
+  ],
   addons: [
     "@storybook/addon-docs",
     // Runs axe-core against every story render; this is the gate the CI
