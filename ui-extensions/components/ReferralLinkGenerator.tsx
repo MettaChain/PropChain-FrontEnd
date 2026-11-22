@@ -137,7 +137,7 @@ export function ReferralLinkGenerator({
 
   return (
     <section
-      className="mx-auto w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="mx-auto w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
       aria-label="Referral link generator"
     >
       <div className="mb-5 flex items-center gap-2">
