@@ -118,7 +118,7 @@
     "@playwright/test": "^1.48.0",
     "@size-limit/file": "^11.1.6",
     "@storybook/addon-a11y": "^10.3.3",
-    "@storybook/addon-docs": "^10.3.3",
+    "@storybook/addon-docs": "^10.6.8",
     "@storybook/addon-onboarding": "^10.3.3",
     "@storybook/addon-vitest": "^10.3.3",
     "@storybook/nextjs-vite": "^10.3.3",
