@@ -126,7 +126,7 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.0",
-    "@testing-library/user-event": "^14.5.2",
+    "@testing-library/user-event": "^14.6.13",
     "@types/file-saver": "^2.0.7",
     "@types/jest": "^29.5.12",
     "@types/jest-axe": "^3.5.9",
