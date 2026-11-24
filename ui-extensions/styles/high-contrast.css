@@ -1,0 +1,147 @@
+/*
+ * High contrast theme for ui-extensions components (#1365).
+ *
+ * All values come from `components/highContrastTheme.ts` (HIGH_CONTRAST_LIGHT /
+ * HIGH_CONTRAST_DARK), where every foreground/background pair is unit tested at
+ * 7:1 or better. Keep the two in sync.
+ *
+ * Usage:
+ *   import { HighContrastTheme } from '../components/HighContrastTheme';
+ *   import '../styles/high-contrast.css';
+ *
+ *   <HighContrastTheme baseTheme="dark">{...}</HighContrastTheme>
+ *
+ * The theme is scoped to `.hc-root` so it never leaks into the host page.
+ * Nothing here hides or disables UI: disabled controls stay legible (dashed
+ * outline) so the theme never costs functionality.
+ */
+
+.hc-root {
+  --hc-background: #ffffff;
+  --hc-foreground: #000000;
+  --hc-muted-foreground: #333333;
+  --hc-border: #000000;
+  --hc-focus-ring: #0000cc;
+  --hc-accent: #0000cc;
+  --hc-accent-foreground: #ffffff;
+  --hc-danger: #b00020;
+  --hc-success: #005a2b;
+  --hc-input-background: #ffffff;
+
+  background: var(--hc-background);
+  color: var(--hc-foreground);
+}
+
+/* Dark base theme, explicitly selected. */
+.hc-root[data-hc-base='dark'] {
+  --hc-background: #000000;
+  --hc-foreground: #ffffff;
+  --hc-muted-foreground: #cccccc;
+  --hc-border: #ffffff;
+  --hc-focus-ring: #ffd700;
+  --hc-accent: #ffd700;
+  --hc-accent-foreground: #000000;
+  --hc-danger: #ff8080;
+  --hc-success: #99ffbb;
+  --hc-input-background: #000000;
+}
+
+/* Text */
+.hc-root .hc-text,
+.hc-root p,
+.hc-root li,
+.hc-root dt,
+.hc-root dd,
+.hc-root label {
+  color: var(--hc-foreground);
+}
+
+.hc-root .hc-text-muted,
+.hc-root small,
+.hc-root time {
+  color: var(--hc-muted-foreground);
+}
+
+.hc-root .hc-text-danger {
+  color: var(--hc-danger);
+}
+
+.hc-root .hc-text-success {
+  color: var(--hc-success);
+}
+
+/* Links */
+.hc-root a {
+  color: var(--hc-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Buttons */
+.hc-root .hc-button,
+.hc-root button:not(.hc-plain) {
+  background: var(--hc-accent);
+  color: var(--hc-accent-foreground);
+  border: 2px solid var(--hc-border);
+  border-radius: 0.375rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+}
+
+.hc-root .hc-button-secondary {
+  background: var(--hc-background);
+  color: var(--hc-foreground);
+  border: 2px solid var(--hc-border);
+}
+
+/* Inputs */
+.hc-root .hc-input,
+.hc-root input:not([type='checkbox']):not([type='radio']),
+.hc-root select,
+.hc-root textarea {
+  background: var(--hc-input-background);
+  color: var(--hc-foreground);
+  border: 2px solid var(--hc-border);
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+}
+
+/* Cards and surfaces */
+.hc-root .hc-card,
+.hc-root [data-hc-card],
+.hc-root table,
+.hc-root dialog {
+  background: var(--hc-background);
+  color: var(--hc-foreground);
+  border: 2px solid var(--hc-border);
+  box-shadow: none;
+}
+
+.hc-root th,
+.hc-root td {
+  border-bottom: 2px solid var(--hc-border);
+}
+
+/*
+ * Focus visibility is the strongest requirement in high contrast mode: the
+ * outline must survive on both light and dark surfaces.
+ */
+.hc-root :focus-visible,
+.hc-root a:focus-visible,
+.hc-root button:focus-visible,
+.hc-root input:focus-visible,
+.hc-root select:focus-visible,
+.hc-root textarea:focus-visible,
+.hc-root [tabindex]:focus-visible {
+  outline: 3px solid var(--hc-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Disabled stays visually distinct without relying on reduced opacity alone. */
+.hc-root :disabled,
+.hc-root [aria-disabled='true'] {
+  opacity: 1;
+  color: var(--hc-muted-foreground);
+  border-style: dashed;
+  cursor: not-allowed;
+}
