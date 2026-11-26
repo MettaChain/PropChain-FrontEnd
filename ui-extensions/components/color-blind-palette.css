@@ -1,0 +1,19 @@
+:root {
+  --data-viz-blue: #0072b2;
+  --data-viz-orange: #e69f00;
+  --data-viz-bluish-green: #009e73;
+  --data-viz-yellow: #f0e442;
+  --data-viz-sky-blue: #56b4e9;
+  --data-viz-vermillion: #d55e00;
+  --data-viz-reddish-purple: #cc79a7;
+  --data-viz-black: #000000;
+
+  --data-viz-high-contrast-blue: #005a92;
+  --data-viz-high-contrast-orange: #b77900;
+  --data-viz-high-contrast-bluish-green: #007a59;
+  --data-viz-high-contrast-yellow: #817700;
+  --data-viz-high-contrast-sky-blue: #1682b8;
+  --data-viz-high-contrast-vermillion: #a94a00;
+  --data-viz-high-contrast-reddish-purple: #a94f80;
+  --data-viz-high-contrast-black: #111111;
+}
