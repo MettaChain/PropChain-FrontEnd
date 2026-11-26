@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { COLOR_BLIND_SAFE_PALETTE, type DataVisualizationPattern } from './colorBlindPalette';
 
@@ -17,7 +17,16 @@ export interface PortfolioPieChartProps {
 interface PaletteLegendEntry {
   value?: string;
   color?: string;
-  payload?: { pattern?: DataVisualizationPattern };
+  payload?: { pattern?: DataVisualizationPattern; color?: string };
+}
+
+function contrastingInk(hex: string): string {
+  if (!/^#?[0-9a-f]{6}$/i.test(hex)) return '#FFFFFF';
+  const value = hex.startsWith('#') ? hex.slice(1) : hex;
+  const channels = value.match(/[0-9a-f]{2}/gi)!.map((part) => Number.parseInt(part, 16) / 255);
+  const linear = channels.map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+  const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  return luminance > 0.179 ? '#000000' : '#FFFFFF';
 }
 
 export function PatternMarker({ pattern, color }: { pattern: DataVisualizationPattern; color: string }) {
@@ -45,7 +54,7 @@ function PaletteLegend({ payload }: { payload?: PaletteLegendEntry[] }) {
         return (
           <li key={`${entry.value ?? 'segment'}-${index}`} className="inline-flex items-center gap-1.5">
             <svg aria-hidden="true" className="h-4 w-4 shrink-0" viewBox="0 0 16 16">
-              <PatternMarker pattern={pattern} color={entry.color ?? '#000000'} />
+              <PatternMarker pattern={pattern} color={entry.payload?.color ?? entry.color ?? '#000000'} />
             </svg>
             <span>{entry.value}</span>
             <span className="text-gray-500 dark:text-gray-400">({pattern})</span>
@@ -58,6 +67,7 @@ function PaletteLegend({ payload }: { payload?: PaletteLegendEntry[] }) {
 
 export function PortfolioPieChart({ data, colors }: PortfolioPieChartProps) {
   const [reduceMotion, setReduceMotion] = useState(false);
+  const chartId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
@@ -75,6 +85,14 @@ export function PortfolioPieChart({ data, colors }: PortfolioPieChartProps) {
     <div className="h-72 w-full text-gray-900 dark:text-gray-100" role="group" aria-label="Portfolio distribution chart">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
+          <defs>
+            {segments.map((segment, index) => (
+              <pattern key={segment.name} id={`${chartId}-pattern-${index}`} width="16" height="16" patternUnits="userSpaceOnUse">
+                <rect width="16" height="16" fill={segment.color} />
+                <PatternMarker pattern={segment.pattern} color={contrastingInk(segment.color)} />
+              </pattern>
+            ))}
+          </defs>
           <Pie
             data={segments}
             dataKey="value"
@@ -83,8 +101,8 @@ export function PortfolioPieChart({ data, colors }: PortfolioPieChartProps) {
             outerRadius="80%"
             isAnimationActive={!reduceMotion}
           >
-            {segments.map((s) => (
-              <Cell key={s.name} fill={s.color} />
+            {segments.map((s, index) => (
+              <Cell key={s.name} fill={`url(#${chartId}-pattern-${index})`} />
             ))}
           </Pie>
           <Tooltip

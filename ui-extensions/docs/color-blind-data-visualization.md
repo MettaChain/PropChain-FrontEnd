@@ -14,7 +14,7 @@ Import the CSS file in the consuming app or Storybook entry point when using the
 }
 ```
 
-Use `PortfolioPieChart` as an example of pairing each data color with a marker and a text label in the legend. For line and bar charts, carry the palette entry's `pattern` into point markers, dash styles, or labels. Never use color as the only way to identify a series.
+`PortfolioPieChart` applies repeating shape patterns to its pie slices and shows each series' shape and name in the legend. For line and bar charts, carry the palette entry's `pattern` into point markers, dash styles, or labels. Never use color as the only way to identify a series.
 
 ## Review under color vision simulations
 
